@@ -1,0 +1,82 @@
+{
+  "name": "@mcp-z/mcp-pdf",
+  "version": "1.0.0",
+  "description": "MCP server for PDF generation using PDFKit",
+  "keywords": [
+    "pdf",
+    "pdfkit",
+    "emoji",
+    "unicode",
+    "mcp",
+    "ai",
+    "pdf generator",
+    "model context protocol",
+    "json resume",
+    "document generator",
+    "certificate",
+    "invoice",
+    "report",
+    "flyer",
+    "resume",
+    "color emoji",
+    "ai agent",
+    "claude"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "bin": "./bin/server.js",
+  "files": [
+    "dist",
+    "bin",
+    "scripts"
+  ],
+  "scripts": {
+    "build": "npm run typecheck && tsds build",
+    "format": "biome check --write --unsafe",
+    "postinstall": "node scripts/postinstall.cjs",
+    "test": "node --test 'test/**/*.test.ts'",
+    "test:engines": "nvu engines tsds test:node --no-timeouts",
+    "typecheck": "tsc --noEmit",
+    "version": "tsds version"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.19.1",
+    "@napi-rs/canvas": "^0.1.80",
+    "emoji-regex": "^10.5.0",
+    "fontkit": "^2.0.4",
+    "module-root-sync": "^1.2.0",
+    "pdfkit": "^0.17.2",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.2.5",
+    "@types/fontkit": "^2.0.8",
+    "@types/node": "^24.6.2",
+    "@types/pdfkit": "^0.17.3",
+    "ts-dev-stack": "^1.18.8",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "tsds": {
+    "source": "src/index.ts"
+  },
+  "depcheck": {
+    "ignores": [
+      "@biomejs/biome",
+      "ts-dev-stack",
+      "typescript"
+    ]
+  }
+}
