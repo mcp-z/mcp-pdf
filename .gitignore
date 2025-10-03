@@ -13,6 +13,9 @@ docs/
 .env
 .env.*
 
+# MCP Registry tokens
+.mcpregistry_*
+
 # Logs
 npm-debug.log*
 yarn-debug.log*
