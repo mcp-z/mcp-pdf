@@ -35,7 +35,9 @@
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/esm/index.d.ts",
-  "bin": "./bin/server.js",
+  "bin": {
+    "mcp-pdf": "bin/server.js"
+  },
   "files": [
     "dist",
     "bin",
