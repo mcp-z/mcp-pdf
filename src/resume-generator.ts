@@ -1,4 +1,3 @@
-import { createWriteStream } from 'node:fs';
 import PDFDocument from 'pdfkit';
 import type { JsonResume } from './json-resume-schema.ts';
 import { registerEmojiFont } from './lib/emoji-renderer.ts';
@@ -34,7 +33,7 @@ export interface ResumeStyling {
   };
 }
 
-export async function generateResumePDF(resume: JsonResume, outputPath: string, font?: string, styling?: ResumeStyling): Promise<void> {
+export async function generateResumePDFBuffer(resume: JsonResume, font?: string, styling?: ResumeStyling): Promise<Buffer> {
   // Merge styling with defaults
   const margins = {
     top: styling?.margins?.top ?? 50,
@@ -74,8 +73,13 @@ export async function generateResumePDF(resume: JsonResume, outputPath: string, 
     },
   });
 
-  const stream = createWriteStream(outputPath);
-  doc.pipe(stream);
+  // Capture PDF in memory
+  const chunks: Buffer[] = [];
+  doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+  const pdfPromise = new Promise<Buffer>((resolve, reject) => {
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+  });
 
   // Check if content has Unicode characters or emoji
   const resumeText = JSON.stringify(resume);
@@ -390,8 +394,6 @@ export async function generateResumePDF(resume: JsonResume, outputPath: string, 
   // Finalize
   doc.end();
 
-  await new Promise<void>((resolve, reject) => {
-    stream.on('finish', () => resolve());
-    stream.on('error', reject);
-  });
+  // Return the PDF buffer
+  return await pdfPromise;
 }

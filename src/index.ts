@@ -1,6 +1,4 @@
-import { createWriteStream } from 'node:fs';
-import { mkdir } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { randomBytes } from 'node:crypto';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import PDFDocument from 'pdfkit';
@@ -9,15 +7,14 @@ import { jsonResumeSchema } from './json-resume-schema.ts';
 import { registerEmojiFont } from './lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts, validateTextForFont } from './lib/fonts.ts';
 import { renderTextWithEmoji } from './lib/pdf-helpers.ts';
-import { generateResumePDF } from './resume-generator.ts';
+import { generateResumePDFBuffer } from './resume-generator.ts';
 
 // Export utility functions for emoji/Unicode detection and character validation
 export { type CharacterValidationResult, hasEmoji, needsUnicodeFont, validateTextForFont } from './lib/fonts.ts';
 
-// Helper to ensure directory exists
-async function ensureDir(filePath: string): Promise<void> {
-  const dir = dirname(filePath);
-  await mkdir(dir, { recursive: true });
+// Helper to generate unique PDF IDs
+function generatePdfId(): string {
+  return randomBytes(8).toString('hex');
 }
 
 // Create and configure the MCP server
@@ -35,6 +32,7 @@ function createPdfServer(): McpServer {
       description:
         'Create a PDF document with text, images, shapes, and full layout control. Supports progressive enhancement from simple documents to complex designs.\n\n' +
         '**Key Features:**\n' +
+        '• Unicode support: Chinese, Japanese, Korean, Arabic, emoji - auto-detects system fonts\n' +
         '• Page setup (custom size, margins, background color)\n' +
         '• Text with colors, fonts, positioning, and styling (oblique, spacing, etc.)\n' +
         '• Shapes (rectangles, circles, lines) for visual design\n' +
@@ -66,9 +64,20 @@ function createPdfServer(): McpServer {
         '• Oblique: true for default slant, or number for degrees (15 = italic look)\n' +
         '• All pageSetup and visual styling fields are optional - defaults match standard documents',
       inputSchema: {
-        outputPath: z.string().describe('Output file path for the PDF'),
+        filename: z.string().optional().describe('Optional filename for the PDF (defaults to "document.pdf")'),
         title: z.string().optional().describe('Document title metadata'),
         author: z.string().optional().describe('Document author metadata'),
+        font: z
+          .string()
+          .optional()
+          .describe(
+            'Font for the PDF (optional - defaults to "auto").\n\n' +
+              '**Default**: "auto" auto-detects Unicode fonts on macOS/Linux/Windows. Works for Chinese, Japanese, Korean, Arabic, emoji, and all languages.\n\n' +
+              'Advanced options:\n' +
+              '• Built-in: Helvetica, Times-Roman, Courier - ASCII/Latin only, no Chinese support\n' +
+              '• Custom: Absolute path to TTF/OTF font file for special needs\n\n' +
+              '**You can omit this parameter** - auto-detection works for 99% of use cases.'
+          ),
         pageSetup: z
           .object({
             size: z.tuple([z.number(), z.number()]).optional().describe('Page size [width, height] in points (default: [612, 792] = Letter)'),
@@ -199,10 +208,8 @@ function createPdfServer(): McpServer {
       } as any,
     },
     async (args: any) => {
-      const { outputPath, title, author, pageSetup, content } = args;
+      const { filename = 'document.pdf', title, author, font, pageSetup, content } = args;
       try {
-        await ensureDir(outputPath);
-
         // Create PDF document with optional page setup
         const docOptions: any = {
           info: {
@@ -220,9 +227,13 @@ function createPdfServer(): McpServer {
 
         const doc = new PDFDocument(docOptions);
 
-        // Pipe to file
-        const stream = createWriteStream(outputPath);
-        doc.pipe(stream);
+        // Capture PDF in memory
+        const chunks: Buffer[] = [];
+        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+        const pdfPromise = new Promise<Buffer>((resolve, reject) => {
+          doc.on('end', () => resolve(Buffer.concat(chunks)));
+          doc.on('error', reject);
+        });
 
         // Draw background if specified
         if (pageSetup?.backgroundColor) {
@@ -236,7 +247,7 @@ function createPdfServer(): McpServer {
         const emojiAvailable = containsEmoji ? registerEmojiFont() : false;
 
         // Setup fonts
-        const fonts = await setupFonts(doc);
+        const fonts = await setupFonts(doc, font);
         const { regular: regularFont, bold: boldFont } = fonts;
 
         // Validate content for unsupported characters
@@ -423,17 +434,29 @@ function createPdfServer(): McpServer {
         // Finalize PDF
         doc.end();
 
-        // Wait for stream to finish
-        await new Promise<void>((resolve, reject) => {
-          stream.on('finish', () => resolve());
-          stream.on('error', reject);
-        });
+        // Wait for PDF to be generated
+        const pdfBuffer = await pdfPromise;
+
+        // Generate unique ID for this PDF
+        const pdfId = generatePdfId();
+        const uri = `mcp+mem://pdf/${pdfId}`;
+        const base64 = pdfBuffer.toString('base64');
 
         // Build response with warnings if any
-        const responseText = warnings.length > 0 ? `PDF created successfully: ${outputPath}\n\n⚠️  Character Warnings:\n${warnings.map((w) => `• ${w}`).join('\n')}` : `PDF created successfully: ${outputPath}`;
+        const warningText = warnings.length > 0 ? `\n\n⚠️  Character Warnings:\n${warnings.map((w) => `• ${w}`).join('\n')}` : '';
+        const responseText = `PDF created successfully (${pdfBuffer.length} bytes)${warningText}`;
 
         return {
           content: [
+            {
+              type: 'resource' as const,
+              resource: {
+                uri,
+                name: filename,
+                mimeType: 'application/pdf',
+                blob: base64,
+              },
+            },
             {
               type: 'text' as const,
               text: responseText,
@@ -462,24 +485,27 @@ function createPdfServer(): McpServer {
       title: 'Create Simple PDF',
       description: 'Create a simple PDF with just text content. A simplified version of create-pdf for basic use cases. Supports emoji rendering.',
       inputSchema: {
-        outputPath: z.string().describe('Output file path for the PDF'),
+        filename: z.string().optional().describe('Optional filename for the PDF (defaults to "document.pdf")'),
         text: z.string().describe('Text content for the PDF'),
         title: z.string().optional().describe('Document title metadata'),
       } as any,
     },
     async (args: any) => {
-      const { outputPath, text, title } = args;
+      const { filename = 'document.pdf', text, title } = args;
       try {
-        await ensureDir(outputPath);
-
         const doc = new PDFDocument({
           info: {
             ...(title && { Title: title }),
           },
         });
 
-        const stream = createWriteStream(outputPath);
-        doc.pipe(stream);
+        // Capture PDF in memory
+        const chunks: Buffer[] = [];
+        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+        const pdfPromise = new Promise<Buffer>((resolve, reject) => {
+          doc.on('end', () => resolve(Buffer.concat(chunks)));
+          doc.on('error', reject);
+        });
 
         // Check for emoji and register font if needed
         const containsEmoji = hasEmoji(text);
@@ -493,16 +519,28 @@ function createPdfServer(): McpServer {
         renderTextWithEmoji(doc, text, 12, regularFont, emojiAvailable);
         doc.end();
 
-        await new Promise<void>((resolve, reject) => {
-          stream.on('finish', () => resolve());
-          stream.on('error', reject);
-        });
+        // Wait for PDF to be generated
+        const pdfBuffer = await pdfPromise;
+
+        // Generate unique ID for this PDF
+        const pdfId = generatePdfId();
+        const uri = `mcp+mem://pdf/${pdfId}`;
+        const base64 = pdfBuffer.toString('base64');
 
         return {
           content: [
             {
+              type: 'resource' as const,
+              resource: {
+                uri,
+                name: filename,
+                mimeType: 'application/pdf',
+                blob: base64,
+              },
+            },
+            {
               type: 'text' as const,
-              text: `PDF created successfully: ${outputPath}`,
+              text: `PDF created successfully (${pdfBuffer.length} bytes)`,
             },
           ],
         };
@@ -528,7 +566,7 @@ function createPdfServer(): McpServer {
       title: 'Generate Resume PDF',
       description: 'Generate a professional resume PDF from JSON Resume format. Follows the standard JSON Resume schema (https://jsonresume.org/schema). Supports basics, work, education, projects, skills, awards, certificates, languages, and more. Includes customizable styling options.',
       inputSchema: {
-        outputPath: z.string().describe('Output file path for the PDF'),
+        filename: z.string().optional().describe('Optional filename for the PDF (defaults to "resume.pdf")'),
         resume: jsonResumeSchema.describe('Resume data in JSON Resume format'),
         font: z
           .string()
@@ -589,16 +627,29 @@ function createPdfServer(): McpServer {
       } as any,
     },
     async (args: any) => {
-      const { outputPath, resume, font, styling } = args;
+      const { filename = 'resume.pdf', resume, font, styling } = args;
       try {
-        await ensureDir(outputPath);
-        await generateResumePDF(resume, outputPath, font, styling);
+        const pdfBuffer = await generateResumePDFBuffer(resume, font, styling);
+
+        // Generate unique ID for this PDF
+        const pdfId = generatePdfId();
+        const uri = `mcp+mem://pdf/${pdfId}`;
+        const base64 = pdfBuffer.toString('base64');
 
         return {
           content: [
             {
+              type: 'resource' as const,
+              resource: {
+                uri,
+                name: filename,
+                mimeType: 'application/pdf',
+                blob: base64,
+              },
+            },
+            {
               type: 'text' as const,
-              text: `Resume PDF generated successfully: ${outputPath}`,
+              text: `Resume PDF generated successfully (${pdfBuffer.length} bytes)`,
             },
           ],
         };

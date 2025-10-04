@@ -1,6 +1,6 @@
 {
   "name": "@mcp-z/mcp-pdf",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "MCP server for PDF generation using PDFKit",
   "mcpName": "io.github.kmalakoff/mcp-pdf",
   "keywords": [
