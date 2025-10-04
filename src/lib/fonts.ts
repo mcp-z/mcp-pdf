@@ -48,23 +48,24 @@ export function hasEmoji(text: string): boolean {
 /**
  * Auto-detect a system font with Unicode support
  * Returns path to first found Unicode-capable font, or null if none found
+ * Prioritizes fonts with known CJK (Chinese/Japanese/Korean) support
  */
 export function getSystemFont(): string | null {
-  // Common system fonts with Unicode support on different platforms
+  // System fonts ordered by Unicode/CJK support quality
   const unicodeSupportedFonts = [
-    // macOS
-    '/System/Library/Fonts/SFNS.ttf',
+    // macOS - prioritize Arial Unicode (full CJK support)
+    '/System/Library/Fonts/Supplemental/Arial Unicode.ttf', // 50k+ glyphs, full CJK
+    '/System/Library/Fonts/SFNS.ttf', // System font (limited CJK)
     '/System/Library/Fonts/SFNSText.ttf',
-    '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',
-    // Linux
+    // Linux - Noto fonts have excellent CJK support
     '/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf',
+    '/usr/share/fonts/noto/NotoSans-Regular.ttf',
     '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
     '/usr/share/fonts/TTF/DejaVuSans.ttf',
-    '/usr/share/fonts/noto/NotoSans-Regular.ttf',
-    // Windows
+    // Windows - Segoe UI has better Unicode than Arial
     'C:\\Windows\\Fonts\\segoeui.ttf',
-    'C:\\Windows\\Fonts\\arial.ttf',
     'C:\\Windows\\Fonts\\NotoSans-Regular.ttf',
+    'C:\\Windows\\Fonts\\arial.ttf',
   ];
 
   for (const fontPath of unicodeSupportedFonts) {
@@ -79,16 +80,10 @@ export function getSystemFont(): string | null {
 /**
  * Download font from URL to temp directory
  * Returns path to downloaded font, or null on error
+ * Caches downloads - if the file already exists, returns cached path
  */
 async function downloadToTemp(url: string): Promise<string | null> {
   try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.warn(`Failed to download font from ${url}: ${response.statusText}`);
-      return null;
-    }
-
-    const buffer = await response.arrayBuffer();
     const tempDir = join(tmpdir(), 'mcp-pdf-fonts');
     await mkdir(tempDir, { recursive: true });
 
@@ -97,7 +92,23 @@ async function downloadToTemp(url: string): Promise<string | null> {
     const filename = urlPath.split('/').pop() || `font-${Date.now()}.woff2`;
     const tempPath = join(tempDir, filename);
 
+    // Check if already cached
+    if (existsSync(tempPath)) {
+      console.log(`Using cached font: ${filename}`);
+      return tempPath;
+    }
+
+    // Download if not cached
+    console.log(`Downloading font: ${url}`);
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.warn(`Failed to download font from ${url}: ${response.statusText}`);
+      return null;
+    }
+
+    const buffer = await response.arrayBuffer();
     await writeFile(tempPath, Buffer.from(buffer));
+    console.log(`Font cached: ${filename}`);
     return tempPath;
   } catch (err) {
     console.warn(`Failed to download font from ${url}:`, err);

@@ -1,22 +1,15 @@
 import assert from 'node:assert/strict';
-import { createWriteStream, existsSync, readFileSync } from 'node:fs';
-import { mkdir } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { describe, test } from 'node:test';
 import PDFDocument from 'pdfkit';
 import { registerEmojiFont } from '../src/lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts } from '../src/lib/fonts.ts';
 import { renderTextWithEmoji } from '../src/lib/pdf-helpers.ts';
 
-const testOutputDir = join(tmpdir(), 'mcp-pdf-enhanced-api');
-
 /**
  * Helper function that simulates the enhanced create-pdf tool
  * This is what an agent would call with calculated values
  */
 async function createPdfWithEnhancements(options: {
-  outputPath: string;
   pageSetup?: {
     size?: [number, number];
     margins?: { top: number; bottom: number; left: number; right: number };
@@ -30,8 +23,8 @@ async function createPdfWithEnhancements(options: {
     | { type: 'line'; x1: number; y1: number; x2: number; y2: number; strokeColor?: string; lineWidth?: number }
     | { type: 'pageBreak' }
   >;
-}) {
-  const { outputPath, pageSetup, content } = options;
+}): Promise<Buffer> {
+  const { pageSetup, content } = options;
 
   // Create PDF document with optional page setup
   const docOptions: any = {};
@@ -39,8 +32,14 @@ async function createPdfWithEnhancements(options: {
   if (pageSetup?.margins) docOptions.margins = pageSetup.margins;
 
   const doc = new PDFDocument(docOptions);
-  const stream = createWriteStream(outputPath);
-  doc.pipe(stream);
+
+  // Capture PDF in memory
+  const chunks: Buffer[] = [];
+  doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+  const pdfPromise = new Promise<Buffer>((resolve, reject) => {
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+  });
 
   // Draw background if specified
   if (pageSetup?.backgroundColor) {
@@ -140,20 +139,13 @@ async function createPdfWithEnhancements(options: {
 
   doc.end();
 
-  await new Promise<void>((resolve, reject) => {
-    stream.on('finish', () => resolve());
-    stream.on('error', reject);
-  });
+  return await pdfPromise;
 }
 
 describe('Enhanced API - Backward Compatibility', () => {
   test('old-style JSON works identically (no new features)', async () => {
-    await mkdir(testOutputDir, { recursive: true });
-    const outputPath = join(testOutputDir, 'backward-compat.pdf');
-
     // Old-style content - no pageSetup, no colors, no shapes
-    await createPdfWithEnhancements({
-      outputPath,
+    const pdfBuffer = await createPdfWithEnhancements({
       content: [
         { type: 'heading', text: 'Business Letter' },
         { type: 'text', text: 'This is a simple letter.', moveDown: 1 },
@@ -162,20 +154,16 @@ describe('Enhanced API - Backward Compatibility', () => {
       ],
     });
 
-    assert.ok(existsSync(outputPath), 'PDF should be created');
-    const stats = readFileSync(outputPath);
-    assert.ok(stats.length > 0, 'PDF should have content');
-    console.log(`    ✅ Backward compatible: ${outputPath} (${stats.length} bytes)`);
+    assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
+    assert.ok(pdfBuffer.length > 0, 'PDF should have content');
+    assert.ok(pdfBuffer.toString('utf8', 0, 4) === '%PDF', 'Should be a valid PDF');
+    console.log(`    ✅ Backward compatible: (${pdfBuffer.length} bytes)`);
   });
 });
 
 describe('Enhanced API - New Features', () => {
   test('pageSetup: custom background color', async () => {
-    await mkdir(testOutputDir, { recursive: true });
-    const outputPath = join(testOutputDir, 'custom-background.pdf');
-
-    await createPdfWithEnhancements({
-      outputPath,
+    const pdfBuffer = await createPdfWithEnhancements({
       pageSetup: {
         backgroundColor: '#1a1a1a', // Dark gray
       },
@@ -185,18 +173,13 @@ describe('Enhanced API - New Features', () => {
       ],
     });
 
-    assert.ok(existsSync(outputPath));
-    const stats = readFileSync(outputPath);
-    assert.ok(stats.length > 0);
-    console.log(`    📄 Created: ${outputPath} (${stats.length} bytes)`);
+    assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
+    assert.ok(pdfBuffer.length > 0, 'PDF should have content');
+    console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
   test('pageSetup: custom margins and size', async () => {
-    await mkdir(testOutputDir, { recursive: true });
-    const outputPath = join(testOutputDir, 'custom-margins.pdf');
-
-    await createPdfWithEnhancements({
-      outputPath,
+    const pdfBuffer = await createPdfWithEnhancements({
       pageSetup: {
         size: [612, 792],
         margins: { top: 0, bottom: 0, left: 0, right: 0 },
@@ -204,16 +187,13 @@ describe('Enhanced API - New Features', () => {
       content: [{ type: 'text', text: 'Full bleed document with zero margins', x: 50, y: 50 }],
     });
 
-    assert.ok(existsSync(outputPath));
-    console.log(`    📄 Created: ${outputPath}`);
+    assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
+    assert.ok(pdfBuffer.length > 0, 'PDF should have content');
+    console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
   test('text colors', async () => {
-    await mkdir(testOutputDir, { recursive: true });
-    const outputPath = join(testOutputDir, 'text-colors.pdf');
-
-    await createPdfWithEnhancements({
-      outputPath,
+    const pdfBuffer = await createPdfWithEnhancements({
       content: [
         { type: 'heading', text: 'Colorful Document', color: '#FF6B6B' },
         { type: 'text', text: 'Red text', color: '#FF0000', moveDown: 0.5 },
@@ -223,16 +203,13 @@ describe('Enhanced API - New Features', () => {
       ],
     });
 
-    assert.ok(existsSync(outputPath));
-    console.log(`    📄 Created: ${outputPath}`);
+    assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
+    assert.ok(pdfBuffer.length > 0, 'PDF should have content');
+    console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
   test('shapes: rectangles, circles, lines', async () => {
-    await mkdir(testOutputDir, { recursive: true });
-    const outputPath = join(testOutputDir, 'shapes.pdf');
-
-    await createPdfWithEnhancements({
-      outputPath,
+    const pdfBuffer = await createPdfWithEnhancements({
       content: [
         // Rectangle header
         { type: 'rect', x: 0, y: 0, width: 612, height: 80, fillColor: '#4A90E2' },
@@ -251,16 +228,14 @@ describe('Enhanced API - New Features', () => {
       ],
     });
 
-    assert.ok(existsSync(outputPath));
-    console.log(`    📄 Created: ${outputPath}`);
+    assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
+    assert.ok(pdfBuffer.length > 0, 'PDF should have content');
+    console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 });
 
 describe('Enhanced API - Agent Workflow Simulation', () => {
   test('agent calculates progressive font sizes', async () => {
-    await mkdir(testOutputDir, { recursive: true });
-    const outputPath = join(testOutputDir, 'agent-calc-fonts.pdf');
-
     // Simulate agent calculating progressive font sizes
     const lines = ['This line starts small', 'This line is slightly bigger', 'This line is medium', 'This line is getting large', 'This line is very large'];
 
@@ -279,17 +254,15 @@ describe('Enhanced API - Agent Workflow Simulation', () => {
       });
     }
 
-    await createPdfWithEnhancements({ outputPath, content });
+    const pdfBuffer = await createPdfWithEnhancements({ content });
 
-    assert.ok(existsSync(outputPath));
+    assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
+    assert.ok(pdfBuffer.length > 0, 'PDF should have content');
     console.log(`    📊 Agent calculated ${lines.length} progressive font sizes`);
-    console.log(`    📄 Created: ${outputPath}`);
+    console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
   test('agent calculates centered tapering widths', async () => {
-    await mkdir(testOutputDir, { recursive: true });
-    const outputPath = join(testOutputDir, 'agent-calc-widths.pdf');
-
     const lines = ['Narrow', 'Getting Wider', 'Even Wider Now', 'Maximum Width Here', 'Full Text Width'];
 
     const pageWidth = 612;
@@ -311,18 +284,17 @@ describe('Enhanced API - Agent Workflow Simulation', () => {
       });
     }
 
-    await createPdfWithEnhancements({ outputPath, content });
+    const pdfBuffer = await createPdfWithEnhancements({ content });
 
-    assert.ok(existsSync(outputPath));
+    assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
+    assert.ok(pdfBuffer.length > 0, 'PDF should have content');
     console.log(`    📊 Agent calculated ${lines.length} centered tapered widths`);
-    console.log(`    📄 Created: ${outputPath}`);
+    console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 });
 
 describe('Enhanced API - Space Journey Resume (Sci-Fi Style)', () => {
   test('generates space journey resume with tapering', async () => {
-    await mkdir(testOutputDir, { recursive: true });
-    const outputPath = join(testOutputDir, 'space-journey-resume.pdf');
 
     // Agent generates a Space Journey style resume with sci-fi theme
     // Uses purple/cyan color scheme with dramatic tapering effect
@@ -428,8 +400,7 @@ describe('Enhanced API - Space Journey Resume (Sci-Fi Style)', () => {
       });
     }
 
-    await createPdfWithEnhancements({
-      outputPath,
+    const pdfBuffer = await createPdfWithEnhancements({
       pageSetup: {
         backgroundColor: '#0A0A1F', // Deep space purple-black instead of pure black
         margins: { top: 50, bottom: 50, left: 60, right: 60 },
@@ -437,24 +408,14 @@ describe('Enhanced API - Space Journey Resume (Sci-Fi Style)', () => {
       content,
     });
 
-    assert.ok(existsSync(outputPath), 'Space journey PDF should be created');
-    const stats = readFileSync(outputPath);
+    assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
 
-    // Validation: Check file size is reasonable (should be ~10-12KB)
-    assert.ok(stats.length > 8000 && stats.length < 15000, `PDF size should be reasonable (got ${stats.length} bytes)`);
+    // Validation: Check file size is reasonable (should be ~10-30KB depending on fonts/emoji)
+    assert.ok(pdfBuffer.length > 8000 && pdfBuffer.length < 40000, `PDF size should be reasonable (got ${pdfBuffer.length} bytes)`);
 
-    console.log(`    🌟 Space Journey Resume created: ${outputPath} (${stats.length} bytes)`);
+    console.log(`    🌟 Space Journey Resume created: (${pdfBuffer.length} bytes)`);
     console.log(`    📊 Agent calculated ${mainContent.length} progressive values`);
     console.log('    ✨ Features: tapering font (7→20pt), tapering width (250→500px), centered, oblique');
     console.log('    🎨 Color scheme: Purple/Cyan on deep space background');
   });
-});
-
-test('print test output directory', () => {
-  console.log(`\n📁 Enhanced API test PDFs generated in: ${testOutputDir}`);
-  console.log('   Open these files to verify:');
-  console.log('   • Backward compatibility (old JSON still works)');
-  console.log('   • New features (colors, shapes, pageSetup)');
-  console.log('   • Agent workflows (calculated values)');
-  console.log('   • Space Journey resume (tapering effect)\n');
 });

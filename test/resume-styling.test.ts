@@ -1,13 +1,7 @@
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
-import { mkdir } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { describe, test } from 'node:test';
 import type { JsonResume } from '../src/json-resume-schema.ts';
-import { generateResumePDF, type ResumeStyling } from '../src/resume-generator.ts';
-
-const testOutputDir = join(tmpdir(), 'mcp-pdf-resume-styling');
+import { generateResumePDFBuffer, type ResumeStyling } from '../src/resume-generator.ts';
 
 const sampleResume: JsonResume = {
   basics: {
@@ -38,21 +32,14 @@ const sampleResume: JsonResume = {
 
 describe('Resume Styling Options', () => {
   test('generates resume with default styling', async () => {
-    await mkdir(testOutputDir, { recursive: true });
-    const outputPath = join(testOutputDir, 'resume-default.pdf');
+    const pdfBuffer = await generateResumePDFBuffer(sampleResume);
 
-    await generateResumePDF(sampleResume, outputPath);
-
-    assert.ok(existsSync(outputPath), 'PDF with default styling should be created');
-    const stats = readFileSync(outputPath);
-    assert.ok(stats.length > 0, 'PDF should have content');
-    console.log(`    📄 Created: ${outputPath} (${stats.length} bytes)`);
+    assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
+    assert.ok(pdfBuffer.length > 0, 'PDF should have content');
+    console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
   test('generates resume with custom font sizes', async () => {
-    await mkdir(testOutputDir, { recursive: true });
-    const outputPath = join(testOutputDir, 'resume-custom-fonts.pdf');
-
     const styling: ResumeStyling = {
       fontSize: {
         name: 32,
@@ -64,18 +51,14 @@ describe('Resume Styling Options', () => {
       },
     };
 
-    await generateResumePDF(sampleResume, outputPath, undefined, styling);
+    const pdfBuffer = await generateResumePDFBuffer(sampleResume, undefined, styling);
 
-    assert.ok(existsSync(outputPath), 'PDF with custom font sizes should be created');
-    const stats = readFileSync(outputPath);
-    assert.ok(stats.length > 0, 'PDF should have content');
-    console.log(`    📄 Created: ${outputPath} (${stats.length} bytes)`);
+    assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
+    assert.ok(pdfBuffer.length > 0, 'PDF should have content');
+    console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
   test('generates resume with custom spacing', async () => {
-    await mkdir(testOutputDir, { recursive: true });
-    const outputPath = join(testOutputDir, 'resume-custom-spacing.pdf');
-
     const styling: ResumeStyling = {
       spacing: {
         afterName: 1.0,
@@ -88,36 +71,28 @@ describe('Resume Styling Options', () => {
       },
     };
 
-    await generateResumePDF(sampleResume, outputPath, undefined, styling);
+    const pdfBuffer = await generateResumePDFBuffer(sampleResume, undefined, styling);
 
-    assert.ok(existsSync(outputPath), 'PDF with custom spacing should be created');
-    const stats = readFileSync(outputPath);
-    assert.ok(stats.length > 0, 'PDF should have content');
-    console.log(`    📄 Created: ${outputPath} (${stats.length} bytes)`);
+    assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
+    assert.ok(pdfBuffer.length > 0, 'PDF should have content');
+    console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
   test('generates resume with left-aligned header', async () => {
-    await mkdir(testOutputDir, { recursive: true });
-    const outputPath = join(testOutputDir, 'resume-left-aligned.pdf');
-
     const styling: ResumeStyling = {
       alignment: {
         header: 'left',
       },
     };
 
-    await generateResumePDF(sampleResume, outputPath, undefined, styling);
+    const pdfBuffer = await generateResumePDFBuffer(sampleResume, undefined, styling);
 
-    assert.ok(existsSync(outputPath), 'PDF with left-aligned header should be created');
-    const stats = readFileSync(outputPath);
-    assert.ok(stats.length > 0, 'PDF should have content');
-    console.log(`    📄 Created: ${outputPath} (${stats.length} bytes)`);
+    assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
+    assert.ok(pdfBuffer.length > 0, 'PDF should have content');
+    console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
   test('generates resume with custom margins', async () => {
-    await mkdir(testOutputDir, { recursive: true });
-    const outputPath = join(testOutputDir, 'resume-custom-margins.pdf');
-
     const styling: ResumeStyling = {
       margins: {
         top: 100,
@@ -127,18 +102,14 @@ describe('Resume Styling Options', () => {
       },
     };
 
-    await generateResumePDF(sampleResume, outputPath, undefined, styling);
+    const pdfBuffer = await generateResumePDFBuffer(sampleResume, undefined, styling);
 
-    assert.ok(existsSync(outputPath), 'PDF with custom margins should be created');
-    const stats = readFileSync(outputPath);
-    assert.ok(stats.length > 0, 'PDF should have content');
-    console.log(`    📄 Created: ${outputPath} (${stats.length} bytes)`);
+    assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
+    assert.ok(pdfBuffer.length > 0, 'PDF should have content');
+    console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
   test('generates resume with all styling options combined', async () => {
-    await mkdir(testOutputDir, { recursive: true });
-    const outputPath = join(testOutputDir, 'resume-all-custom.pdf');
-
     const styling: ResumeStyling = {
       fontSize: {
         name: 28,
@@ -168,16 +139,10 @@ describe('Resume Styling Options', () => {
       },
     };
 
-    await generateResumePDF(sampleResume, outputPath, undefined, styling);
+    const pdfBuffer = await generateResumePDFBuffer(sampleResume, undefined, styling);
 
-    assert.ok(existsSync(outputPath), 'PDF with all custom styling should be created');
-    const stats = readFileSync(outputPath);
-    assert.ok(stats.length > 0, 'PDF should have content');
-    console.log(`    📄 Created: ${outputPath} (${stats.length} bytes)`);
+    assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
+    assert.ok(pdfBuffer.length > 0, 'PDF should have content');
+    console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
-});
-
-test('print test output directory', () => {
-  console.log(`\n📁 Resume styling test PDFs generated in: ${testOutputDir}`);
-  console.log('   Open these files to visually verify styling customization\n');
 });

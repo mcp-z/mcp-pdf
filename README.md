@@ -43,6 +43,16 @@ Add to `claude_desktop_config.json`:
 }
 ```
 
+## Where to Find This Server
+
+Published on multiple MCP registries and package managers:
+
+- **[npm](https://www.npmjs.com/package/@mcp-z/mcp-pdf)** - `@mcp-z/mcp-pdf`
+- **[MCP Official Registry](https://modelcontextprotocol.io/registry)** - `io.github.kmalakoff/mcp-pdf`
+- **[Smithery](https://smithery.ai/server/@mcp-z/mcp-pdf)** - One-click install via Smithery CLI
+- **[Awesome MCP Servers](https://mcpservers.org/)** - Community curated list (pending approval)
+- **[Cline Marketplace](https://github.com/cline/mcp-marketplace)** - Built-in to Cline IDE (coming soon)
+
 ## What You Can Create
 
 - **Professional** - Resumes, invoices, reports, certificates
