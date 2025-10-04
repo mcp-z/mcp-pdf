@@ -2,7 +2,16 @@
   "name": "@mcp-z/mcp-pdf",
   "version": "1.0.2",
   "description": "MCP server for PDF generation using PDFKit",
+  "author": "Kevin Malakoff <kmalakoff.info@gmail.com>",
   "mcpName": "io.github.kmalakoff/mcp-pdf",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mcp-z/mcp-pdf.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mcp-z/mcp-pdf/issues"
+  },
+  "homepage": "https://github.com/mcp-z/mcp-pdf#readme",
   "keywords": [
     "pdf",
     "pdfkit",
@@ -41,7 +50,8 @@
   "files": [
     "dist",
     "bin",
-    "scripts"
+    "scripts",
+    "smithery.yaml"
   ],
   "scripts": {
     "build": "npm run typecheck && tsds build",

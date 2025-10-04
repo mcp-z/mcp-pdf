@@ -3,7 +3,7 @@
   "name": "io.github.kmalakoff/mcp-pdf",
   "description": "MCP server for PDF generation using PDFKit",
   "repository": {
-    "url": "https://github.com/kmalakoff/mcp-pdf",
+    "url": "https://github.com/mcp-z/mcp-pdf",
     "source": "github"
   },
   "version": "1.0.2",

@@ -1,4 +1,3 @@
-import { randomBytes } from 'node:crypto';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import PDFDocument from 'pdfkit';
@@ -6,16 +5,12 @@ import { z } from 'zod/v3';
 import { jsonResumeSchema } from './json-resume-schema.ts';
 import { registerEmojiFont } from './lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts, validateTextForFont } from './lib/fonts.ts';
+import { writePdfToFile } from './lib/output-handler.ts';
 import { renderTextWithEmoji } from './lib/pdf-helpers.ts';
 import { generateResumePDFBuffer } from './resume-generator.ts';
 
 // Export utility functions for emoji/Unicode detection and character validation
 export { type CharacterValidationResult, hasEmoji, needsUnicodeFont, validateTextForFont } from './lib/fonts.ts';
-
-// Helper to generate unique PDF IDs
-function generatePdfId(): string {
-  return randomBytes(8).toString('hex');
-}
 
 // Create and configure the MCP server
 function createPdfServer(): McpServer {
@@ -64,7 +59,18 @@ function createPdfServer(): McpServer {
         '• Oblique: true for default slant, or number for degrees (15 = italic look)\n' +
         '• All pageSetup and visual styling fields are optional - defaults match standard documents',
       inputSchema: {
-        filename: z.string().optional().describe('Optional filename for the PDF (defaults to "document.pdf")'),
+        filename: z
+          .string()
+          .optional()
+          .describe(
+            'Optional filename for the PDF (defaults to "document.pdf").\n\n' +
+              'SECURITY: Filenames are sanitized and written to a sandboxed directory:\n' +
+              '• Default: ~/.mcp-pdf/\n' +
+              '• Override: Set PDF_OUTPUT_DIR environment variable\n' +
+              '• Path traversal attempts (.., /, etc) are blocked\n' +
+              '• Only alphanumeric, spaces, hyphens, underscores, and dots allowed\n' +
+              '• If file exists, timestamp is appended automatically'
+          ),
         title: z.string().optional().describe('Document title metadata'),
         author: z.string().optional().describe('Document author metadata'),
         font: z
@@ -437,26 +443,15 @@ function createPdfServer(): McpServer {
         // Wait for PDF to be generated
         const pdfBuffer = await pdfPromise;
 
-        // Generate unique ID for this PDF
-        const pdfId = generatePdfId();
-        const uri = `mcp+mem://pdf/${pdfId}`;
-        const base64 = pdfBuffer.toString('base64');
+        // Write PDF to sandboxed output directory
+        const outputPath = writePdfToFile(pdfBuffer, filename);
 
         // Build response with warnings if any
         const warningText = warnings.length > 0 ? `\n\n⚠️  Character Warnings:\n${warnings.map((w) => `• ${w}`).join('\n')}` : '';
-        const responseText = `PDF created successfully (${pdfBuffer.length} bytes)${warningText}`;
+        const responseText = `PDF created successfully\n\nOutput: ${outputPath}\nSize: ${pdfBuffer.length} bytes${warningText}`;
 
         return {
           content: [
-            {
-              type: 'resource' as const,
-              resource: {
-                uri,
-                name: filename,
-                mimeType: 'application/pdf',
-                blob: base64,
-              },
-            },
             {
               type: 'text' as const,
               text: responseText,
@@ -485,7 +480,18 @@ function createPdfServer(): McpServer {
       title: 'Create Simple PDF',
       description: 'Create a simple PDF with just text content. A simplified version of create-pdf for basic use cases. Supports emoji rendering.',
       inputSchema: {
-        filename: z.string().optional().describe('Optional filename for the PDF (defaults to "document.pdf")'),
+        filename: z
+          .string()
+          .optional()
+          .describe(
+            'Optional filename for the PDF (defaults to "document.pdf").\n\n' +
+              'SECURITY: Filenames are sanitized and written to a sandboxed directory:\n' +
+              '• Default: ~/.mcp-pdf/\n' +
+              '• Override: Set PDF_OUTPUT_DIR environment variable\n' +
+              '• Path traversal attempts (.., /, etc) are blocked\n' +
+              '• Only alphanumeric, spaces, hyphens, underscores, and dots allowed\n' +
+              '• If file exists, timestamp is appended automatically'
+          ),
         text: z.string().describe('Text content for the PDF'),
         title: z.string().optional().describe('Document title metadata'),
       } as any,
@@ -522,25 +528,14 @@ function createPdfServer(): McpServer {
         // Wait for PDF to be generated
         const pdfBuffer = await pdfPromise;
 
-        // Generate unique ID for this PDF
-        const pdfId = generatePdfId();
-        const uri = `mcp+mem://pdf/${pdfId}`;
-        const base64 = pdfBuffer.toString('base64');
+        // Write PDF to sandboxed output directory
+        const outputPath = writePdfToFile(pdfBuffer, filename);
 
         return {
           content: [
             {
-              type: 'resource' as const,
-              resource: {
-                uri,
-                name: filename,
-                mimeType: 'application/pdf',
-                blob: base64,
-              },
-            },
-            {
               type: 'text' as const,
-              text: `PDF created successfully (${pdfBuffer.length} bytes)`,
+              text: `PDF created successfully\n\nOutput: ${outputPath}\nSize: ${pdfBuffer.length} bytes`,
             },
           ],
         };
@@ -566,7 +561,18 @@ function createPdfServer(): McpServer {
       title: 'Generate Resume PDF',
       description: 'Generate a professional resume PDF from JSON Resume format. Follows the standard JSON Resume schema (https://jsonresume.org/schema). Supports basics, work, education, projects, skills, awards, certificates, languages, and more. Includes customizable styling options.',
       inputSchema: {
-        filename: z.string().optional().describe('Optional filename for the PDF (defaults to "resume.pdf")'),
+        filename: z
+          .string()
+          .optional()
+          .describe(
+            'Optional filename for the PDF (defaults to "resume.pdf").\n\n' +
+              'SECURITY: Filenames are sanitized and written to a sandboxed directory:\n' +
+              '• Default: ~/.mcp-pdf/\n' +
+              '• Override: Set PDF_OUTPUT_DIR environment variable\n' +
+              '• Path traversal attempts (.., /, etc) are blocked\n' +
+              '• Only alphanumeric, spaces, hyphens, underscores, and dots allowed\n' +
+              '• If file exists, timestamp is appended automatically'
+          ),
         resume: jsonResumeSchema.describe('Resume data in JSON Resume format'),
         font: z
           .string()
@@ -631,25 +637,14 @@ function createPdfServer(): McpServer {
       try {
         const pdfBuffer = await generateResumePDFBuffer(resume, font, styling);
 
-        // Generate unique ID for this PDF
-        const pdfId = generatePdfId();
-        const uri = `mcp+mem://pdf/${pdfId}`;
-        const base64 = pdfBuffer.toString('base64');
+        // Write PDF to sandboxed output directory
+        const outputPath = writePdfToFile(pdfBuffer, filename);
 
         return {
           content: [
             {
-              type: 'resource' as const,
-              resource: {
-                uri,
-                name: filename,
-                mimeType: 'application/pdf',
-                blob: base64,
-              },
-            },
-            {
               type: 'text' as const,
-              text: `Resume PDF generated successfully (${pdfBuffer.length} bytes)`,
+              text: `Resume PDF generated successfully\n\nOutput: ${outputPath}\nSize: ${pdfBuffer.length} bytes`,
             },
           ],
         };

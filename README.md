@@ -43,6 +43,35 @@ Add to `claude_desktop_config.json`:
 }
 ```
 
+## Security Model
+
+This server writes PDFs to a sandboxed directory to prevent path traversal attacks:
+
+- **Default location**: `~/.mcp-pdf/`
+- **Custom location**: Set `PDF_OUTPUT_DIR` environment variable
+- **Filename sanitization**: Blocks `..`, `/`, and unsafe characters
+- **No path parameters**: Tools accept only filenames, not full paths
+
+All generated PDFs are written to the configured output directory with sanitized filenames.
+
+### Custom Output Directory
+
+To override the default location, set the `PDF_OUTPUT_DIR` environment variable:
+
+```json
+{
+  "mcpServers": {
+    "pdf": {
+      "command": "npx",
+      "args": ["-y", "@mcp-z/mcp-pdf"],
+      "env": {
+        "PDF_OUTPUT_DIR": "/Users/yourname/Documents/PDFs"
+      }
+    }
+  }
+}
+```
+
 ## Where to Find This Server
 
 Published on multiple MCP registries and package managers:
@@ -52,6 +81,7 @@ Published on multiple MCP registries and package managers:
 - **[Smithery](https://smithery.ai/server/@mcp-z/mcp-pdf)** - One-click install via Smithery CLI
 - **[Awesome MCP Servers](https://mcpservers.org/)** - Community curated list (pending approval)
 - **[Cline Marketplace](https://github.com/cline/mcp-marketplace)** - Built-in to Cline IDE (coming soon)
+- **[GitHub Repository](https://github.com/mcp-z/mcp-pdf)** - Source code and issues
 
 ## What You Can Create
 
@@ -69,7 +99,7 @@ Start simple with plain text:
 
 ```typescript
 create-simple-pdf({
-  outputPath: "./letter.pdf",
+  filename: "letter.pdf",
   text: "Dear Customer,\n\nThank you for your business.\n\nBest regards,\nACME Corp",
   title: "Customer Thank You"
 })
@@ -81,7 +111,7 @@ Add visual style with colors and formatting:
 
 ```typescript
 create-pdf({
-  outputPath: "./notice.pdf",
+  filename: "notice.pdf",
   content: [
     {
       type: "heading",
@@ -111,7 +141,7 @@ Combine shapes and text for visual impact:
 
 ```typescript
 create-pdf({
-  outputPath: "./certificate.pdf",
+  filename: "certificate.pdf",
   pageSetup: {
     backgroundColor: "#FFF8DC"
   },
@@ -160,7 +190,7 @@ Handle complex structured data with JSON Resume:
 
 ```typescript
 generate-resume-pdf({
-  outputPath: "./john-doe-resume.pdf",
+  filename: "john-doe-resume.pdf",
   resume: {
     basics: {
       name: "John Doe",
@@ -213,7 +243,7 @@ The examples above show practical starting points, but agents can combine shapes
 Generate professional resumes from JSON Resume format.
 
 **Parameters:**
-- `outputPath` (string, required) - Output file path
+- `filename` (string, optional) - Filename for the PDF (defaults to "resume.pdf")
 - `resume` (object, required) - [JSON Resume schema](https://jsonresume.org/schema)
 
 **Resume Schema Sections:**
@@ -233,7 +263,7 @@ See the resume example above for structure.
 Create basic text PDFs quickly.
 
 **Parameters:**
-- `outputPath` (string, required) - Output file path
+- `filename` (string, optional) - Filename for the PDF (defaults to "document.pdf")
 - `text` (string, required) - Text content
 - `title` (string, optional) - Document metadata title
 
@@ -244,7 +274,7 @@ Create basic text PDFs quickly.
 Advanced PDF creation with full layout control.
 
 **Parameters:**
-- `outputPath` (string, required) - Output file path
+- `filename` (string, optional) - Filename for the PDF (defaults to "document.pdf")
 - `title` (string, optional) - Document metadata
 - `author` (string, optional) - Document metadata
 - `pageSetup` (object, optional) - Page configuration
