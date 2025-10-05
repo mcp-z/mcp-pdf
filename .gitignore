@@ -43,3 +43,4 @@ test-*.pdf
 *-resume.json
 *-resume.pdf
 examples/
+/.agents/
