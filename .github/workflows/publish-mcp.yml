@@ -1,0 +1,89 @@
+name: Update MCP Registries
+
+on:
+  workflow_dispatch: {}
+  push:
+    tags: [ 'v*' ]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read package.json metadata
+        id: pkg
+        shell: bash
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq
+          NAME=$(jq -r '.name' package.json)
+          VER=$(jq -r '.version' package.json)
+          if [[ -z "$NAME" || "$NAME" == "null" || -z "$VER" || "$VER" == "null" ]]; then
+            echo "package.json must contain { name, version }"; exit 1
+          fi
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "Resolved package: $NAME@$VER"
+
+      - name: Check npm registry for that version
+        id: npmlive
+        shell: bash
+        run: |
+          PKG="${{ steps.pkg.outputs.name }}"
+          VER="${{ steps.pkg.outputs.version }}"
+          echo "Checking npm for $PKG@$VER ..."
+          EXIST=$(npm view "$PKG@$VER" version 2>/dev/null || true)
+          if [[ "$EXIST" == "$VER" ]]; then
+            echo "npm has $PKG@$VER ✅"
+            echo "npm_ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "npm does NOT yet have $PKG@$VER. Skipping MCP publish (success). ✅"
+            echo "npm_ok=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install mcp-publisher
+        if: steps.npmlive.outputs.npm_ok == 'true'
+        shell: bash
+        run: |
+          # Get the latest release version
+          LATEST_VERSION=$(curl -s https://api.github.com/repos/modelcontextprotocol/registry/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+          VERSION=${LATEST_VERSION#v}  # Remove 'v' prefix
+          
+          # Download and install
+          OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+          ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/download/${LATEST_VERSION}/mcp-publisher_${VERSION}_${OS}_${ARCH}.tar.gz" | tar xz mcp-publisher
+          chmod +x mcp-publisher
+          sudo mv mcp-publisher /usr/local/bin/
+
+      - name: Build effective server manifest (inject npm version)
+        if: steps.npmlive.outputs.npm_ok == 'true'
+        shell: bash
+        run: |
+          VER="${{ steps.pkg.outputs.version }}"
+          jq --arg v "$VER" '
+            .version = $v
+            | .packages = (.packages // []) | .packages |= map(.version = $v)
+          ' .github/server.json > server.json
+          echo "Effective manifest:"
+          cat server.json
+
+      - name: Login to MCP Registry
+        if: steps.npmlive.outputs.npm_ok == 'true'
+        shell: bash
+        run: |
+          echo "Authenticating with MCP registry using GitHub OIDC..."
+          mcp-publisher login github-oidc
+
+      - name: Publish to MCP Registry
+        if: steps.npmlive.outputs.npm_ok == 'true'
+        shell: bash
+        env:
+          MCP_REGISTRY_URL: https://registry.modelcontextprotocol.io
+        run: |
+          echo "Publishing version ${{ steps.pkg.outputs.version }} to MCP registry..."
+          mcp-publisher publish

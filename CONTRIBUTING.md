@@ -48,36 +48,29 @@ The project uses three automated scripts in the `scripts/` directory, all writte
 
 **User impact:** End users see a brief download message on first install. If the download fails, emoji rendering won't work, but the package still functions for regular text.
 
-### `version.cjs`
-**When it runs:** Automatically when you run `npm version patch/minor/major`
-
-**What it does:** Syncs the version number from `package.json` to `server.json`, keeping both files in sync. The MCP registry uses `server.json` to track the package version.
-
-**Developer impact:** You don't need to manually update version numbers in multiple places.
-
-### `postpublish.cjs`
-**When it runs:** Automatically after successful `npm publish`
-
-**What it does:** 
-1. Pushes the version commit and tags to GitHub
-2. Updates the MCP Official Registry via `mcp-publisher`
-3. Displays helpful links and manual submission reminders
-
-**Developer impact:** One `npm publish` command handles deployment to npm, GitHub, and the MCP registry.
-
 ## Release Workflow
 
 ### Publishing a New Version
 
-We use npm's native lifecycle hooks for a streamlined two-command deployment:
+We use GitHub Actions for automated deployment to npm and the MCP registry:
 
 ```bash
-# Step 1: Bump the version (auto-syncs server.json)
+# Step 1: Bump the version in package.json
 npm version patch  # or: minor, major
 
-# Step 2: Publish to npm (auto-pushes to GitHub and updates MCP registry)
+# Step 2: Publish to npm
 npm publish --otp=<your-2fa-code>
+
+# Step 3: Push tags to trigger GitHub Actions
+git push --follow-tags
 ```
+
+The GitHub Actions workflow (`publish-mcp.yml`) will automatically:
+1. Wait for the new version to appear on npm
+2. Inject the version from package.json into .github/server.json dynamically
+3. Publish to the MCP Official Registry
+
+**Note:** `.github/server.json` uses placeholder versions (`0.0.0-auto`) that are replaced automatically by CI. Do not manually update version numbers in server.json.
 
 That's it! The lifecycle hooks handle everything automatically.
 
