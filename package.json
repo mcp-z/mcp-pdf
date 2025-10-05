@@ -1,7 +1,7 @@
 {
   "name": "@mcp-z/mcp-pdf",
   "version": "1.0.3",
-  "description": "MCP server for PDF generation using PDFKit",
+  "description": "MCP server for creative PDF generation with full emoji, Unicode, and offline support",
   "author": "Kevin Malakoff <kmalakoff.info@gmail.com>",
   "mcpName": "io.github.kmalakoff/mcp-pdf",
   "repository": {
@@ -57,10 +57,12 @@
     "build": "npm run typecheck && tsds build",
     "format": "biome check --write --unsafe",
     "postinstall": "node scripts/postinstall.cjs",
+    "postpublish": "node scripts/postpublish.cjs",
+    "prepublishOnly": "npm run build",
     "test": "node --test 'test/**/*.test.ts'",
     "test:engines": "nvu engines tsds test:node --no-timeouts",
     "typecheck": "tsc --noEmit",
-    "version": "tsds version"
+    "version": "tsds version && node scripts/version.cjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.19.1",
