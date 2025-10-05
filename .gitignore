@@ -1,0 +1,45 @@
+# Node artifacts
+node_modules/
+dist/
+docs/
+
+# Downloaded fonts (generated during postinstall)
+.fonts/
+/.pnp*
+/package-lock.json
+/yarn.lock
+
+# Env
+.env
+.env.*
+
+# MCP Registry tokens
+.mcpregistry_*
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# MacOS
+.DS_Store
+
+# VSCode
+.vscode/
+.claude/
+
+# TypeScript
+*.tsbuildinfo
+
+# Local database files
+*.db
+
+# Temporary files
+.tmp/
+
+# Test/example files
+test-*.json
+test-*.pdf
+*-resume.json
+*-resume.pdf
+examples/
