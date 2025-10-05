@@ -52,9 +52,13 @@ function createPdfServer(): McpServer {
         '• Origin (0, 0) is top-left corner\n' +
         '• Letter size page: 612 x 792 points (8.5" x 11")\n' +
         '• 72 points = 1 inch\n\n' +
+        '**Positioning Rules:**\n' +
+        '• Absolute: Use x, y (do NOT use align) - positions element at exact coordinates\n' +
+        '• Centered: Use y with align: "center" (do NOT use x) - centers element on page\n' +
+        '• Flow: Use align without x, y - element follows document flow\n\n' +
+        '⚠️  CRITICAL: Never combine x coordinate with align property!\n' +
+        '   They are mutually exclusive positioning modes. Mixing them causes unpredictable behavior.\n\n' +
         '**Tips:**\n' +
-        '• Use "align": "center" for centered text (works with or without "width")\n' +
-        '• Use "x" to manually position (calculate as: (pageWidth - textWidth) / 2 for centering)\n' +
         '• Colors: hex ("#FFD700") or named ("gold", "navy", "black")\n' +
         '• Oblique: true for default slant, or number for degrees (15 = italic look)\n' +
         '• All pageSetup and visual styling fields are optional - defaults match standard documents',
@@ -111,11 +115,14 @@ function createPdfServer(): McpServer {
                 color: z.string().optional().describe('Text color (hex like #FFD700 or named color like "gold", default: black)'),
 
                 // Positioning
-                x: z.number().optional().describe('X position'),
+                x: z.number().optional().describe('X position for absolute positioning. ⚠️ Do NOT use with align property - they conflict!'),
                 y: z.number().optional().describe('Y position'),
 
                 // Layout & Alignment
-                align: z.enum(['left', 'center', 'right', 'justify']).optional().describe('Text alignment (default: left)'),
+                align: z
+                  .enum(['left', 'center', 'right', 'justify'])
+                  .optional()
+                  .describe('Text alignment for flow-based layout (default: left). ⚠️ Do NOT use with x property - they conflict!'),
                 indent: z.number().optional().describe('First line indent in points'),
                 lineGap: z.number().optional().describe('Space between lines in points'),
                 paragraphGap: z.number().optional().describe('Space between paragraphs in points'),
@@ -144,11 +151,14 @@ function createPdfServer(): McpServer {
                 color: z.string().optional().describe('Text color (hex like #FFD700 or named color like "gold", default: black)'),
 
                 // Positioning
-                x: z.number().optional().describe('X position'),
+                x: z.number().optional().describe('X position for absolute positioning. ⚠️ Do NOT use with align property - they conflict!'),
                 y: z.number().optional().describe('Y position'),
 
                 // Layout & Alignment
-                align: z.enum(['left', 'center', 'right', 'justify']).optional().describe('Text alignment (default: left)'),
+                align: z
+                  .enum(['left', 'center', 'right', 'justify'])
+                  .optional()
+                  .describe('Text alignment for flow-based layout (default: left). ⚠️ Do NOT use with x property - they conflict!'),
                 indent: z.number().optional().describe('First line indent in points'),
                 lineGap: z.number().optional().describe('Space between lines in points'),
                 paragraphGap: z.number().optional().describe('Space between paragraphs in points'),
@@ -290,6 +300,14 @@ function createPdfServer(): McpServer {
               const fontSize = item.fontSize ?? 12;
               const font = item.bold ? boldFont : regularFont;
 
+              // Validate that x and align are not used together
+              if (item.x !== undefined && item.align !== undefined) {
+                throw new Error(
+                  `Invalid positioning in text element: Cannot use both 'x' (${item.x}) and 'align' ("${item.align}"). ` +
+                    `Use 'x' for absolute positioning OR 'align' for flow-based layout, not both.`
+                );
+              }
+
               // Set text color if specified
               if (item.color) {
                 doc.fillColor(item.color);
@@ -330,6 +348,14 @@ function createPdfServer(): McpServer {
             case 'heading': {
               const fontSize = item.fontSize ?? 24;
               const font = item.bold !== false ? boldFont : regularFont;
+
+              // Validate that x and align are not used together
+              if (item.x !== undefined && item.align !== undefined) {
+                throw new Error(
+                  `Invalid positioning in heading element: Cannot use both 'x' (${item.x}) and 'align' ("${item.align}"). ` +
+                    `Use 'x' for absolute positioning OR 'align' for flow-based layout, not both.`
+                );
+              }
 
               // Set text color if specified
               if (item.color) {
