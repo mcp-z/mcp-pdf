@@ -1,20 +1,20 @@
 # @mcp-z/mcp-pdf
 
-MCP server for creative PDF generation. AI agents and users work together to create anything from simple documents to artistic masterpieces—all powered by PDFKit.
+MCP server for creative PDF generation with full emoji, Unicode, and offline support
 
 ## Why This Exists
 
-PDFs shouldn't be boring. This server gives AI agents the power to generate professional documents, creative projects, and everything in between. Color emoji support (😀 🎉 🚀), full Unicode (你好 مرحبا Привет), and direct PDFKit access mean the only limit is imagination.
+PDFs shouldn't be boring. This server gives AI agents the power to create professional documents and creative projects with full emoji (😀 🎉 🚀), Unicode (你好 مرحبا Привет), and direct PDFKit access.
 
-Projects range from Bob Ross-style paintings and space-themed documents to practical invoices and resumes. It's for professionals and fun seekers alike.
+From practical invoices and resumes to creative artwork—if it's a PDF, you can build it.
 
 ## Features
 
-- **Creative Freedom** - Colors, shapes, positioning, emoji—build anything
-- **Pure JavaScript** - No native dependencies, works everywhere
-- **Emoji & Unicode** - Color emoji as images, full international text support
-- **Three Tools** - Simple text, advanced layouts, or JSON Resume format
-- **PDFKit Wrapper** - Minimal abstraction over PDFKit's powerful API
+- **Full Emoji & Unicode** - Color emoji as inline images, complete international text support
+- **Offline Ready** - Works without internet after first install, perfect for local LLMs
+- **Creative Freedom** - Colors, shapes, positioning—build anything from invoices to art
+- **Three Specialized Tools** - Simple text, advanced layouts, or JSON Resume format
+- **Zero Dependencies** - Pure JavaScript, no brew install, no system configuration
 
 ## Installation
 
@@ -28,9 +28,11 @@ Or use directly:
 npx @mcp-z/mcp-pdf
 ```
 
+**Note:** On first install, emoji font (~15MB) downloads automatically. After that, works completely offline.
+
 ## Quick Start
 
-Add to `claude_desktop_config.json`:
+Add to your `claude_desktop_config.json`:
 
 ```json
 {
@@ -42,6 +44,10 @@ Add to `claude_desktop_config.json`:
   }
 }
 ```
+
+## Works Everywhere
+
+Runs anywhere Node.js >=16 runs. No Python, no Cairo, no Homebrew—just npm install and go. Once installed, works completely offline with cached fonts.
 
 ## Security Model
 
@@ -227,14 +233,9 @@ generate-resume-pdf({
 
 ## Creative Possibilities
 
-This tool has been used to create:
+Beyond standard documents, this tool creates artistic PDFs through layered shapes, gradients, and effects. Examples include Bob Ross-style landscape paintings, space-themed documents with stars and cosmic effects, and visually striking community notices.
 
-- **Bob Ross-style paintings** - Layered shapes with colors creating landscape art
-- **Space-themed documents** - Stars, gradients, and cosmic effects
-- **Apartment notices** - Creative community announcements with visual flair
-- **Progressive effects** - Font tapering, color gradients, animated-style layouts
-
-The examples above show practical starting points, but agents can combine shapes, colors, positioning, and text to create virtually anything. The `create-pdf` tool provides direct access to PDFKit's capabilities.
+The `create-pdf` tool provides direct access to PDFKit's capabilities for combining shapes, colors, positioning, and text into virtually anything.
 
 ## Available Tools
 
@@ -367,9 +368,7 @@ pageSetup: {
 
 ## Emoji & Unicode Support
 
-### Color Emoji ✅
-
-True color emoji render as inline PNG images:
+**Color Emoji** - True color emoji render as inline PNG images. Emoji like 😀 🎉 🚀 👋 appear in full color. The emoji font (NotoColorEmoji.ttf) downloads automatically on install.
 
 ```json
 {
@@ -380,14 +379,7 @@ True color emoji render as inline PNG images:
 }
 ```
 
-Emoji like 😀 🎉 🚀 👋 appear in full color. The emoji font (NotoColorEmoji.ttf) downloads automatically on install.
-
-### Unicode ✅
-
-Full international text support:
-- **CJK**: Chinese (你好), Japanese (こんにちは), Korean (안녕하세요)
-- **Scripts**: Arabic (مرحبا), Cyrillic (Привет), Hebrew, Thai
-- **Symbols**: Greek (Ξ Δ Ω), geometric (△ ○ ◆), dingbats (✓ ✗ ➤)
+**Unicode** - Complete international text support including Chinese (你好), Japanese (こんにちは), Korean (안녕하세요), Arabic (مرحبا), Cyrillic (Привет), Hebrew, Thai, Greek (Ξ Δ Ω), and geometric symbols (△ ○ ◆).
 
 ## Resources
 
@@ -398,6 +390,10 @@ Full international text support:
 ## Requirements
 
 Node.js >= 16
+
+## Contributing
+
+Interested in contributing? See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing, and release workflow.
 
 ## License
 
