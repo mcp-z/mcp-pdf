@@ -1,9 +1,9 @@
 {
   "name": "@mcp-z/mcp-pdf",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "MCP server for creative PDF generation with full emoji, Unicode, and offline support",
   "author": "Kevin Malakoff <kmalakoff.info@gmail.com>",
-  "mcpName": "io.github.kmalakoff/mcp-pdf",
+  "mcpName": "io.github.mcp-z/mcp-pdf",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mcp-z/mcp-pdf.git"
@@ -50,19 +50,17 @@
   "files": [
     "dist",
     "bin",
-    "scripts",
-    "smithery.yaml"
+    "scripts"
   ],
   "scripts": {
     "build": "npm run typecheck && tsds build",
     "format": "biome check --write --unsafe",
     "postinstall": "node scripts/postinstall.cjs",
-    "postpublish": "node scripts/postpublish.cjs",
     "prepublishOnly": "npm run build",
     "test": "node --test 'test/**/*.test.ts'",
     "test:engines": "nvu engines tsds test:node --no-timeouts",
     "typecheck": "tsc --noEmit",
-    "version": "tsds version && node scripts/version.cjs"
+    "version": "tsds version"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.19.1",
