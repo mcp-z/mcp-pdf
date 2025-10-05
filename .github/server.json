@@ -5,11 +5,13 @@
   "version": "0.0.0-auto",
   "repository": {
     "url": "https://github.com/mcp-z/mcp-pdf.git",
-    "source": "github"
+    "source": "github",
+    "id": "1069486310"
   },
   "packages": [
     {
       "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@mcp-z/mcp-pdf",
       "version": "0.0.0-auto",
       "runtimeHint": "npx",

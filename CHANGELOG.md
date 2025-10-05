@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2025-10-05
+
+### Fixed
+- **MCP Registry Publication**: Added required `repository.id` field and `registryBaseUrl` to server.json manifest to ensure proper registration in the Model Context Protocol official registry
+- **Glama.ai Integration**: Added glama.json with maintainer information for proper author attribution on Glama.ai directory
+
+## [1.1.0] - 2025-10-05
+
+### Added
+- MCP registry publication workflow with GitHub Actions
+- Automated publishing to Model Context Protocol official registry
+
 ## [1.0.4] - 2025-01-05
 
 ### Fixed

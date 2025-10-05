@@ -1,6 +1,6 @@
 {
   "name": "@mcp-z/mcp-pdf",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "MCP server for creative PDF generation with full emoji, Unicode, and offline support",
   "author": "Kevin Malakoff <kmalakoff.info@gmail.com>",
   "mcpName": "io.github.mcp-z/mcp-pdf",
