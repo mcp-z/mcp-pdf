@@ -295,7 +295,6 @@ describe('Enhanced API - Agent Workflow Simulation', () => {
 
 describe('Enhanced API - Space Journey Resume (Sci-Fi Style)', () => {
   test('generates space journey resume with tapering', async () => {
-
     // Agent generates a Space Journey style resume with sci-fi theme
     // Uses purple/cyan color scheme with dramatic tapering effect
 

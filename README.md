@@ -15,6 +15,7 @@ From practical invoices and resumes to creative artwork—if it's a PDF, you can
 - **Creative Freedom** - Colors, shapes, positioning—build anything from invoices to art
 - **Three Specialized Tools** - Simple text, advanced layouts, or JSON Resume format
 - **Zero Dependencies** - Pure JavaScript, no brew install, no system configuration
+- **Smart Context Management** - Returns resource URIs instead of embedding PDFs in context
 
 ## Installation
 
@@ -49,34 +50,35 @@ Add to your `claude_desktop_config.json`:
 
 Runs anywhere Node.js >=16 runs. No Python, no Cairo, no Homebrew—just npm install and go. Once installed, works completely offline with cached fonts.
 
-## Security Model
+## How It Works
+
+### Resource URIs (No Context Bloat)
+
+When you create a PDF, the server returns a resource URI instead of embedding the PDF content:
+
+```
+Create PDF → Returns: mcp-pdf://uuid (just the URI, not the PDF)
+```
+
+This keeps PDFs out of the LLM's context until explicitly needed. PDFs are only loaded when you specifically request them via their resource URI.
+
+### Security Model
 
 This server writes PDFs to a sandboxed directory to prevent path traversal attacks:
 
 - **Default location**: `~/.mcp-pdf/`
-- **Custom location**: Set `PDF_OUTPUT_DIR` environment variable
+- **Custom location**: Set `PDF_STORAGE_DIR` environment variable
 - **Filename sanitization**: Blocks `..`, `/`, and unsafe characters
 - **No path parameters**: Tools accept only filenames, not full paths
+- **Server isolation**: Never writes outside its storage directory
 
-All generated PDFs are written to the configured output directory with sanitized filenames.
+All generated PDFs are written to the configured storage directory with sanitized filenames.
 
-### Custom Output Directory
+### Storage Directory
 
-To override the default location, set the `PDF_OUTPUT_DIR` environment variable:
+PDFs are stored in `~/.mcp-pdf` by default. This works everywhere - local, containers, remote servers.
 
-```json
-{
-  "mcpServers": {
-    "pdf": {
-      "command": "npx",
-      "args": ["-y", "@mcp-z/mcp-pdf"],
-      "env": {
-        "PDF_OUTPUT_DIR": "/Users/yourname/Documents/PDFs"
-      }
-    }
-  }
-}
-```
+Most users should just use the default. No configuration needed.
 
 ## Where to Find This Server
 
