@@ -4,6 +4,10 @@ import { DEFAULT_PURGE_HOURS } from '../constants.ts';
 
 const FALSEY = new Set(['0', 'false', 'no', 'off']);
 
+/**
+ * Configuration for PDF server
+ * @public
+ */
 export interface PdfServerConfig {
   /** Directory where PDFs are stored */
   storageDir: string;
