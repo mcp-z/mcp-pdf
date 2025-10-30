@@ -1,5 +1,10 @@
 # @mcp-z/mcp-pdf
 
+[![npm](https://img.shields.io/npm/v/@mcp-z/mcp-pdf.svg)](https://www.npmjs.com/package/@mcp-z/mcp-pdf)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node](https://img.shields.io/node/v/@mcp-z/mcp-pdf.svg)](https://nodejs.org)
+[![npm downloads](https://img.shields.io/npm/dm/@mcp-z/mcp-pdf.svg)](https://www.npmjs.com/package/@mcp-z/mcp-pdf)
+
 MCP server for creative PDF generation with full emoji, Unicode, and offline support
 
 ## Why This Exists
@@ -19,21 +24,38 @@ From practical invoices and resumes to creative artwork—if it's a PDF, you can
 
 ## Installation
 
+### Option 1: Global Install (Recommended)
+
 ```bash
+# npm
 npm install -g @mcp-z/mcp-pdf
+
+# yarn
+yarn global add @mcp-z/mcp-pdf
+
+# pnpm
+pnpm add -g @mcp-z/mcp-pdf
 ```
 
-Or use directly:
+Then add to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "pdf": {
+      "command": "mcp-pdf"
+    }
+  }
+}
+```
+
+### Option 2: Direct Usage (No Install)
 
 ```bash
-npx @mcp-z/mcp-pdf
+npx -y @mcp-z/mcp-pdf
 ```
 
-**Note:** On first install, emoji font (~15MB) downloads automatically. After that, works completely offline.
-
-## Quick Start
-
-Add to your `claude_desktop_config.json`:
+Config:
 
 ```json
 {
@@ -45,6 +67,44 @@ Add to your `claude_desktop_config.json`:
   }
 }
 ```
+
+**Note:** On first install, emoji font (~15MB) downloads automatically. After that, works completely offline.
+
+---
+
+## Quick Start
+
+Once installed, create your first PDF:
+
+```typescript
+// Ask Claude:
+"Create a simple PDF with the text 'Hello World!'"
+
+// Claude will use the create-simple-pdf tool
+// Result: mcp-pdf://abc123 (resource URI)
+
+// View the PDF:
+"Show me that PDF"
+
+// Claude retrieves the PDF content via the resource URI
+```
+
+✅ Your PDF is at `~/.mcp-pdf/` ready to use!
+
+---
+
+## Where to Find This Server
+
+Published on multiple MCP registries and package managers:
+
+- **[npm](https://www.npmjs.com/package/@mcp-z/mcp-pdf)** - `@mcp-z/mcp-pdf`
+- **[MCP Official Registry](https://modelcontextprotocol.io/registry)** - `io.github.kmalakoff/mcp-pdf`
+- **[Smithery](https://smithery.ai/server/@mcp-z/mcp-pdf)** - One-click install via Smithery CLI
+- **[Awesome MCP Servers](https://mcpservers.org/)** - Community curated list
+- **[Cline Marketplace](https://github.com/cline/mcp-marketplace)** - Built-in to Cline IDE (coming soon)
+- **[GitHub Repository](https://github.com/mcp-z/mcp-pdf)** - Source code and issues
+
+---
 
 ## Works Everywhere
 
@@ -80,16 +140,7 @@ PDFs are stored in `~/.mcp-pdf` by default. This works everywhere - local, conta
 
 Most users should just use the default. No configuration needed.
 
-## Where to Find This Server
-
-Published on multiple MCP registries and package managers:
-
-- **[npm](https://www.npmjs.com/package/@mcp-z/mcp-pdf)** - `@mcp-z/mcp-pdf`
-- **[MCP Official Registry](https://modelcontextprotocol.io/registry)** - `io.github.kmalakoff/mcp-pdf`
-- **[Smithery](https://smithery.ai/server/@mcp-z/mcp-pdf)** - One-click install via Smithery CLI
-- **[Awesome MCP Servers](https://mcpservers.org/)** - Community curated list (pending approval)
-- **[Cline Marketplace](https://github.com/cline/mcp-marketplace)** - Built-in to Cline IDE (coming soon)
-- **[GitHub Repository](https://github.com/mcp-z/mcp-pdf)** - Source code and issues
+---
 
 ## What You Can Create
 
