@@ -13,7 +13,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Read package.json metadata
         id: pkg
@@ -45,20 +45,34 @@ jobs:
             echo "npm_ok=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Install mcp-publisher
-        if: steps.npmlive.outputs.npm_ok == 'true'
+      - name: Install mcp-publisher (Linux/macOS)
         shell: bash
         run: |
-          # Get the latest release version
-          LATEST_VERSION=$(curl -s https://api.github.com/repos/modelcontextprotocol/registry/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
-          VERSION=${LATEST_VERSION#v}  # Remove 'v' prefix
-          
-          # Download and install
-          OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-          ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
-          curl -L "https://github.com/modelcontextprotocol/registry/releases/download/${LATEST_VERSION}/mcp-publisher_${VERSION}_${OS}_${ARCH}.tar.gz" | tar xz mcp-publisher
-          chmod +x mcp-publisher
-          sudo mv mcp-publisher /usr/local/bin/
+          set -euo pipefail
+
+          OS=$(uname -s | tr '[:upper:]' '[:lower:]')              # linux|darwin
+          ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/') # amd64|arm64
+
+          # Try Homebrew first (fast & cached in GH runners)
+          if command -v brew >/dev/null 2>&1; then
+            brew update >/dev/null
+            brew install mcp-publisher || brew upgrade mcp-publisher || true
+          fi
+
+          if ! command -v mcp-publisher >/dev/null 2>&1; then
+            echo "Falling back to direct download of mcp-publisher for ${OS}_${ARCH} ..."
+            URL="https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_${OS}_${ARCH}.tar.gz"
+            echo "Fetching $URL"
+            curl -fSL "$URL" -o mcp-publisher.tar.gz
+            file mcp-publisher.tar.gz
+            tar xzf mcp-publisher.tar.gz mcp-publisher
+            chmod +x mcp-publisher
+            sudo mv mcp-publisher /usr/local/bin/mcp-publisher
+            rm -f mcp-publisher.tar.gz
+          fi
+
+          echo "mcp-publisher version:"
+          mcp-publisher --version
 
       - name: Build effective server manifest (inject npm version)
         if: steps.npmlive.outputs.npm_ok == 'true'
