@@ -13,8 +13,10 @@ docs/
 .env
 .env.*
 
-# MCP Registry tokens
+# MCP 
+.mcp*.json
 .mcpregistry_*
+server.effective.json
 
 # Logs
 npm-debug.log*

@@ -1,5 +1,10 @@
 # @mcp-z/mcp-pdf
 
+[![npm](https://img.shields.io/npm/v/@mcp-z/mcp-pdf.svg)](https://www.npmjs.com/package/@mcp-z/mcp-pdf)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node](https://img.shields.io/node/v/@mcp-z/mcp-pdf.svg)](https://nodejs.org)
+[![npm downloads](https://img.shields.io/npm/dm/@mcp-z/mcp-pdf.svg)](https://www.npmjs.com/package/@mcp-z/mcp-pdf)
+
 MCP server for creative PDF generation with full emoji, Unicode, and offline support
 
 ## Why This Exists
@@ -15,24 +20,42 @@ From practical invoices and resumes to creative artwork—if it's a PDF, you can
 - **Creative Freedom** - Colors, shapes, positioning—build anything from invoices to art
 - **Three Specialized Tools** - Simple text, advanced layouts, or JSON Resume format
 - **Zero Dependencies** - Pure JavaScript, no brew install, no system configuration
+- **Smart Context Management** - Returns resource URIs instead of embedding PDFs in context
 
 ## Installation
 
+### Option 1: Global Install (Recommended)
+
 ```bash
+# npm
 npm install -g @mcp-z/mcp-pdf
+
+# yarn
+yarn global add @mcp-z/mcp-pdf
+
+# pnpm
+pnpm add -g @mcp-z/mcp-pdf
 ```
 
-Or use directly:
+Then add to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "pdf": {
+      "command": "mcp-pdf"
+    }
+  }
+}
+```
+
+### Option 2: Direct Usage (No Install)
 
 ```bash
-npx @mcp-z/mcp-pdf
+npx -y @mcp-z/mcp-pdf
 ```
 
-**Note:** On first install, emoji font (~15MB) downloads automatically. After that, works completely offline.
-
-## Quick Start
-
-Add to your `claude_desktop_config.json`:
+Config:
 
 ```json
 {
@@ -45,38 +68,47 @@ Add to your `claude_desktop_config.json`:
 }
 ```
 
-## Works Everywhere
+**Note:** On first install, emoji font (~15MB) downloads automatically. After that, works completely offline.
 
-Runs anywhere Node.js >=16 runs. No Python, no Cairo, no Homebrew—just npm install and go. Once installed, works completely offline with cached fonts.
-
-## Security Model
-
-This server writes PDFs to a sandboxed directory to prevent path traversal attacks:
-
-- **Default location**: `~/.mcp-pdf/`
-- **Custom location**: Set `PDF_OUTPUT_DIR` environment variable
-- **Filename sanitization**: Blocks `..`, `/`, and unsafe characters
-- **No path parameters**: Tools accept only filenames, not full paths
-
-All generated PDFs are written to the configured output directory with sanitized filenames.
-
-### Custom Output Directory
-
-To override the default location, set the `PDF_OUTPUT_DIR` environment variable:
+## Environment Variables and Arguments
 
 ```json
 {
   "mcpServers": {
-    "pdf": {
+    "mcp-pdf": {
       "command": "npx",
-      "args": ["-y", "@mcp-z/mcp-pdf"],
+      "args": ["-y", "mcp-pdf"],
       "env": {
-        "PDF_OUTPUT_DIR": "/Users/yourname/Documents/PDFs"
+        "PDF_STORAGE_DIR": "~/.mcp-pdf",
+        "PDF_PURGE_HOURS": "24"
       }
     }
   }
 }
 ```
+
+---
+
+## Quick Start
+
+Once installed, create your first PDF:
+
+```typescript
+// Ask Claude:
+"Create a simple PDF with the text 'Hello World!'"
+
+// Claude will use the create-simple-pdf tool
+// Result: mcp-pdf://abc123 (resource URI)
+
+// View the PDF:
+"Show me that PDF"
+
+// Claude retrieves the PDF content via the resource URI
+```
+
+✅ Your PDF is at `~/.mcp-pdf/` ready to use!
+
+---
 
 ## Where to Find This Server
 
@@ -85,9 +117,47 @@ Published on multiple MCP registries and package managers:
 - **[npm](https://www.npmjs.com/package/@mcp-z/mcp-pdf)** - `@mcp-z/mcp-pdf`
 - **[MCP Official Registry](https://modelcontextprotocol.io/registry)** - `io.github.kmalakoff/mcp-pdf`
 - **[Smithery](https://smithery.ai/server/@mcp-z/mcp-pdf)** - One-click install via Smithery CLI
-- **[Awesome MCP Servers](https://mcpservers.org/)** - Community curated list (pending approval)
+- **[Awesome MCP Servers](https://mcpservers.org/)** - Community curated list
 - **[Cline Marketplace](https://github.com/cline/mcp-marketplace)** - Built-in to Cline IDE (coming soon)
 - **[GitHub Repository](https://github.com/mcp-z/mcp-pdf)** - Source code and issues
+
+---
+
+## Works Everywhere
+
+Runs anywhere Node.js >=16 runs. No Python, no Cairo, no Homebrew—just npm install and go. Once installed, works completely offline with cached fonts.
+
+## How It Works
+
+### Resource URIs (No Context Bloat)
+
+When you create a PDF, the server returns a resource URI instead of embedding the PDF content:
+
+```
+Create PDF → Returns: mcp-pdf://uuid (just the URI, not the PDF)
+```
+
+This keeps PDFs out of the LLM's context until explicitly needed. PDFs are only loaded when you specifically request them via their resource URI.
+
+### Security Model
+
+This server writes PDFs to a sandboxed directory to prevent path traversal attacks:
+
+- **Default location**: `~/.mcp-pdf/`
+- **Custom location**: Set `PDF_STORAGE_DIR` environment variable
+- **Filename sanitization**: Blocks `..`, `/`, and unsafe characters
+- **No path parameters**: Tools accept only filenames, not full paths
+- **Server isolation**: Never writes outside its storage directory
+
+All generated PDFs are written to the configured storage directory with sanitized filenames.
+
+### Storage Directory
+
+PDFs are stored in `~/.mcp-pdf` by default. This works everywhere - local, containers, remote servers.
+
+Most users should just use the default. No configuration needed.
+
+---
 
 ## What You Can Create
 

@@ -1,17 +1,7 @@
 {
   "name": "@mcp-z/mcp-pdf",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "MCP server for creative PDF generation with full emoji, Unicode, and offline support",
-  "author": "Kevin Malakoff <kmalakoff.info@gmail.com>",
-  "mcpName": "io.github.mcp-z/mcp-pdf",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/mcp-z/mcp-pdf.git"
-  },
-  "bugs": {
-    "url": "https://github.com/mcp-z/mcp-pdf/issues"
-  },
-  "homepage": "https://github.com/mcp-z/mcp-pdf#readme",
   "keywords": [
     "pdf",
     "pdfkit",
@@ -32,7 +22,16 @@
     "ai agent",
     "claude"
   ],
+  "homepage": "https://github.com/mcp-z/mcp-pdf#readme",
+  "bugs": {
+    "url": "https://github.com/mcp-z/mcp-pdf/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mcp-z/mcp-pdf.git"
+  },
   "license": "MIT",
+  "author": "Kevin Malakoff <kmalakoff.info@gmail.com>",
   "type": "module",
   "exports": {
     ".": {
@@ -45,7 +44,8 @@
   "module": "./dist/esm/index.js",
   "types": "./dist/esm/index.d.ts",
   "bin": {
-    "mcp-pdf": "bin/server.js"
+    "mcp-pdf": "bin/server.js",
+    "mcp-z-pdf": "bin/server.js"
   },
   "files": [
     "dist",
@@ -63,27 +63,24 @@
     "version": "tsds version"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.19.1",
-    "@napi-rs/canvas": "^0.1.80",
-    "emoji-regex": "^10.5.0",
+    "@modelcontextprotocol/sdk": "^1.20.2",
+    "@napi-rs/canvas": "^0.1.81",
+    "emoji-regex": "^10.6.0",
     "fontkit": "^2.0.4",
-    "module-root-sync": "^1.2.0",
+    "module-root-sync": "^1.2.2",
     "pdfkit": "^0.17.2",
-    "zod": "^4.1.11"
+    "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.2.5",
+    "@biomejs/biome": "2.3.2",
     "@types/fontkit": "^2.0.8",
-    "@types/node": "^24.6.2",
+    "@types/node": "^24.9.2",
     "@types/pdfkit": "^0.17.3",
-    "ts-dev-stack": "^1.18.8",
+    "ts-dev-stack": "^1.18.12",
     "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=16"
-  },
-  "tsds": {
-    "source": "src/index.ts"
   },
   "depcheck": {
     "ignores": [
@@ -91,5 +88,9 @@
       "ts-dev-stack",
       "typescript"
     ]
+  },
+  "mcpName": "io.github.kmalakoff/mcp-pdf",
+  "tsds": {
+    "source": "src/index.ts"
   }
 }
