@@ -1,5 +1,5 @@
-import { mkdir, writeFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { mkdir, writeFile } from 'fs/promises';
+import { join, resolve } from 'path';
 
 /**
  * Ensure the output directory exists

@@ -1,0 +1,83 @@
+{"level":30,"time":1762408611881,"pid":64968,"hostname":"MacBook-Pro-23003.local","msg":"Starting mcp-pdf MCP server"}
+{"level":30,"time":1762408611883,"pid":64968,"hostname":"MacBook-Pro-23003.local","msg":"MCP server instance created. Transport stdio"}
+{"level":30,"time":1762408611883,"pid":64968,"hostname":"MacBook-Pro-23003.local","msg":"stdio transport ready"}
+{"level":30,"time":1762408611883,"pid":64968,"hostname":"MacBook-Pro-23003.local","msg":"Server started with 1 transport(s)"}
+{"level":30,"time":1762410668132,"pid":98559,"hostname":"MacBook-Pro-23223.local","msg":"Starting mcp-pdf MCP server"}
+{"level":30,"time":1762410668134,"pid":98559,"hostname":"MacBook-Pro-23223.local","msg":"MCP server instance created. Transport stdio"}
+{"level":30,"time":1762410668134,"pid":98559,"hostname":"MacBook-Pro-23223.local","msg":"stdio transport ready"}
+{"level":30,"time":1762410668134,"pid":98559,"hostname":"MacBook-Pro-23223.local","msg":"Server started with 1 transport(s)"}
+{"level":30,"time":1762411669921,"pid":4372,"hostname":"MacBook-Pro-23273.local","msg":"Starting mcp-pdf MCP server"}
+{"level":30,"time":1762411669924,"pid":4372,"hostname":"MacBook-Pro-23273.local","msg":"MCP server instance created. Transport stdio"}
+{"level":30,"time":1762411669924,"pid":4372,"hostname":"MacBook-Pro-23273.local","msg":"stdio transport ready"}
+{"level":30,"time":1762411669924,"pid":4372,"hostname":"MacBook-Pro-23273.local","msg":"Server started with 1 transport(s)"}
+{"level":30,"time":1762411670341,"pid":4415,"hostname":"MacBook-Pro-23273.local","msg":"Starting mcp-pdf MCP server"}
+{"level":30,"time":1762411670343,"pid":4415,"hostname":"MacBook-Pro-23273.local","msg":"MCP server instance created. Transport stdio"}
+{"level":30,"time":1762411670343,"pid":4415,"hostname":"MacBook-Pro-23273.local","msg":"stdio transport ready"}
+{"level":30,"time":1762411670343,"pid":4415,"hostname":"MacBook-Pro-23273.local","msg":"Server started with 1 transport(s)"}
+{"level":30,"time":1762411679296,"pid":4566,"hostname":"MacBook-Pro-23273.local","msg":"Starting mcp-pdf MCP server"}
+{"level":30,"time":1762411679299,"pid":4566,"hostname":"MacBook-Pro-23273.local","msg":"MCP server instance created. Transport stdio"}
+{"level":30,"time":1762411679299,"pid":4566,"hostname":"MacBook-Pro-23273.local","msg":"stdio transport ready"}
+{"level":30,"time":1762411679299,"pid":4566,"hostname":"MacBook-Pro-23273.local","msg":"Server started with 1 transport(s)"}
+{"level":30,"time":1762442628787,"pid":46319,"hostname":"MacBook-Pro-23434.local","msg":"Starting mcp-pdf MCP server"}
+{"level":30,"time":1762442628790,"pid":46319,"hostname":"MacBook-Pro-23434.local","msg":"MCP server instance created. Transport stdio"}
+{"level":30,"time":1762442628790,"pid":46319,"hostname":"MacBook-Pro-23434.local","msg":"stdio transport ready"}
+{"level":30,"time":1762442628790,"pid":46319,"hostname":"MacBook-Pro-23434.local","msg":"Server started with 1 transport(s)"}
+{"level":30,"time":1762442628787,"pid":46315,"hostname":"MacBook-Pro-23434.local","msg":"Starting mcp-pdf MCP server"}
+{"level":30,"time":1762442628790,"pid":46315,"hostname":"MacBook-Pro-23434.local","msg":"MCP server instance created. Transport stdio"}
+{"level":30,"time":1762442628790,"pid":46315,"hostname":"MacBook-Pro-23434.local","msg":"stdio transport ready"}
+{"level":30,"time":1762442628790,"pid":46315,"hostname":"MacBook-Pro-23434.local","msg":"Server started with 1 transport(s)"}
+{"level":30,"time":1762442629064,"pid":46315,"hostname":"MacBook-Pro-23434.local","msg":"Shutting down all transports..."}
+{"level":30,"time":1762442641108,"pid":46384,"hostname":"MacBook-Pro-23434.local","msg":"Starting mcp-pdf MCP server"}
+{"level":30,"time":1762442641110,"pid":46384,"hostname":"MacBook-Pro-23434.local","msg":"MCP server instance created. Transport stdio"}
+{"level":30,"time":1762442641110,"pid":46384,"hostname":"MacBook-Pro-23434.local","msg":"stdio transport ready"}
+{"level":30,"time":1762442641110,"pid":46384,"hostname":"MacBook-Pro-23434.local","msg":"Server started with 1 transport(s)"}
+{"level":30,"time":1762442641422,"pid":46388,"hostname":"MacBook-Pro-23434.local","msg":"Starting mcp-pdf MCP server"}
+{"level":30,"time":1762442641424,"pid":46388,"hostname":"MacBook-Pro-23434.local","msg":"MCP server instance created. Transport stdio"}
+{"level":30,"time":1762442641424,"pid":46388,"hostname":"MacBook-Pro-23434.local","msg":"stdio transport ready"}
+{"level":30,"time":1762442641424,"pid":46388,"hostname":"MacBook-Pro-23434.local","msg":"Server started with 1 transport(s)"}
+{"level":30,"time":1762442641710,"pid":46384,"hostname":"MacBook-Pro-23434.local","msg":"Shutting down all transports..."}
+{"level":30,"time":1762442656599,"pid":46442,"hostname":"MacBook-Pro-23434.local","msg":"Starting mcp-pdf MCP server"}
+{"level":30,"time":1762442656602,"pid":46442,"hostname":"MacBook-Pro-23434.local","msg":"MCP server instance created. Transport stdio"}
+{"level":30,"time":1762442656602,"pid":46442,"hostname":"MacBook-Pro-23434.local","msg":"stdio transport ready"}
+{"level":30,"time":1762442656602,"pid":46442,"hostname":"MacBook-Pro-23434.local","msg":"Server started with 1 transport(s)"}
+{"level":30,"time":1762442656917,"pid":46446,"hostname":"MacBook-Pro-23434.local","msg":"Starting mcp-pdf MCP server"}
+{"level":30,"time":1762442656919,"pid":46446,"hostname":"MacBook-Pro-23434.local","msg":"MCP server instance created. Transport stdio"}
+{"level":30,"time":1762442656919,"pid":46446,"hostname":"MacBook-Pro-23434.local","msg":"stdio transport ready"}
+{"level":30,"time":1762442656919,"pid":46446,"hostname":"MacBook-Pro-23434.local","msg":"Server started with 1 transport(s)"}
+{"level":30,"time":1762442657206,"pid":46442,"hostname":"MacBook-Pro-23434.local","msg":"Shutting down all transports..."}
+{"level":30,"time":1762442673574,"pid":46508,"hostname":"MacBook-Pro-23434.local","msg":"Starting mcp-pdf MCP server"}
+{"level":30,"time":1762442673576,"pid":46508,"hostname":"MacBook-Pro-23434.local","msg":"MCP server instance created. Transport stdio"}
+{"level":30,"time":1762442673577,"pid":46508,"hostname":"MacBook-Pro-23434.local","msg":"stdio transport ready"}
+{"level":30,"time":1762442673577,"pid":46508,"hostname":"MacBook-Pro-23434.local","msg":"Server started with 1 transport(s)"}
+{"level":30,"time":1762442673893,"pid":46512,"hostname":"MacBook-Pro-23434.local","msg":"Starting mcp-pdf MCP server"}
+{"level":30,"time":1762442673895,"pid":46512,"hostname":"MacBook-Pro-23434.local","msg":"MCP server instance created. Transport stdio"}
+{"level":30,"time":1762442673895,"pid":46512,"hostname":"MacBook-Pro-23434.local","msg":"stdio transport ready"}
+{"level":30,"time":1762442673895,"pid":46512,"hostname":"MacBook-Pro-23434.local","msg":"Server started with 1 transport(s)"}
+{"level":30,"time":1762442674172,"pid":46508,"hostname":"MacBook-Pro-23434.local","msg":"Shutting down all transports..."}
+{"level":30,"time":1762442731223,"pid":46813,"hostname":"MacBook-Pro-23434.local","msg":"Starting mcp-pdf MCP server"}
+{"level":30,"time":1762442731225,"pid":46813,"hostname":"MacBook-Pro-23434.local","msg":"MCP server instance created. Transport stdio"}
+{"level":30,"time":1762442731225,"pid":46813,"hostname":"MacBook-Pro-23434.local","msg":"stdio transport ready"}
+{"level":30,"time":1762442731225,"pid":46813,"hostname":"MacBook-Pro-23434.local","msg":"Server started with 1 transport(s)"}
+{"level":30,"time":1762442731532,"pid":46817,"hostname":"MacBook-Pro-23434.local","msg":"Starting mcp-pdf MCP server"}
+{"level":30,"time":1762442731534,"pid":46817,"hostname":"MacBook-Pro-23434.local","msg":"MCP server instance created. Transport stdio"}
+{"level":30,"time":1762442731534,"pid":46817,"hostname":"MacBook-Pro-23434.local","msg":"stdio transport ready"}
+{"level":30,"time":1762442731534,"pid":46817,"hostname":"MacBook-Pro-23434.local","msg":"Server started with 1 transport(s)"}
+{"level":30,"time":1762442731812,"pid":46813,"hostname":"MacBook-Pro-23434.local","msg":"Shutting down all transports..."}
+{"level":30,"time":1762492325417,"pid":47957,"hostname":"MacBook-Pro-23743.local","msg":"Starting mcp-pdf MCP server"}
+{"level":30,"time":1762492325419,"pid":47957,"hostname":"MacBook-Pro-23743.local","msg":"MCP server instance created. Transport stdio"}
+{"level":30,"time":1762492325420,"pid":47957,"hostname":"MacBook-Pro-23743.local","msg":"stdio transport ready"}
+{"level":30,"time":1762492325420,"pid":47957,"hostname":"MacBook-Pro-23743.local","msg":"Server started with 1 transport(s)"}
+{"level":30,"time":1762492335149,"pid":47957,"hostname":"MacBook-Pro-23743.local","msg":"Shutting down all transports..."}
+{"level":30,"time":1762492358029,"pid":48006,"hostname":"MacBook-Pro-23743.local","msg":"Starting mcp-pdf MCP server"}
+{"level":30,"time":1762492358031,"pid":48006,"hostname":"MacBook-Pro-23743.local","msg":"MCP server instance created. Transport stdio"}
+{"level":30,"time":1762492358031,"pid":48006,"hostname":"MacBook-Pro-23743.local","msg":"stdio transport ready"}
+{"level":30,"time":1762492358032,"pid":48006,"hostname":"MacBook-Pro-23743.local","msg":"Server started with 1 transport(s)"}
+{"level":30,"time":1762492358343,"pid":48010,"hostname":"MacBook-Pro-23743.local","msg":"Starting mcp-pdf MCP server"}
+{"level":30,"time":1762492358345,"pid":48010,"hostname":"MacBook-Pro-23743.local","msg":"MCP server instance created. Transport stdio"}
+{"level":30,"time":1762492358345,"pid":48010,"hostname":"MacBook-Pro-23743.local","msg":"stdio transport ready"}
+{"level":30,"time":1762492358345,"pid":48010,"hostname":"MacBook-Pro-23743.local","msg":"Server started with 1 transport(s)"}
+{"level":30,"time":1762492358372,"pid":48006,"hostname":"MacBook-Pro-23743.local","msg":"Shutting down all transports..."}
+{"level":30,"time":1762492761572,"pid":50706,"hostname":"MacBook-Pro-23743.local","msg":"Starting mcp-pdf MCP server"}
+{"level":30,"time":1762492761574,"pid":50706,"hostname":"MacBook-Pro-23743.local","msg":"MCP server instance created. Transport stdio"}
+{"level":30,"time":1762492761575,"pid":50706,"hostname":"MacBook-Pro-23743.local","msg":"stdio transport ready"}
+{"level":30,"time":1762492761575,"pid":50706,"hostname":"MacBook-Pro-23743.local","msg":"Server started with 1 transport(s)"}

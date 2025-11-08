@@ -1,5 +1,5 @@
-import { readdirSync, statSync, unlinkSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { readdirSync, statSync, unlinkSync } from 'fs';
+import { join, resolve } from 'path';
 
 /** Purge PDFs older than specified hours */
 export function purgeOldPdfs(storageDir: string, hours: number): void {

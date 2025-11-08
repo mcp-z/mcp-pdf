@@ -1,8 +1,7 @@
-import assert from 'node:assert/strict';
-import { existsSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { beforeEach, describe, test } from 'node:test';
+import assert from 'assert/strict';
+import { existsSync, rmSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import { writePdfToFile } from '../../src/lib/output-handler.ts';
 
 describe('output-handler', () => {
@@ -16,7 +15,7 @@ describe('output-handler', () => {
       testDir = join(tmpdir(), `mcp-pdf-test-${Date.now()}`);
     });
 
-    test('writes PDF to specified directory', async () => {
+    it('writes PDF to specified directory', async () => {
       const buffer = Buffer.from('test pdf content');
       const result = await writePdfToFile(buffer, 'test.pdf', testDir);
 
@@ -28,7 +27,7 @@ describe('output-handler', () => {
       rmSync(testDir, { recursive: true, force: true });
     });
 
-    test('writes UUID-based filename (no sanitization needed)', async () => {
+    it('writes UUID-based filename (no sanitization needed)', async () => {
       const buffer = Buffer.from('test pdf content');
       // In production, tools generate UUIDs which are already safe
       const safeUuid = 'abc123-def456.pdf';
@@ -42,7 +41,7 @@ describe('output-handler', () => {
       rmSync(testDir, { recursive: true, force: true });
     });
 
-    test('creates directory if it does not exist', async () => {
+    it('creates directory if it does not exist', async () => {
       const newDir = join(tmpdir(), `mcp-pdf-new-${Date.now()}`);
 
       const buffer = Buffer.from('test pdf content');

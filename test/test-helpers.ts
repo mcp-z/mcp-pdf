@@ -1,6 +1,6 @@
-import { existsSync } from 'node:fs';
-import { mkdir, readdir, rm } from 'node:fs/promises';
-import { join } from 'node:path';
+import { existsSync } from 'fs';
+import { mkdir, readdir, rm } from 'fs/promises';
+import { join } from 'path';
 
 const ROOT_DIR = join(import.meta.dirname, '..');
 const TMP_DIR = join(ROOT_DIR, '.tmp');

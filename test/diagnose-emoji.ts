@@ -4,10 +4,10 @@
  * Diagnostic script to understand emoji rendering in PDFKit
  */
 
-import { createWriteStream } from 'node:fs';
-import { mkdir } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { createWriteStream } from 'fs';
+import { mkdir } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import PDFDocument from 'pdfkit';
 
 const testDir = join(tmpdir(), 'mcp-pdf-emoji-diagnosis');
@@ -57,7 +57,7 @@ for (const testCase of testCases) {
   try {
     if (testCase.font !== 'Helvetica') {
       // Check if font exists
-      const fs = await import('node:fs');
+      const fs = await import('fs');
       if (!fs.existsSync(testCase.font)) {
         console.log(`   ❌ Font file not found: ${testCase.font}`);
         doc.font('Helvetica').text(`Font not found: ${testCase.font}`);

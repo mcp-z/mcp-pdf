@@ -1,5 +1,5 @@
-import { homedir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { homedir } from 'os';
+import { join, resolve } from 'path';
 import { DEFAULT_PURGE_HOURS } from '../constants.ts';
 
 const FALSEY = new Set(['0', 'false', 'no', 'off']);

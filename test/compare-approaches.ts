@@ -1,6 +1,6 @@
-import { createWriteStream } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { createWriteStream } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import PDFDocument from 'pdfkit';
 import { registerEmojiFont } from '../src/lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts } from '../src/lib/fonts.ts';

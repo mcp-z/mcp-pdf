@@ -1,5 +1,5 @@
-import crypto from 'node:crypto';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import crypto from 'crypto';
 import PDFDocument from 'pdfkit';
 import { z } from 'zod/v3';
 import type { PdfServerConfig } from '../lib/config.ts';

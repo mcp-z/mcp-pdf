@@ -1,8 +1,8 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
 import { type McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { Variables } from '@modelcontextprotocol/sdk/shared/uriTemplate.js';
 import type { BlobResourceContents, ReadResourceResult } from '@modelcontextprotocol/sdk/types.js';
+import { existsSync, readFileSync } from 'fs';
+import { join, resolve } from 'path';
 import type { PdfServerConfig } from '../lib/config.ts';
 
 const template = new ResourceTemplate('mcp-pdf://{id}', { list: undefined });
