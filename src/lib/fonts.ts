@@ -1,9 +1,9 @@
-import emojiRegexFactory from 'emoji-regex';
-import { openSync as fontkitOpenSync } from 'fontkit';
 import { existsSync } from 'fs';
 import { mkdir, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import emojiRegexFactory from 'emoji-regex';
+import { openSync as fontkitOpenSync } from 'fontkit';
 import type PDFKit from 'pdfkit';
 
 export interface FontConfig {

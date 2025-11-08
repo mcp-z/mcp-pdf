@@ -1,9 +1,10 @@
 import assert from 'assert/strict';
-import type { JsonResume } from '../src/json-resume-schema.ts';
-import { generateResumePDFBuffer } from '../src/resume-generator.ts';
+import { describe, test } from 'test';
+import type { JsonResume } from '../src/lib/json-resume-schema.ts';
+import { generateResumePDFBuffer } from '../src/lib/resume-generator.ts';
 
 describe('Emoji Integration in PDFs', () => {
-  it('renders resume with emoji in name', async () => {
+  test('renders resume with emoji in name', async () => {
     const resume: JsonResume = {
       basics: {
         name: 'John Doe 👨‍💻',
@@ -19,7 +20,7 @@ describe('Emoji Integration in PDFs', () => {
     console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
-  it('renders resume with emoji in skills', async () => {
+  test('renders resume with emoji in skills', async () => {
     const resume: JsonResume = {
       basics: {
         name: 'Jane Developer',
@@ -43,7 +44,7 @@ describe('Emoji Integration in PDFs', () => {
     console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
-  it('renders resume with emoji in job highlights', async () => {
+  test('renders resume with emoji in job highlights', async () => {
     const resume: JsonResume = {
       basics: {
         name: 'Alex Engineer',
@@ -64,7 +65,7 @@ describe('Emoji Integration in PDFs', () => {
     console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
-  it('renders resume with various emoji types', async () => {
+  test('renders resume with various emoji types', async () => {
     const resume: JsonResume = {
       basics: {
         name: 'Emoji Test 🎯',
@@ -101,7 +102,7 @@ describe('Emoji Integration in PDFs', () => {
     console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
-  it('handles resume without emoji gracefully', async () => {
+  test('handles resume without emoji gracefully', async () => {
     const resume: JsonResume = {
       basics: {
         name: 'Plain Name',
@@ -122,7 +123,7 @@ describe('Emoji Integration in PDFs', () => {
     console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
-  it('renders standard Unicode symbols correctly (Greek, geometric, symbols)', async () => {
+  test('renders standard Unicode symbols correctly (Greek, geometric, symbols)', async () => {
     const resume: JsonResume = {
       basics: {
         name: 'Symbol Test Resume',
@@ -145,7 +146,7 @@ describe('Emoji Integration in PDFs', () => {
     console.log('    ℹ️  Greek letters (Ξ), geometric shapes (△ ○), and symbols (☐) should render correctly');
   });
 
-  it('correctly distinguishes between symbols and true emoji', async () => {
+  test('correctly distinguishes between symbols and true emoji', async () => {
     const resume: JsonResume = {
       basics: {
         name: 'Mixed Content Test',

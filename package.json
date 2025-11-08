@@ -63,12 +63,16 @@
     "version": "tsds version"
   },
   "dependencies": {
+    "@mcpeasy/server": "^6.1.9",
     "@modelcontextprotocol/sdk": "^1.21.1",
     "@napi-rs/canvas": "^0.1.81",
+    "cors": "^2.8.5",
     "emoji-regex": "^10.6.0",
+    "express": "^5.1.0",
     "fontkit": "^2.0.4",
     "module-root-sync": "^1.2.3",
     "pdfkit": "^0.17.2",
+    "pino": "^10.1.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {

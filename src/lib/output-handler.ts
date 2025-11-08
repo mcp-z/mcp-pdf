@@ -22,3 +22,17 @@ export async function writePdfToFile(buffer: Buffer, filename: string, storageDi
   await writeFile(fullPath, buffer);
   return { fullPath, storedName };
 }
+
+/**
+ * Extract the original filename from a stored filename
+ * Format: {uuid}-{original-filename}.pdf
+ * UUID is first 36 characters (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+ */
+export function extractOriginalFilename(storedFilename: string): string {
+  // UUID is exactly 36 characters, followed by a hyphen, then the original filename
+  if (storedFilename.length > 37 && storedFilename.charAt(36) === '-') {
+    return storedFilename.substring(37);
+  }
+  // Fallback: return the full filename if format doesn't match
+  return storedFilename;
+}

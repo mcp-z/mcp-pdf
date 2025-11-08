@@ -1,6 +1,7 @@
 import assert from 'assert/strict';
-import type { JsonResume } from '../src/json-resume-schema.ts';
-import { generateResumePDFBuffer, type ResumeStyling } from '../src/resume-generator.ts';
+import { describe, test } from 'test';
+import type { JsonResume } from '../src/lib/json-resume-schema.ts';
+import { generateResumePDFBuffer, type ResumeStyling } from '../src/lib/resume-generator.ts';
 
 const sampleResume: JsonResume = {
   basics: {
@@ -30,7 +31,7 @@ const sampleResume: JsonResume = {
 };
 
 describe('Resume Styling Options', () => {
-  it('generates resume with default styling', async () => {
+  test('generates resume with default styling', async () => {
     const pdfBuffer = await generateResumePDFBuffer(sampleResume);
 
     assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
@@ -38,7 +39,7 @@ describe('Resume Styling Options', () => {
     console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
-  it('generates resume with custom font sizes', async () => {
+  test('generates resume with custom font sizes', async () => {
     const styling: ResumeStyling = {
       fontSize: {
         name: 32,
@@ -57,7 +58,7 @@ describe('Resume Styling Options', () => {
     console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
-  it('generates resume with custom spacing', async () => {
+  test('generates resume with custom spacing', async () => {
     const styling: ResumeStyling = {
       spacing: {
         afterName: 1.0,
@@ -77,7 +78,7 @@ describe('Resume Styling Options', () => {
     console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
-  it('generates resume with left-aligned header', async () => {
+  test('generates resume with left-aligned header', async () => {
     const styling: ResumeStyling = {
       alignment: {
         header: 'left',
@@ -91,7 +92,7 @@ describe('Resume Styling Options', () => {
     console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
-  it('generates resume with custom margins', async () => {
+  test('generates resume with custom margins', async () => {
     const styling: ResumeStyling = {
       margins: {
         top: 100,
@@ -108,7 +109,7 @@ describe('Resume Styling Options', () => {
     console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
-  it('generates resume with all styling options combined', async () => {
+  test('generates resume with all styling options combined', async () => {
     const styling: ResumeStyling = {
       fontSize: {
         name: 28,
