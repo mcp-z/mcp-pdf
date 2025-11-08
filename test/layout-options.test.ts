@@ -3,7 +3,6 @@ import { createWriteStream, existsSync, readFileSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, test } from 'node:test';
 import PDFDocument from 'pdfkit';
 import { setupFonts } from '../src/lib/fonts.ts';
 import { renderTextWithEmoji } from '../src/lib/pdf-helpers.ts';
@@ -11,7 +10,7 @@ import { renderTextWithEmoji } from '../src/lib/pdf-helpers.ts';
 const testOutputDir = join(tmpdir(), 'mcp-pdf-layout-tests');
 
 describe('Layout Options for create-pdf', () => {
-  test('renders text with custom alignment', async () => {
+  it('renders text with custom alignment', async () => {
     await mkdir(testOutputDir, { recursive: true });
     const outputPath = join(testOutputDir, 'alignment-test.pdf');
 
@@ -39,7 +38,7 @@ describe('Layout Options for create-pdf', () => {
     console.log(`    📄 Created: ${outputPath} (${stats.length} bytes)`);
   });
 
-  test('renders text with custom spacing (moveDown)', async () => {
+  it('renders text with custom spacing (moveDown)', async () => {
     await mkdir(testOutputDir, { recursive: true });
     const outputPath = join(testOutputDir, 'spacing-test.pdf');
 
@@ -69,7 +68,7 @@ describe('Layout Options for create-pdf', () => {
     console.log(`    📄 Created: ${outputPath} (${stats.length} bytes)`);
   });
 
-  test('renders text with underline and strike', async () => {
+  it('renders text with underline and strike', async () => {
     await mkdir(testOutputDir, { recursive: true });
     const outputPath = join(testOutputDir, 'styling-test.pdf');
 
@@ -97,7 +96,7 @@ describe('Layout Options for create-pdf', () => {
     console.log(`    📄 Created: ${outputPath} (${stats.length} bytes)`);
   });
 
-  test('renders text with indentation', async () => {
+  it('renders text with indentation', async () => {
     await mkdir(testOutputDir, { recursive: true });
     const outputPath = join(testOutputDir, 'indent-test.pdf');
 
@@ -126,7 +125,7 @@ describe('Layout Options for create-pdf', () => {
   });
 });
 
-test('print test output directory', () => {
+it('print test output directory', () => {
   console.log(`\n📁 Layout test PDFs generated in: ${testOutputDir}`);
   console.log('   Open these files to visually verify layout options\n');
 });

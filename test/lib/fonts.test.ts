@@ -2,13 +2,12 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, test } from 'node:test';
 
 // Import functions from source with proper TypeScript types
 import { getSystemFont, hasEmoji, needsUnicodeFont, PDF_STANDARD_FONTS, resolveFont } from '../../src/lib/fonts.ts';
 
 describe('PDF_STANDARD_FONTS', (): void => {
-  test('should contain all 14 standard PDF fonts', (): void => {
+  it('should contain all 14 standard PDF fonts', (): void => {
     assert.strictEqual(PDF_STANDARD_FONTS.length, 14);
 
     // Verify all standard fonts are present
@@ -21,36 +20,36 @@ describe('PDF_STANDARD_FONTS', (): void => {
 });
 
 describe('hasEmoji', (): void => {
-  test('returns false for ASCII-only text', (): void => {
+  it('returns false for ASCII-only text', (): void => {
     assert.strictEqual(hasEmoji('Hello World'), false);
     assert.strictEqual(hasEmoji('Test 123'), false);
     assert.strictEqual(hasEmoji(''), false);
   });
 
-  test('returns false for Latin-1 characters', (): void => {
+  it('returns false for Latin-1 characters', (): void => {
     assert.strictEqual(hasEmoji('Café'), false);
     assert.strictEqual(hasEmoji('résumé'), false);
   });
 
-  test('returns false for non-emoji Unicode', (): void => {
+  it('returns false for non-emoji Unicode', (): void => {
     assert.strictEqual(hasEmoji('你好'), false);
     assert.strictEqual(hasEmoji('こんにちは'), false);
     assert.strictEqual(hasEmoji('Привет'), false);
   });
 
-  test('returns false for Greek letters (render fine in standard fonts)', (): void => {
+  it('returns false for Greek letters (render fine in standard fonts)', (): void => {
     assert.strictEqual(hasEmoji('Ξ'), false, 'Greek Xi should not be detected as emoji');
     assert.strictEqual(hasEmoji('Δ'), false, 'Greek Delta should not be detected as emoji');
     assert.strictEqual(hasEmoji('Ω'), false, 'Greek Omega should not be detected as emoji');
   });
 
-  test('returns false for geometric shapes (render fine in standard fonts)', (): void => {
+  it('returns false for geometric shapes (render fine in standard fonts)', (): void => {
     assert.strictEqual(hasEmoji('△'), false, 'White triangle should not be detected as emoji');
     assert.strictEqual(hasEmoji('○'), false, 'White circle should not be detected as emoji');
     assert.strictEqual(hasEmoji('◆'), false, 'Black diamond should not be detected as emoji');
   });
 
-  test('correctly identifies emoji per Unicode Standard', (): void => {
+  it('correctly identifies emoji per Unicode Standard', (): void => {
     // emoji-regex follows the official Unicode emoji list
     // ☑, ⚠, ✂ ARE emoji per Unicode Standard (they have color versions!)
     assert.strictEqual(hasEmoji('☑'), true, 'Checked ballot box IS an emoji per Unicode');
@@ -64,31 +63,31 @@ describe('hasEmoji', (): void => {
     assert.strictEqual(hasEmoji('✗'), false, 'X mark is not an emoji');
   });
 
-  test('returns true for true color emoji (U+1F300-U+1F9FF)', (): void => {
+  it('returns true for true color emoji (U+1F300-U+1F9FF)', (): void => {
     assert.strictEqual(hasEmoji('Hello 👋'), true, 'Waving hand is true emoji');
     assert.strictEqual(hasEmoji('😀'), true, 'Grinning face is true emoji');
     assert.strictEqual(hasEmoji('🎉'), true, 'Party popper is true emoji');
     assert.strictEqual(hasEmoji('🚀'), true, 'Rocket is true emoji');
   });
 
-  test('returns true for extended emoji (U+1FA00-U+1FAFF)', (): void => {
+  it('returns true for extended emoji (U+1FA00-U+1FAFF)', (): void => {
     assert.strictEqual(hasEmoji('🪀'), true, 'Yo-yo is extended emoji');
     assert.strictEqual(hasEmoji('🫶'), true, 'Heart hands is extended emoji');
   });
 
-  test('returns true for various true emoji categories', (): void => {
+  it('returns true for various true emoji categories', (): void => {
     assert.strictEqual(hasEmoji('💙'), true, 'Blue heart is true emoji');
     assert.strictEqual(hasEmoji('📱'), true, 'Mobile phone is true emoji');
     assert.strictEqual(hasEmoji('🔥'), true, 'Fire is true emoji');
     assert.strictEqual(hasEmoji('🏆'), true, 'Trophy is true emoji');
   });
 
-  test('detects emoji in mixed content', (): void => {
+  it('detects emoji in mixed content', (): void => {
     assert.strictEqual(hasEmoji('Skills: TypeScript 💙'), true);
     assert.strictEqual(hasEmoji('First place 🏆'), true);
   });
 
-  test('correctly handles mixed symbols and emoji', (): void => {
+  it('correctly handles mixed symbols and emoji', (): void => {
     // Only symbols (not emoji)
     assert.strictEqual(hasEmoji('Ξ △ ☐ ○'), false, 'Only standard symbols should return false');
 
@@ -98,41 +97,41 @@ describe('hasEmoji', (): void => {
 });
 
 describe('needsUnicodeFont', (): void => {
-  test('returns false for ASCII-only text', (): void => {
+  it('returns false for ASCII-only text', (): void => {
     assert.strictEqual(needsUnicodeFont('Hello World'), false);
     assert.strictEqual(needsUnicodeFont('Test 123'), false);
     assert.strictEqual(needsUnicodeFont(''), false);
   });
 
-  test('returns false for Latin-1 characters', (): void => {
+  it('returns false for Latin-1 characters', (): void => {
     assert.strictEqual(needsUnicodeFont('Café'), false);
     assert.strictEqual(needsUnicodeFont('résumé'), false);
     assert.strictEqual(needsUnicodeFont('naïve'), false);
   });
 
-  test('returns true for emoji', (): void => {
+  it('returns true for emoji', (): void => {
     assert.strictEqual(needsUnicodeFont('Hello 👋'), true);
     assert.strictEqual(needsUnicodeFont('😀 🎉'), true);
     assert.strictEqual(needsUnicodeFont('Test ✅'), true);
   });
 
-  test('returns true for CJK characters', (): void => {
+  it('returns true for CJK characters', (): void => {
     assert.strictEqual(needsUnicodeFont('你好'), true);
     assert.strictEqual(needsUnicodeFont('こんにちは'), true);
     assert.strictEqual(needsUnicodeFont('안녕하세요'), true);
   });
 
-  test('returns true for Cyrillic', (): void => {
+  it('returns true for Cyrillic', (): void => {
     assert.strictEqual(needsUnicodeFont('Привет'), true);
     assert.strictEqual(needsUnicodeFont('Здравствуйте'), true);
   });
 
-  test('returns true for Arabic', (): void => {
+  it('returns true for Arabic', (): void => {
     assert.strictEqual(needsUnicodeFont('مرحبا'), true);
     assert.strictEqual(needsUnicodeFont('السلام عليكم'), true);
   });
 
-  test('returns correctly for special symbols', (): void => {
+  it('returns correctly for special symbols', (): void => {
     // ™ and € are beyond Latin-1, need Unicode
     assert.strictEqual(needsUnicodeFont('™'), true);
     assert.strictEqual(needsUnicodeFont('€'), true);
@@ -143,13 +142,13 @@ describe('needsUnicodeFont', (): void => {
 });
 
 describe('getSystemFont', (): void => {
-  test('returns a font path or null', (): void => {
+  it('returns a font path or null', (): void => {
     const result: string | null = getSystemFont();
     // Result should be either null or a string path
     assert.ok(result === null || typeof result === 'string');
   });
 
-  test('returns existing font path if found', (): void => {
+  it('returns existing font path if found', (): void => {
     const result: string | null = getSystemFont();
     if (result !== null) {
       assert.ok(existsSync(result), `Font path should exist: ${result}`);
@@ -159,37 +158,37 @@ describe('getSystemFont', (): void => {
 
 describe('resolveFont', (): void => {
   describe('built-in PDF fonts', (): void => {
-    test('resolves Helvetica', async (): Promise<void> => {
+    it('resolves Helvetica', async (): Promise<void> => {
       const result: string | null = await resolveFont('Helvetica');
       assert.strictEqual(result, 'Helvetica');
     });
 
-    test('resolves Helvetica-Bold', async (): Promise<void> => {
+    it('resolves Helvetica-Bold', async (): Promise<void> => {
       const result: string | null = await resolveFont('Helvetica-Bold');
       assert.strictEqual(result, 'Helvetica-Bold');
     });
 
-    test('resolves Times-Roman', async (): Promise<void> => {
+    it('resolves Times-Roman', async (): Promise<void> => {
       const result: string | null = await resolveFont('Times-Roman');
       assert.strictEqual(result, 'Times-Roman');
     });
 
-    test('resolves Courier-Oblique', async (): Promise<void> => {
+    it('resolves Courier-Oblique', async (): Promise<void> => {
       const result: string | null = await resolveFont('Courier-Oblique');
       assert.strictEqual(result, 'Courier-Oblique');
     });
 
-    test('resolves Symbol', async (): Promise<void> => {
+    it('resolves Symbol', async (): Promise<void> => {
       const result: string | null = await resolveFont('Symbol');
       assert.strictEqual(result, 'Symbol');
     });
 
-    test('resolves ZapfDingbats', async (): Promise<void> => {
+    it('resolves ZapfDingbats', async (): Promise<void> => {
       const result: string | null = await resolveFont('ZapfDingbats');
       assert.strictEqual(result, 'ZapfDingbats');
     });
 
-    test('resolves all 14 standard fonts', async (): Promise<void> => {
+    it('resolves all 14 standard fonts', async (): Promise<void> => {
       for (const fontName of PDF_STANDARD_FONTS) {
         const result: string | null = await resolveFont(fontName);
         assert.strictEqual(result, fontName, `Should resolve ${fontName}`);
@@ -198,7 +197,7 @@ describe('resolveFont', (): void => {
   });
 
   describe('auto-detect', (): void => {
-    test('resolves "auto" to system font', async (): Promise<void> => {
+    it('resolves "auto" to system font', async (): Promise<void> => {
       const result: string | null = await resolveFont('auto');
       // Should be either null (no font found) or a path
       assert.ok(result === null || typeof result === 'string');
@@ -206,7 +205,7 @@ describe('resolveFont', (): void => {
   });
 
   describe('absolute paths', (): void => {
-    test('resolves existing absolute path', async (): Promise<void> => {
+    it('resolves existing absolute path', async (): Promise<void> => {
       // Create a temp file to test
       const tempDir: string = join(tmpdir(), 'mcp-pdf-test');
       mkdirSync(tempDir, { recursive: true });
@@ -217,12 +216,12 @@ describe('resolveFont', (): void => {
       assert.strictEqual(result, testFont);
     });
 
-    test('returns null for non-existent path', async (): Promise<void> => {
+    it('returns null for non-existent path', async (): Promise<void> => {
       const result: string | null = await resolveFont('/nonexistent/font.ttf');
       assert.strictEqual(result, null);
     });
 
-    test('handles Windows paths', async (): Promise<void> => {
+    it('handles Windows paths', async (): Promise<void> => {
       const result: string | null = await resolveFont('C:\\Windows\\Fonts\\nonexistent.ttf');
       // Should return null since file doesn't exist
       assert.strictEqual(result, null);
@@ -230,7 +229,7 @@ describe('resolveFont', (): void => {
   });
 
   describe('URLs', (): void => {
-    test('downloads font from valid URL', async (): Promise<void> => {
+    it('downloads font from valid URL', async (): Promise<void> => {
       // This will actually download - use a small font
       const url: string = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@5.0.0/files/noto-sans-latin-400-normal.woff2';
       const result: string | null = await resolveFont(url);
@@ -240,19 +239,19 @@ describe('resolveFont', (): void => {
       assert.ok(existsSync(result), 'Downloaded font should exist');
     });
 
-    test('returns null for invalid URL', async (): Promise<void> => {
+    it('returns null for invalid URL', async (): Promise<void> => {
       const result: string | null = await resolveFont('https://invalid.example.com/font.ttf');
       assert.strictEqual(result, null);
     });
   });
 
   describe('invalid fonts', (): void => {
-    test('returns null for unknown font name', async (): Promise<void> => {
+    it('returns null for unknown font name', async (): Promise<void> => {
       const result: string | null = await resolveFont('UnknownFont');
       assert.strictEqual(result, null);
     });
 
-    test('returns null for empty string', async (): Promise<void> => {
+    it('returns null for empty string', async (): Promise<void> => {
       const result: string | null = await resolveFont('');
       assert.strictEqual(result, null);
     });
