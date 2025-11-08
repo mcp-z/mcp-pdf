@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+import assert from 'assert/strict';
 import { splitTextAndEmoji } from '../../src/lib/emoji-renderer.ts';
 
 describe('splitTextAndEmoji', (): void => {

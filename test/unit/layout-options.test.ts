@@ -1,11 +1,11 @@
-import assert from 'node:assert/strict';
-import { createWriteStream, existsSync, readFileSync } from 'node:fs';
-import { mkdir } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import assert from 'assert/strict';
+import { createWriteStream, existsSync, readFileSync } from 'fs';
+import { mkdir } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import PDFDocument from 'pdfkit';
-import { setupFonts } from '../src/lib/fonts.ts';
-import { renderTextWithEmoji } from '../src/lib/pdf-helpers.ts';
+import { setupFonts } from '../../src/lib/fonts.ts';
+import { renderTextWithEmoji } from '../../src/lib/pdf-helpers.ts';
 
 const testOutputDir = join(tmpdir(), 'mcp-pdf-layout-tests');
 

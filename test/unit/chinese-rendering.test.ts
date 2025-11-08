@@ -1,14 +1,14 @@
-import assert from 'node:assert/strict';
-import { createWriteStream, existsSync, statSync, unlinkSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import assert from 'assert/strict';
+import { createWriteStream, existsSync, statSync, unlinkSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import PDFDocument from 'pdfkit';
-import { setupFonts } from '../src/lib/fonts.ts';
-import { renderTextWithEmoji } from '../src/lib/pdf-helpers.ts';
+import { setupFonts } from '../../src/lib/fonts.ts';
+import { renderTextWithEmoji } from '../../src/lib/pdf-helpers.ts';
 
 describe('Chinese/CJK Character Rendering', (): void => {
   it('should detect Chinese characters need Unicode font', async (): Promise<void> => {
-    const { needsUnicodeFont } = await import('../src/lib/fonts.ts');
+    const { needsUnicodeFont } = await import('../../src/lib/fonts.ts');
 
     // Traditional Chinese
     assert.strictEqual(needsUnicodeFont('很久很久以前'), true);
@@ -174,7 +174,7 @@ describe('Chinese/CJK Character Rendering', (): void => {
       const stream = doc.pipe(createWriteStream(outputPath));
 
       // Register emoji font
-      const { registerEmojiFont } = await import('../src/lib/emoji-renderer.ts');
+      const { registerEmojiFont } = await import('../../src/lib/emoji-renderer.ts');
       const emojiAvailable = registerEmojiFont();
 
       const fonts = await setupFonts(doc, 'auto');

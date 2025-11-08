@@ -1,36 +1,52 @@
-import { homedir } from 'node:os';
-import { join, resolve } from 'node:path';
-import { DEFAULT_PURGE_HOURS } from '../constants.ts';
-
-const FALSEY = new Set(['0', 'false', 'no', 'off']);
-
-/**
- * Configuration for PDF server
- * @public
- */
-export interface PdfServerConfig {
-  /** Directory where PDFs are stored */
-  storageDir: string;
-  /** Hours before PDFs are purged (0 = never) */
-  purgeHours: number;
-  /** Include file paths in tool responses */
-  includePath: boolean;
-}
+import { parseTransportConfig } from '@mcpeasy/server';
+import { homedir } from 'os';
+import { join, resolve } from 'path';
+import { parseArgs } from 'util';
+import type { ServerConfig } from '../types.ts';
 
 /**
- * Read configuration from environment variables.
- * This should only be called once at server startup.
+ * Parse PDF server configuration from CLI arguments and environment.
  */
-export function loadConfig(): PdfServerConfig {
-  let storageDir = process.env.PDF_STORAGE_DIR || join(homedir(), '.mcp-pdf');
+export function parseServerConfig(args: string[], env: Record<string, string | undefined>): ServerConfig {
+  // Parse shared transport config
+  const transportConfig = parseTransportConfig(args, env);
+
+  // Parse PDF-specific config from environment variables
+  let storageDir = env.PDF_STORAGE_DIR || join(homedir(), '.mcp-pdf');
   if (storageDir.startsWith('~')) storageDir = storageDir.replace(/^~/, homedir());
 
-  const purgeHours = process.env.PDF_PURGE_HOURS === undefined ? DEFAULT_PURGE_HOURS : parseInt(process.env.PDF_PURGE_HOURS, 10);
-  const includePath = process.env.PDF_INCLUDE_PATH === undefined ? true : !FALSEY.has(process.env.PDF_INCLUDE_PATH.toString().trim().toLowerCase());
-  return { storageDir: resolve(storageDir), purgeHours, includePath };
+  // Parse application-level config (BASE_URL, LOG_LEVEL)
+  const { values } = parseArgs({
+    args,
+    options: {
+      'base-url': { type: 'string' },
+      'log-level': { type: 'string' },
+    },
+    strict: false, // Allow other arguments
+    allowPositionals: true,
+  });
+
+  const cliBaseUrl = typeof values['base-url'] === 'string' ? values['base-url'] : undefined;
+  const envBaseUrl = env.BASE_URL;
+  const baseUrl = cliBaseUrl ?? envBaseUrl;
+
+  const cliLogLevel = typeof values['log-level'] === 'string' ? values['log-level'] : undefined;
+  const envLogLevel = env.LOG_LEVEL;
+  const logLevel = cliLogLevel ?? envLogLevel ?? 'info';
+
+  // Combine configs
+  return {
+    ...transportConfig,
+    storageDir: resolve(storageDir),
+    ...(baseUrl && { baseUrl }),
+    logLevel,
+  };
 }
 
 /**
- * Create a default config for testing
+ * Build production configuration from process globals.
+ * Entry point for production server.
  */
-// NOTE: test helpers (like createTestConfig) live under test/lib per project conventions.
+export function buildConfig(): ServerConfig {
+  return parseServerConfig(process.argv, process.env);
+}

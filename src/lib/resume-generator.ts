@@ -1,8 +1,8 @@
 import PDFDocument from 'pdfkit';
+import { registerEmojiFont } from './emoji-renderer.ts';
+import { hasEmoji, needsUnicodeFont, setupFonts } from './fonts.ts';
 import type { JsonResume } from './json-resume-schema.ts';
-import { registerEmojiFont } from './lib/emoji-renderer.ts';
-import { hasEmoji, needsUnicodeFont, setupFonts } from './lib/fonts.ts';
-import { renderTextWithEmoji } from './lib/pdf-helpers.ts';
+import { renderTextWithEmoji } from './pdf-helpers.ts';
 
 export interface ResumeStyling {
   fontSize?: {
