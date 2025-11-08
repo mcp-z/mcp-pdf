@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-const { access, mkdir, writeFile } = require('node:fs/promises');
-const { join } = require('node:path');
+const { access, mkdir, writeFile } = require('fs/promises');
+const { join } = require('path');
 
 const FONT_URL = 'https://github.com/googlefonts/noto-emoji/raw/main/fonts/NotoColorEmoji.ttf';
 const FONT_PATH = join(__dirname, '..', '.fonts', 'NotoColorEmoji.ttf');

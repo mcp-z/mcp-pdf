@@ -1,9 +1,9 @@
-# @mcp-z/mcp-pdf
+# @mcpeasy/mcp-pdf
 
-[![npm](https://img.shields.io/npm/v/@mcp-z/mcp-pdf.svg)](https://www.npmjs.com/package/@mcp-z/mcp-pdf)
+[![npm](https://img.shields.io/npm/v/@mcpeasy/mcp-pdf.svg)](https://www.npmjs.com/package/@mcpeasy/mcp-pdf)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node](https://img.shields.io/node/v/@mcp-z/mcp-pdf.svg)](https://nodejs.org)
-[![npm downloads](https://img.shields.io/npm/dm/@mcp-z/mcp-pdf.svg)](https://www.npmjs.com/package/@mcp-z/mcp-pdf)
+[![Node](https://img.shields.io/node/v/@mcpeasy/mcp-pdf.svg)](https://nodejs.org)
+[![npm downloads](https://img.shields.io/npm/dm/@mcpeasy/mcp-pdf.svg)](https://www.npmjs.com/package/@mcpeasy/mcp-pdf)
 
 MCP server for creative PDF generation with full emoji, Unicode, and offline support
 
@@ -28,13 +28,13 @@ From practical invoices and resumes to creative artwork—if it's a PDF, you can
 
 ```bash
 # npm
-npm install -g @mcp-z/mcp-pdf
+npm install -g @mcpeasy/mcp-pdf
 
 # yarn
-yarn global add @mcp-z/mcp-pdf
+yarn global add @mcpeasy/mcp-pdf
 
 # pnpm
-pnpm add -g @mcp-z/mcp-pdf
+pnpm add -g @mcpeasy/mcp-pdf
 ```
 
 Then add to your `claude_desktop_config.json`:
@@ -52,7 +52,7 @@ Then add to your `claude_desktop_config.json`:
 ### Option 2: Direct Usage (No Install)
 
 ```bash
-npx -y @mcp-z/mcp-pdf
+npx -y @mcpeasy/mcp-pdf
 ```
 
 Config:
@@ -62,7 +62,7 @@ Config:
   "mcpServers": {
     "pdf": {
       "command": "npx",
-      "args": ["-y", "@mcp-z/mcp-pdf"]
+      "args": ["-y", "@mcpeasy/mcp-pdf"]
     }
   }
 }
@@ -114,9 +114,9 @@ Once installed, create your first PDF:
 
 Published on multiple MCP registries and package managers:
 
-- **[npm](https://www.npmjs.com/package/@mcp-z/mcp-pdf)** - `@mcp-z/mcp-pdf`
+- **[npm](https://www.npmjs.com/package/@mcpeasy/mcp-pdf)** - `@mcpeasy/mcp-pdf`
 - **[MCP Official Registry](https://modelcontextprotocol.io/registry)** - `io.github.kmalakoff/mcp-pdf`
-- **[Smithery](https://smithery.ai/server/@mcp-z/mcp-pdf)** - One-click install via Smithery CLI
+- **[Smithery](https://smithery.ai/server/@mcpeasy/mcp-pdf)** - One-click install via Smithery CLI
 - **[Awesome MCP Servers](https://mcpservers.org/)** - Community curated list
 - **[Cline Marketplace](https://github.com/cline/mcp-marketplace)** - Built-in to Cline IDE (coming soon)
 - **[GitHub Repository](https://github.com/mcp-z/mcp-pdf)** - Source code and issues

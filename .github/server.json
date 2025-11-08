@@ -12,7 +12,7 @@
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
-      "identifier": "@mcp-z/mcp-pdf",
+      "identifier": "@mcpeasy/mcp-pdf",
       "version": "0.0.0-auto",
       "runtimeHint": "npx",
       "transport": { "type": "stdio" }

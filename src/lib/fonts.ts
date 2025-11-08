@@ -1,9 +1,9 @@
-import { existsSync } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import emojiRegexFactory from 'emoji-regex';
 import { openSync as fontkitOpenSync } from 'fontkit';
+import { existsSync } from 'fs';
+import { mkdir, writeFile } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import type PDFKit from 'pdfkit';
 
 export interface FontConfig {

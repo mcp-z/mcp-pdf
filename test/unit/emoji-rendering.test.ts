@@ -1,9 +1,9 @@
-import assert from 'node:assert/strict';
-import { createWriteStream, existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import assert from 'assert/strict';
+import { createWriteStream, existsSync, readFileSync } from 'fs';
+import { join } from 'path';
 import PDFDocument from 'pdfkit';
-import { needsUnicodeFont, setupFonts } from '../src/lib/fonts.ts';
-import { cleanTmpDir, getTmpSubdir } from './test-helpers.ts';
+import { needsUnicodeFont, setupFonts } from '../../src/lib/fonts.ts';
+import { cleanTmpDir, getTmpSubdir } from '../lib/test-helpers.ts';
 
 let testOutputDir: string;
 

@@ -1,9 +1,9 @@
-import { existsSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { createCanvas, GlobalFonts } from '@napi-rs/canvas';
 import emojiRegexFactory from 'emoji-regex';
+import { existsSync } from 'fs';
 import moduleRoot from 'module-root-sync';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 
 // Cross-platform __dirname (works in both CJS and ESM)
 const __dirname = dirname(fileURLToPath(import.meta.url));

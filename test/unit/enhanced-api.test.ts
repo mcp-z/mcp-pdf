@@ -1,8 +1,8 @@
-import assert from 'node:assert/strict';
+import assert from 'assert/strict';
 import PDFDocument from 'pdfkit';
-import { registerEmojiFont } from '../src/lib/emoji-renderer.ts';
-import { hasEmoji, setupFonts } from '../src/lib/fonts.ts';
-import { renderTextWithEmoji } from '../src/lib/pdf-helpers.ts';
+import { registerEmojiFont } from '../../src/lib/emoji-renderer.ts';
+import { hasEmoji, setupFonts } from '../../src/lib/fonts.ts';
+import { renderTextWithEmoji } from '../../src/lib/pdf-helpers.ts';
 
 /**
  * Helper function that simulates the enhanced create-pdf tool

@@ -1,6 +1,6 @@
-import assert from 'node:assert/strict';
-import type { JsonResume } from '../src/json-resume-schema.ts';
-import { generateResumePDFBuffer, type ResumeStyling } from '../src/resume-generator.ts';
+import assert from 'assert/strict';
+import type { JsonResume } from '../../src/lib/json-resume-schema.ts';
+import { generateResumePDFBuffer, type ResumeStyling } from '../../src/lib/resume-generator.ts';
 
 const sampleResume: JsonResume = {
   basics: {
