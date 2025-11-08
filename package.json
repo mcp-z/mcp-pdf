@@ -79,7 +79,7 @@
     "typescript": "^5.9.3"
   },
   "engines": {
-    "node": ">=16"
+    "node": ">=20"
   },
   "mcpName": "io.github.kmalakoff/mcp-pdf",
   "tsds": {
