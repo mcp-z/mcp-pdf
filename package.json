@@ -1,6 +1,6 @@
 {
   "name": "@mcpeasy/mcp-pdf",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "description": "MCP server for creative PDF generation with full emoji, Unicode, and offline support",
   "keywords": [
     "pdf",
