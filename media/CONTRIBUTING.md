@@ -1,4 +1,4 @@
-# Contributing to @mcpeasy/mcp-pdf
+# Contributing to @mcp-z/mcp-pdf
 
 Thank you for your interest in contributing! This guide covers the development workflow, testing, and release process.
 
@@ -100,10 +100,10 @@ After automated deployment, you may want to manually submit to:
 ### Check Registry Status
 
 Verify where the package is published:
-- **npm**: https://www.npmjs.com/package/@mcpeasy/mcp-pdf
+- **npm**: https://www.npmjs.com/package/@mcp-z/mcp-pdf
 - **MCP Official**: https://modelcontextprotocol.io/registry
 - **GitHub**: https://github.com/mcp-z/mcp-pdf
-- **Smithery**: https://smithery.ai/server/@mcpeasy/mcp-pdf
+- **Smithery**: https://smithery.ai/server/@mcp-z/mcp-pdf
 - **PulseMCP**: https://www.pulsemcp.com/servers
 - **Awesome MCP**: https://mcpservers.org/
 
