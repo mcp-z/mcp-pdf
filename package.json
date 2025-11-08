@@ -74,7 +74,7 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@mcpeasy/package-verify": "^1.1.12",
+    "@mcpeasy/package-verify": "^1.1.13",
     "@types/cors": "*",
     "@types/express": "^5.0.5",
     "@types/fontkit": "^2.0.8",
