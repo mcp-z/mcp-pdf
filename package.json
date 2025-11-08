@@ -43,10 +43,7 @@
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/esm/index.d.ts",
-  "bin": {
-    "mcp-pdf": "bin/server.js",
-    "mcp-z-pdf": "bin/server.js"
-  },
+  "bin": "bin/server.js",
   "files": [
     "dist",
     "bin",
@@ -60,6 +57,7 @@
     "test": "tsds test:node --no-timeouts 'test/**/*.test.ts'",
     "test:engines": "nvu engines tsds test:node --no-timeouts 'test/**/*.test.ts'",
     "typecheck": "tsc --noEmit",
+    "verify": "package-verify",
     "version": "tsds version"
   },
   "dependencies": {
@@ -76,6 +74,7 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@mcpeasy/package-verify": "^1.1.10",
     "@types/cors": "*",
     "@types/express": "^5.0.5",
     "@types/fontkit": "^2.0.8",
