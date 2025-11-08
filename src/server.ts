@@ -1,4 +1,4 @@
-import { registerPrompts, registerTools, setupTransports } from '@mcpeasy/server';
+import { createFileServingRouter, registerPrompts, registerTools, setupTransports } from '@mcpeasy/server';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import cors from 'cors';
 import express from 'express';
@@ -7,7 +7,6 @@ import moduleRoot from 'module-root-sync';
 import * as path from 'path';
 import pino from 'pino';
 import * as url from 'url';
-import { extractOriginalFilename } from './lib/output-handler.ts';
 import createPdfPrompt from './prompts/pdf-instructions.ts';
 import createPdfTool from './tools/create-pdf.ts';
 import createSimplePdfTool from './tools/create-simple-pdf.ts';
@@ -32,30 +31,13 @@ export async function createServer(config: ServerConfig) {
     app.use(cors());
     app.use(express.json({ limit: '10mb' }));
 
-    // Serve PDF files via HTTP endpoint
-    app.get('/files/:filename', (req, res) => {
-      const storedFilename = req.params.filename;
-      const filePath = path.join(config.storageDir, storedFilename);
-      logger.debug(`File request: ${storedFilename}, path: ${filePath}, exists: ${fs.existsSync(filePath)}`);
-
-      if (!fs.existsSync(filePath)) {
-        logger.warn(`File not found: ${filePath}`);
-        res.status(404).send('File not found');
-        return;
-      }
-
-      try {
-        const data = fs.readFileSync(filePath);
-        const originalFilename = extractOriginalFilename(storedFilename);
-        res.contentType('application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="${originalFilename}"`);
-        res.send(data);
-        logger.debug(`Served file: ${storedFilename} as "${originalFilename}"`);
-      } catch (error) {
-        logger.error(`Error reading file: ${error}`);
-        res.status(500).send('Error reading file');
-      }
+    // Serve PDF files via HTTP endpoint using shared file serving router
+    const fileRouter = createFileServingRouter({
+      storageDir: config.storageDir,
+      contentType: 'application/pdf',
+      contentDisposition: 'attachment',
     });
+    app.use('/files', fileRouter);
 
     logger.debug('Created Express app for HTTP/WS transports with file serving');
   }

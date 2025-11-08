@@ -1,9 +1,7 @@
-import type { ToolModule } from '@mcpeasy/server';
+import { getFileUri, type ToolModule, writeFileWithUUID } from '@mcpeasy/server';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import crypto from 'crypto';
 import { z } from 'zod/v3';
 import { jsonResumeSchema } from '../lib/json-resume-schema.ts';
-import { writePdfToFile } from '../lib/output-handler.ts';
 import { generateResumePDFBuffer } from '../lib/resume-generator.ts';
 import type { ServerConfig } from '../types.ts';
 
@@ -62,20 +60,16 @@ export default function createTool(serverConfig: ServerConfig, transport?: impor
     const { filename = 'resume.pdf', resume, font, styling } = args;
     try {
       const pdfBuffer = await generateResumePDFBuffer(resume, font, styling);
-      const uuid = crypto.randomUUID();
-      const storedFilename = `${uuid}-${filename}`;
-      const { fullPath } = await writePdfToFile(pdfBuffer, storedFilename, serverConfig.storageDir);
 
-      // Determine URI based on transport
-      let fileUri: string;
-      if (transport?.type === 'stdio' || !transport) {
-        // stdio mode: direct filesystem access
-        fileUri = `file://${fullPath}`;
-      } else {
-        // HTTP mode: serve via HTTP endpoint
-        const base = serverConfig.baseUrl || (transport.port ? `http://localhost:${transport.port}` : 'http://localhost');
-        fileUri = `${base}/files/${storedFilename}`;
-      }
+      // Write file with UUID prefix
+      const { storedName } = await writeFileWithUUID(pdfBuffer, filename, serverConfig.storageDir);
+
+      // Generate URI based on transport type
+      const fileUri = getFileUri(storedName, transport, {
+        storageDir: serverConfig.storageDir,
+        ...(serverConfig.baseUrl && { baseUrl: serverConfig.baseUrl }),
+        endpoint: '/files',
+      });
 
       return {
         content: [

@@ -1,13 +1,11 @@
+import { extractOriginalFilename, writeFileWithUUID } from '@mcpeasy/server';
 import assert from 'assert/strict';
 import { existsSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { extractOriginalFilename, writePdfToFile } from '../../src/lib/output-handler.ts';
 
 describe('output-handler', () => {
-  // Filename sanitization and uniqueness are handled externally (UUIDs).
-
-  describe('writePdfToFile', () => {
+  describe('writeFileWithUUID', () => {
     let testDir: string;
 
     beforeEach(() => {
@@ -15,27 +13,29 @@ describe('output-handler', () => {
       testDir = join(tmpdir(), `mcp-pdf-test-${Date.now()}`);
     });
 
-    it('writes PDF to specified directory', async () => {
+    it('writes PDF to specified directory with UUID prefix', async () => {
       const buffer = Buffer.from('test pdf content');
-      const result = await writePdfToFile(buffer, 'test.pdf', testDir);
+      const result = await writeFileWithUUID(buffer, 'test.pdf', testDir);
 
       assert.ok(existsSync(result.fullPath));
       assert.ok(result.fullPath.startsWith(testDir));
-      assert.ok(result.fullPath.endsWith('test.pdf'));
+      assert.ok(result.storedName.endsWith('-test.pdf'));
+      // Verify UUID prefix format (36 chars + hyphen)
+      assert.ok(result.storedName.match(/^[0-9a-f-]{36}-test\.pdf$/));
 
       // Clean up
       rmSync(testDir, { recursive: true, force: true });
     });
 
-    it('writes UUID-based filename (no sanitization needed)', async () => {
+    it('generates unique UUID for each file', async () => {
       const buffer = Buffer.from('test pdf content');
-      // In production, tools generate UUIDs which are already safe
-      const safeUuid = 'abc123-def456.pdf';
-      const result = await writePdfToFile(buffer, safeUuid, testDir);
+      const result1 = await writeFileWithUUID(buffer, 'test.pdf', testDir);
+      const result2 = await writeFileWithUUID(buffer, 'test.pdf', testDir);
 
-      assert.ok(existsSync(result.fullPath));
-      assert.ok(result.fullPath.startsWith(testDir));
-      assert.ok(result.fullPath.endsWith(safeUuid));
+      // Should have different UUIDs
+      assert.notStrictEqual(result1.storedName, result2.storedName);
+      assert.ok(existsSync(result1.fullPath));
+      assert.ok(existsSync(result2.fullPath));
 
       // Clean up
       rmSync(testDir, { recursive: true, force: true });
@@ -45,7 +45,7 @@ describe('output-handler', () => {
       const newDir = join(tmpdir(), `mcp-pdf-new-${Date.now()}`);
 
       const buffer = Buffer.from('test pdf content');
-      const result = await writePdfToFile(buffer, 'test.pdf', newDir);
+      const result = await writeFileWithUUID(buffer, 'test.pdf', newDir);
 
       assert.ok(existsSync(newDir));
       assert.ok(existsSync(result.fullPath));
