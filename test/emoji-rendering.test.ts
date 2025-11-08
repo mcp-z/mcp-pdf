@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { createWriteStream, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { before, describe, test } from 'node:test';
 import PDFDocument from 'pdfkit';
 import { needsUnicodeFont, setupFonts } from '../src/lib/fonts.ts';
 import { cleanTmpDir, getTmpSubdir } from './test-helpers.ts';
@@ -34,13 +33,13 @@ async function createTestPDF(filename: string, text: string, fontSpec?: string):
 }
 
 describe('Emoji and Unicode Rendering', (): void => {
-  test('detects emoji as needing Unicode font', (): void => {
+  it('detects emoji as needing Unicode font', (): void => {
     assert.strictEqual(needsUnicodeFont('Hello 👋'), true);
     assert.strictEqual(needsUnicodeFont('😀 🎉 🚀'), true);
     assert.strictEqual(needsUnicodeFont('Test ✅ ❌'), true);
   });
 
-  test('creates PDF with emoji using default font', async (): Promise<void> => {
+  it('creates PDF with emoji using default font', async (): Promise<void> => {
     const text = 'Hello World 👋 😀 🎉';
     const path = await createTestPDF('emoji-default.pdf', text);
 
@@ -50,7 +49,7 @@ describe('Emoji and Unicode Rendering', (): void => {
     console.log(`    📄 Created: ${path} (${stats.length} bytes)`);
   });
 
-  test('creates PDF with emoji using auto-detect font', async (): Promise<void> => {
+  it('creates PDF with emoji using auto-detect font', async (): Promise<void> => {
     const text = 'Hello World 👋 😀 🎉';
     const path = await createTestPDF('emoji-auto.pdf', text, 'auto');
 
@@ -60,7 +59,7 @@ describe('Emoji and Unicode Rendering', (): void => {
     console.log(`    📄 Created: ${path} (${stats.length} bytes)`);
   });
 
-  test('creates PDF with various emoji categories', async (): Promise<void> => {
+  it('creates PDF with various emoji categories', async (): Promise<void> => {
     const emojiTests = [
       { category: 'Smileys', text: '😀 😃 😄 😁 😆 😅 🤣 😂' },
       { category: 'Gestures', text: '👋 🤚 🖐 ✋ 🖖 👌 🤌' },
@@ -78,7 +77,7 @@ describe('Emoji and Unicode Rendering', (): void => {
     }
   });
 
-  test('creates PDF with CJK characters', async (): Promise<void> => {
+  it('creates PDF with CJK characters', async (): Promise<void> => {
     const text = '你好世界 こんにちは世界 안녕하세요 세계';
     const path = await createTestPDF('unicode-cjk.pdf', text, 'auto');
 
@@ -88,7 +87,7 @@ describe('Emoji and Unicode Rendering', (): void => {
     console.log(`    📄 Created: ${path} (${stats.length} bytes)`);
   });
 
-  test('creates PDF with mixed ASCII and emoji', async (): Promise<void> => {
+  it('creates PDF with mixed ASCII and emoji', async (): Promise<void> => {
     const text = `
 Technical Skills:
 • TypeScript 💙
@@ -109,7 +108,7 @@ Achievements:
     console.log(`    📄 Created: ${path} (${stats.length} bytes)`);
   });
 
-  test('creates PDF with font from URL', async (): Promise<void> => {
+  it('creates PDF with font from URL', async (): Promise<void> => {
     // Noto Sans has good Unicode coverage
     const fontUrl = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@5.0.0/files/noto-sans-latin-400-normal.woff2';
     const text = 'Hello World 👋 Testing with downloaded font';
@@ -123,7 +122,7 @@ Achievements:
 });
 
 // Print summary at the end
-test('print test output directory', (): void => {
+it('print test output directory', (): void => {
   console.log(`\n📁 Test PDFs generated in: ${testOutputDir}`);
   console.log('   Open these files to visually verify emoji rendering\n');
 });
