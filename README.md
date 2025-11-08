@@ -7,6 +7,10 @@
 
 MCP server for creative PDF generation with full emoji, Unicode, and offline support
 
+<a href="https://glama.ai/mcp/servers/@mcp-z/mcp-pdf">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@mcp-z/mcp-pdf/badge" alt="PDF MCP server" />
+</a>
+
 ## Why This Exists
 
 PDFs shouldn't be boring. This server gives AI agents the power to create professional documents and creative projects with full emoji (😀 🎉 🚀), Unicode (你好 مرحبا Привет), and direct PDFKit access.
