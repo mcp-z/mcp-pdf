@@ -86,7 +86,7 @@
   "engines": {
     "node": ">=20"
   },
-  "mcpName": "io.github.kmalakoff/mcp-pdf",
+  "mcpName": "io.github.mcp-z/mcp-pdf",
   "tsds": {
     "source": "src/index.ts"
   }
