@@ -1,5 +1,4 @@
 import assert from 'assert/strict';
-import { describe, it } from 'test';
 import { parseServerConfig } from '../../src/lib/config.ts';
 
 describe('Config parsing', () => {

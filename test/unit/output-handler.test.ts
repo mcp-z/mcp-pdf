@@ -2,7 +2,6 @@ import assert from 'assert/strict';
 import { existsSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { beforeEach, describe, test } from 'test';
 import { extractOriginalFilename, writePdfToFile } from '../../src/lib/output-handler.ts';
 
 describe('output-handler', () => {
@@ -16,7 +15,7 @@ describe('output-handler', () => {
       testDir = join(tmpdir(), `mcp-pdf-test-${Date.now()}`);
     });
 
-    test('writes PDF to specified directory', async () => {
+    it('writes PDF to specified directory', async () => {
       const buffer = Buffer.from('test pdf content');
       const result = await writePdfToFile(buffer, 'test.pdf', testDir);
 
@@ -28,7 +27,7 @@ describe('output-handler', () => {
       rmSync(testDir, { recursive: true, force: true });
     });
 
-    test('writes UUID-based filename (no sanitization needed)', async () => {
+    it('writes UUID-based filename (no sanitization needed)', async () => {
       const buffer = Buffer.from('test pdf content');
       // In production, tools generate UUIDs which are already safe
       const safeUuid = 'abc123-def456.pdf';
@@ -42,7 +41,7 @@ describe('output-handler', () => {
       rmSync(testDir, { recursive: true, force: true });
     });
 
-    test('creates directory if it does not exist', async () => {
+    it('creates directory if it does not exist', async () => {
       const newDir = join(tmpdir(), `mcp-pdf-new-${Date.now()}`);
 
       const buffer = Buffer.from('test pdf content');
@@ -57,37 +56,37 @@ describe('output-handler', () => {
   });
 
   describe('extractOriginalFilename', () => {
-    test('extracts filename from UUID-prefixed format', () => {
+    it('extracts filename from UUID-prefixed format', () => {
       const stored = 'abc12345-1234-5678-9abc-def123456789-invoice.pdf';
       const result = extractOriginalFilename(stored);
       assert.strictEqual(result, 'invoice.pdf');
     });
 
-    test('handles filenames with hyphens', () => {
+    it('handles filenames with hyphens', () => {
       const stored = 'abc12345-1234-5678-9abc-def123456789-my-document-v2.pdf';
       const result = extractOriginalFilename(stored);
       assert.strictEqual(result, 'my-document-v2.pdf');
     });
 
-    test('handles simple filenames', () => {
+    it('handles simple filenames', () => {
       const stored = 'abc12345-1234-5678-9abc-def123456789-resume.pdf';
       const result = extractOriginalFilename(stored);
       assert.strictEqual(result, 'resume.pdf');
     });
 
-    test('handles filenames with spaces', () => {
+    it('handles filenames with spaces', () => {
       const stored = 'abc12345-1234-5678-9abc-def123456789-project plan.pdf';
       const result = extractOriginalFilename(stored);
       assert.strictEqual(result, 'project plan.pdf');
     });
 
-    test('returns original if format does not match', () => {
+    it('returns original if format does not match', () => {
       const stored = 'invalid-format.pdf';
       const result = extractOriginalFilename(stored);
       assert.strictEqual(result, 'invalid-format.pdf');
     });
 
-    test('handles UUID without trailing filename', () => {
+    it('handles UUID without trailing filename', () => {
       const stored = 'abc12345-1234-5678-9abc-def123456789';
       const result = extractOriginalFilename(stored);
       // Should return the original since there's no filename after UUID

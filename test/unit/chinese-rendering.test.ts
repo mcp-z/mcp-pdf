@@ -2,14 +2,13 @@ import assert from 'assert/strict';
 import { createWriteStream, existsSync, statSync, unlinkSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { describe, test } from 'test';
 import PDFDocument from 'pdfkit';
-import { setupFonts } from '../src/lib/fonts.ts';
-import { renderTextWithEmoji } from '../src/lib/pdf-helpers.ts';
+import { setupFonts } from '../../src/lib/fonts.ts';
+import { renderTextWithEmoji } from '../../src/lib/pdf-helpers.ts';
 
 describe('Chinese/CJK Character Rendering', (): void => {
-  test('should detect Chinese characters need Unicode font', async (): Promise<void> => {
-    const { needsUnicodeFont } = await import('../src/lib/fonts.ts');
+  it('should detect Chinese characters need Unicode font', async (): Promise<void> => {
+    const { needsUnicodeFont } = await import('../../src/lib/fonts.ts');
 
     // Traditional Chinese
     assert.strictEqual(needsUnicodeFont('很久很久以前'), true);
@@ -28,7 +27,7 @@ describe('Chinese/CJK Character Rendering', (): void => {
     assert.strictEqual(needsUnicodeFont('Hello 世界'), true);
   });
 
-  test('should render Chinese characters with auto font detection', async (): Promise<void> => {
+  it('should render Chinese characters with auto font detection', async (): Promise<void> => {
     const outputPath = join(tmpdir(), `test-chinese-${Date.now()}.pdf`);
 
     try {
@@ -66,7 +65,7 @@ describe('Chinese/CJK Character Rendering', (): void => {
     }
   });
 
-  test('should render Cantonese/Traditional Chinese text', async (): Promise<void> => {
+  it('should render Cantonese/Traditional Chinese text', async (): Promise<void> => {
     const outputPath = join(tmpdir(), `test-cantonese-${Date.now()}.pdf`);
 
     try {
@@ -112,7 +111,7 @@ describe('Chinese/CJK Character Rendering', (): void => {
     }
   });
 
-  test('should handle Japanese characters', async (): Promise<void> => {
+  it('should handle Japanese characters', async (): Promise<void> => {
     const outputPath = join(tmpdir(), `test-japanese-${Date.now()}.pdf`);
 
     try {
@@ -140,7 +139,7 @@ describe('Chinese/CJK Character Rendering', (): void => {
     }
   });
 
-  test('should handle Korean characters', async (): Promise<void> => {
+  it('should handle Korean characters', async (): Promise<void> => {
     const outputPath = join(tmpdir(), `test-korean-${Date.now()}.pdf`);
 
     try {
@@ -167,7 +166,7 @@ describe('Chinese/CJK Character Rendering', (): void => {
     }
   });
 
-  test('should handle mixed CJK and emoji', async (): Promise<void> => {
+  it('should handle mixed CJK and emoji', async (): Promise<void> => {
     const outputPath = join(tmpdir(), `test-mixed-cjk-emoji-${Date.now()}.pdf`);
 
     try {
@@ -175,7 +174,7 @@ describe('Chinese/CJK Character Rendering', (): void => {
       const stream = doc.pipe(createWriteStream(outputPath));
 
       // Register emoji font
-      const { registerEmojiFont } = await import('../src/lib/emoji-renderer.ts');
+      const { registerEmojiFont } = await import('../../src/lib/emoji-renderer.ts');
       const emojiAvailable = registerEmojiFont();
 
       const fonts = await setupFonts(doc, 'auto');
@@ -199,7 +198,7 @@ describe('Chinese/CJK Character Rendering', (): void => {
     }
   });
 
-  test('should gracefully handle missing Unicode font', async (): Promise<void> => {
+  it('should gracefully handle missing Unicode font', async (): Promise<void> => {
     // This test verifies the fallback behavior when no Unicode font is available
     const doc = new PDFDocument();
 
@@ -213,7 +212,7 @@ describe('Chinese/CJK Character Rendering', (): void => {
     assert.strictEqual(fonts.oblique, 'Helvetica-Oblique');
   });
 
-  test('should support Star Wars themed Chinese resume', async (): Promise<void> => {
+  it('should support Star Wars themed Chinese resume', async (): Promise<void> => {
     const outputPath = join(tmpdir(), `test-starwars-chinese-${Date.now()}.pdf`);
 
     try {

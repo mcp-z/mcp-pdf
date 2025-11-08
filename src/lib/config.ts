@@ -1,7 +1,7 @@
+import { parseTransportConfig } from '@mcpeasy/server';
 import { homedir } from 'os';
 import { join, resolve } from 'path';
 import { parseArgs } from 'util';
-import { parseTransportConfig } from '@mcpeasy/server';
 import type { ServerConfig } from '../types.ts';
 
 /**

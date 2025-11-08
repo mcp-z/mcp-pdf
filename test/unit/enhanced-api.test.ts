@@ -1,9 +1,8 @@
 import assert from 'assert/strict';
-import { describe, test } from 'test';
 import PDFDocument from 'pdfkit';
-import { registerEmojiFont } from '../src/lib/emoji-renderer.ts';
-import { hasEmoji, setupFonts } from '../src/lib/fonts.ts';
-import { renderTextWithEmoji } from '../src/lib/pdf-helpers.ts';
+import { registerEmojiFont } from '../../src/lib/emoji-renderer.ts';
+import { hasEmoji, setupFonts } from '../../src/lib/fonts.ts';
+import { renderTextWithEmoji } from '../../src/lib/pdf-helpers.ts';
 
 /**
  * Helper function that simulates the enhanced create-pdf tool
@@ -143,7 +142,7 @@ async function createPdfWithEnhancements(options: {
 }
 
 describe('Enhanced API - Backward Compatibility', () => {
-  test('old-style JSON works identically (no new features)', async () => {
+  it('old-style JSON works identically (no new features)', async () => {
     // Old-style content - no pageSetup, no colors, no shapes
     const pdfBuffer = await createPdfWithEnhancements({
       content: [
@@ -162,7 +161,7 @@ describe('Enhanced API - Backward Compatibility', () => {
 });
 
 describe('Enhanced API - New Features', () => {
-  test('pageSetup: custom background color', async () => {
+  it('pageSetup: custom background color', async () => {
     const pdfBuffer = await createPdfWithEnhancements({
       pageSetup: {
         backgroundColor: '#1a1a1a', // Dark gray
@@ -178,7 +177,7 @@ describe('Enhanced API - New Features', () => {
     console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
-  test('pageSetup: custom margins and size', async () => {
+  it('pageSetup: custom margins and size', async () => {
     const pdfBuffer = await createPdfWithEnhancements({
       pageSetup: {
         size: [612, 792],
@@ -192,7 +191,7 @@ describe('Enhanced API - New Features', () => {
     console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
-  test('text colors', async () => {
+  it('text colors', async () => {
     const pdfBuffer = await createPdfWithEnhancements({
       content: [
         { type: 'heading', text: 'Colorful Document', color: '#FF6B6B' },
@@ -208,7 +207,7 @@ describe('Enhanced API - New Features', () => {
     console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
-  test('shapes: rectangles, circles, lines', async () => {
+  it('shapes: rectangles, circles, lines', async () => {
     const pdfBuffer = await createPdfWithEnhancements({
       content: [
         // Rectangle header
@@ -235,7 +234,7 @@ describe('Enhanced API - New Features', () => {
 });
 
 describe('Enhanced API - Agent Workflow Simulation', () => {
-  test('agent calculates progressive font sizes', async () => {
+  it('agent calculates progressive font sizes', async () => {
     // Simulate agent calculating progressive font sizes
     const lines = ['This line starts small', 'This line is slightly bigger', 'This line is medium', 'This line is getting large', 'This line is very large'];
 
@@ -262,7 +261,7 @@ describe('Enhanced API - Agent Workflow Simulation', () => {
     console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
   });
 
-  test('agent calculates centered tapering widths', async () => {
+  it('agent calculates centered tapering widths', async () => {
     const lines = ['Narrow', 'Getting Wider', 'Even Wider Now', 'Maximum Width Here', 'Full Text Width'];
 
     const pageWidth = 612;
@@ -294,7 +293,7 @@ describe('Enhanced API - Agent Workflow Simulation', () => {
 });
 
 describe('Enhanced API - Space Journey Resume (Sci-Fi Style)', () => {
-  test('generates space journey resume with tapering', async () => {
+  it('generates space journey resume with tapering', async () => {
     // Agent generates a Space Journey style resume with sci-fi theme
     // Uses purple/cyan color scheme with dramatic tapering effect
 
