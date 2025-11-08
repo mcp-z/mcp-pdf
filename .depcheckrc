@@ -1,0 +1,1 @@
+ignores: ["@mcpeasy/package-verify", "@types/node", "@types/mocha", "typescript"]
