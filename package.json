@@ -53,11 +53,11 @@
     "build": "npm run typecheck && tsds build",
     "format": "biome check --write --unsafe",
     "postinstall": "node scripts/postinstall.cjs",
+    "prepublish:check": "ncp",
     "prepublishOnly": "tsds validate",
     "test": "tsds test:node --no-timeouts 'test/**/*.test.ts'",
     "test:engines": "nvu engines tsds test:node --no-timeouts 'test/**/*.test.ts'",
     "typecheck": "tsc --noEmit",
-    "verify": "package-verify",
     "version": "tsds version"
   },
   "dependencies": {
@@ -74,13 +74,13 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@mcpeasy/package-verify": "^1.1.14",
     "@types/cors": "*",
     "@types/express": "^5.0.5",
     "@types/fontkit": "^2.0.8",
     "@types/mocha": "*",
     "@types/node": "^24.10.0",
     "@types/pdfkit": "^0.17.3",
+    "npm-check-prepublish": "^0.1.0",
     "typescript": "^5.9.3"
   },
   "engines": {
