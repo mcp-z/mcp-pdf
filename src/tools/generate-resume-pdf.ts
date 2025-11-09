@@ -56,6 +56,13 @@ const config = {
 type In = z.infer<z.ZodObject<typeof config.inputSchema>>;
 
 export default function createTool(serverConfig: ServerConfig, transport?: import('@mcpeasy/server').TransportConfig): ToolModule {
+  // Validate configuration at startup - fail fast if HTTP/WS transport without baseUrl or port
+  if (transport && (transport.type === 'http' || transport.type === 'ws')) {
+    if (!serverConfig?.baseUrl && !transport.port) {
+      throw new Error('generate-resume-pdf: HTTP/WS transport requires either baseUrl in server config or port in transport config. This is a server configuration error - please provide --base-url or --port.');
+    }
+  }
+
   async function handler(args: In): Promise<CallToolResult> {
     const { filename = 'resume.pdf', resume, font, styling } = args;
     try {
