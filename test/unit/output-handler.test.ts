@@ -19,8 +19,8 @@ describe('output-handler', () => {
       assert.ok(existsSync(result.fullPath));
       assert.ok(result.fullPath.startsWith(testDir));
       assert.ok(result.storedName.includes('test.pdf'));
-      // Verify ID-prefixed format with hash delimiter
-      assert.ok(result.storedName.match(/^[0-9a-f-]+#test\.pdf$/));
+      // Verify ID-prefixed format with tilde delimiter
+      assert.ok(result.storedName.match(/^[0-9a-f-]+~test\.pdf$/));
 
       // Clean up
       rmSync(testDir, { recursive: true, force: true });
