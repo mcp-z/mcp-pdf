@@ -61,7 +61,6 @@ export async function createServer(config: ServerConfig) {
     serverFactory: createMcpServer,
     logger,
     app,
-    serviceName: 'pdf',
   });
 
   return {
