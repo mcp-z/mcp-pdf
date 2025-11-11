@@ -32,11 +32,13 @@ export async function createServer(config: ServerConfig) {
     app.use(express.json({ limit: '10mb' }));
 
     // Serve PDF files via HTTP endpoint using shared file serving router
-    const fileRouter = createFileServingRouter({
-      storageDir: config.storageDir,
-      contentType: 'application/pdf',
-      contentDisposition: 'attachment',
-    });
+    const fileRouter = createFileServingRouter(
+      { storageDir: config.storageDir },
+      {
+        contentType: 'application/pdf',
+        contentDisposition: 'attachment',
+      }
+    );
     app.use('/files', fileRouter);
 
     logger.debug('Created Express app for HTTP/WS transports with file serving');
