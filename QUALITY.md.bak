@@ -1557,17 +1557,17 @@ Code should implement security measures and error handling for real threats whil
 ## Category Pattern
 This encompasses violations where defensive patterns:
 - Solve theoretical attack vectors that don't apply to the actual deployment context
-- Implement rate limiting or retry workarounds for provider API quotas
+- Implement rate limiting for per-process scenarios in distributed environments
 - Create retry logic for failure modes that should fail fast
 
 ## Recognition Signals
-- Signal: Rate limiting or quota workarounds
-  Examples: Per-process rate limiting, retry logic for 429 responses, artificial delays to "avoid" quotas
-  Principle: Don't implement workarounds - analyze the situation and consult with humans before implementing solutions
+- Signal: Theoretical rate limiting implementations
+  Examples: Per-process rate limiting in distributed systems, artificial quota enforcement below provider limits
+  But also: Complex retry patterns for rate limit responses that should fail fast
 
 - Signal: Defensive patterns without clear threat model
-  Examples: Authentication rate limiting for AI agents with valid credentials, complex error handling for scenarios that should fail fast
-  Principle: Address real threats in the actual deployment context
+  Examples: Authentication rate limiting for AI agents with valid credentials
+  But also: Quota retry logic when quotas reset daily
 
 ## Diverse Examples (Non-Exhaustive)
 
@@ -1582,48 +1582,48 @@ function handleApiError(error: ApiError): never {
 }
 ```
 
-### Example 2: Prohibited Rate Limit Workaround
+### Example 2: Theoretical Rate Limiting Violation
 ```typescript
-// ❌ VIOLATION: Implementing rate limit workarounds
+// ❌ VIOLATION: Per-process rate limiting in distributed system
 class TokenRateLimiter {
   private requests = new Map<string, number>();
 
   async checkLimit(clientId: string): Promise<boolean> {
     const count = this.requests.get(clientId) || 0;
-    if (count > 60) return false; // Don't implement artificial limits
+    if (count > 60) return false; // Artificial limit, useless distributed
     this.requests.set(clientId, count + 1);
     return true;
   }
 }
-// VIOLATION REASON: Don't implement workarounds - analyze and consult humans
+// VIOLATION REASON: Per-process limiting doesn't work in distributed systems
 ```
 
-### Example 3: Prohibited Retry Logic
+### Example 3: Inappropriate Retry Logic
 ```typescript
-// ❌ VIOLATION: Retrying rate limit errors
+// ❌ VIOLATION: Retrying rate limits when quotas are daily
 async function requestWithRetry(request: () => Promise<Response>): Promise<Response> {
   try {
     return await request();
   } catch (error) {
     if (error.status === 429) {
       await delay(1000);
-      return requestWithRetry(request); // Don't retry rate limits
+      return requestWithRetry(request); // Wrong - quotas don't reset quickly
     }
     throw error;
   }
 }
-// VIOLATION REASON: Fail fast on 429 - don't implement workarounds
+// VIOLATION REASON: Should fail fast on 429, quotas are per day
 ```
 
 ### Example 4: Appropriate Network Retry
 ```typescript
-// ✅ COMPLIANT: Retry transient errors, fail fast on rate limits
+// ✅ COMPLIANT: Retry network errors, fail fast on rate limits
 async function requestWithBackoff(request: () => Promise<Response>): Promise<Response> {
   try {
     return await request();
   } catch (error) {
     if (error.status === 429) {
-      throw error; // Fail fast - let caller handle appropriately
+      throw error; // Fail fast - rate limits don't recover quickly
     }
     if (error.status >= 500) {
       await exponentialBackoff();
@@ -1635,18 +1635,11 @@ async function requestWithBackoff(request: () => Promise<Response>): Promise<Res
 ```
 
 ## Generalization Guidance
+Ask yourself:
+1. Does this defensive pattern address real threats in the deployment context?
+2. Is this rate limiting effective in a distributed/multi-instance environment?
+3. Should this error type fail fast or retry based on actual recovery characteristics?
 
-When encountering rate limiting or quota issues:
-1. Do NOT implement workarounds (delays, retries, artificial limits)
-2. Analyze the actual usage patterns and error frequency
-3. Consult with humans before implementing any solution
-4. Request quota increases from providers if needed
-
-When evaluating defensive patterns:
-- Identify the actual threat model and deployment context
-- Only implement defenses for real, applicable threats
-- Fail fast on errors that should not be retried
-- Consult with humans before adding complex error handling
 ## Anti-Patterns (What This Rule Does NOT Cover)
 - Rate limit detection and error classification (always appropriate)
 - Network retry for 5xx errors that can recover
