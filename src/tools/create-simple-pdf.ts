@@ -21,7 +21,7 @@ type In = z.infer<z.ZodObject<typeof config.inputSchema>>;
 
 export default function createTool(serverConfig: ServerConfig, transport?: import('@mcpeasy/server').TransportConfig): ToolModule {
   // Validate configuration at startup - fail fast if HTTP/WS transport without baseUrl or port
-  if (transport && (transport.type === 'http' || transport.type === 'ws')) {
+  if (transport && transport.type === 'http') {
     if (!serverConfig?.baseUrl && !transport.port) {
       throw new Error('create-simple-pdf: HTTP/WS transport requires either baseUrl in server config or port in transport config. This is a server configuration error - please provide --base-url or --port.');
     }
