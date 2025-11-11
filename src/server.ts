@@ -1,4 +1,5 @@
-import { createFileServingRouter, registerPrompts, registerTools, setupTransports } from '@mcpeasy/server';
+import type { Logger } from '@mcpeasy/server';
+import { createFileServingRouter, registerPrompts, registerTools, setupHttpServer, setupStdioServer } from '@mcpeasy/server';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import cors from 'cors';
 import express from 'express';
@@ -15,60 +16,104 @@ import type { ServerConfig } from './types.ts';
 
 const pkg = JSON.parse(fs.readFileSync(path.join(moduleRoot(url.fileURLToPath(import.meta.url), { keyExists: 'name' }), 'package.json'), 'utf-8'));
 
+// ===== Main Entry Point =====
 export async function createServer(config: ServerConfig) {
-  // Setup logging (file for stdio, stdout for others)
-  const hasStdio = config.transports.some((t) => t.type === 'stdio');
-  const logsPath = path.join(process.cwd(), '.mcp-z', 'logs', 'mcp-pdf.log');
-  if (hasStdio) fs.mkdirSync(path.dirname(logsPath), { recursive: true });
-  const logger = pino({ level: config.logLevel || 'info' }, hasStdio ? pino.destination({ dest: logsPath, sync: false }) : pino.destination(1));
+  // Shared setup (both transports need this)
+  const { logger } = await setupShared(config);
 
-  // Create Express app IF HTTP/WS transports present
-  const needsHttpServer = config.transports.some((t) => t.type === 'http');
-  let app: express.Application | undefined;
-
-  if (needsHttpServer) {
-    app = express();
-    app.use(cors());
-    app.use(express.json({ limit: '10mb' }));
-
-    // Serve PDF files via HTTP endpoint using shared file serving router
-    const fileRouter = createFileServingRouter(
-      { storageDir: config.storageDir },
-      {
-        contentType: 'application/pdf',
-        contentDisposition: 'attachment',
-      }
-    );
-    app.use('/files', fileRouter);
-
-    logger.debug('Created Express app for HTTP/WS transports with file serving');
+  // ===== SINGLE DECISION POINT =====
+  if (config.transport.type === 'stdio') {
+    return await setupStdioServerComplete(config, { logger });
   }
 
-  // Factory function to create and configure MCP server instances
-  // Receives transport info from setupTransports
-  const createMcpServer = (transport?: import('@mcpeasy/server').TransportConfig) => {
-    // Create tools with transport awareness
-    const tools = [createPdfTool(config, transport), createSimplePdfTool(config, transport), createResumePdfTool(config, transport)];
-    const prompts = [createPdfPrompt()];
+  return await setupHttpServerComplete(config, { logger });
+}
 
-    const server = new McpServer({ name: pkg.name, version: pkg.version });
-    registerTools(server, tools);
-    registerPrompts(server, prompts);
-    return server;
-  };
+// ===== Helper: Shared Infrastructure =====
+async function setupShared(config: ServerConfig) {
+  const hasStdio = config.transport.type === 'stdio';
+  const logsPath = path.join(process.cwd(), '.mcp-z', 'logs', 'mcp-pdf.log');
+  if (hasStdio) fs.mkdirSync(path.dirname(logsPath), { recursive: true });
 
-  // Setup all transports
+  const logger = pino({ level: config.logLevel || 'info' }, hasStdio ? pino.destination({ dest: logsPath, sync: false }) : pino.destination(1));
+
+  return { logger };
+}
+
+// ===== stdio-ONLY Setup (Complete Path) =====
+async function setupStdioServerComplete(config: ServerConfig, shared: { logger: Logger }) {
+  const { logger } = shared;
+
+  // Create MCP components (shared logic)
+  const { tools, prompts } = createMcpComponents(config, undefined); // stdio doesn't need transport parameter
+
+  // Create and register MCP server
+  const mcpServer = new McpServer({ name: pkg.name, version: pkg.version });
+  registerTools(mcpServer, tools);
+  registerPrompts(mcpServer, prompts);
+
+  // Setup stdio transport
   logger.info('Starting mcp-pdf MCP server');
-  const { mcpServer, httpServers, cleanup } = await setupTransports(config.transports, {
-    serverFactory: createMcpServer,
+  const { cleanup } = await setupStdioServer({
+    serverFactory: () => mcpServer,
     logger,
-    app,
   });
 
-  return {
-    httpServers,
-    mcpServer,
-    cleanup,
+  return { mcpServer, cleanup, logger };
+}
+
+// ===== HTTP-ONLY Setup (Complete Path) =====
+async function setupHttpServerComplete(config: ServerConfig, shared: { logger: Logger }) {
+  const { logger } = shared;
+
+  // ✅ Create Express app ONLY for HTTP
+  const app = express();
+  app.use(cors());
+  app.use(express.json({ limit: '10mb' }));
+
+  // Serve PDF files via HTTP endpoint using shared file serving router
+  const fileRouter = createFileServingRouter(
+    { storageDir: config.storageDir },
+    {
+      contentType: 'application/pdf',
+      contentDisposition: 'attachment',
+    }
+  );
+  app.use('/files', fileRouter);
+
+  logger.debug('Created Express app for HTTP transport with PDF file serving');
+
+  // Create MCP components (shared logic)
+  const { tools, prompts } = createMcpComponents(config, config.transport);
+
+  // Create and register MCP server
+  const mcpServer = new McpServer({ name: pkg.name, version: pkg.version });
+  registerTools(mcpServer, tools);
+  registerPrompts(mcpServer, prompts);
+
+  // Setup HTTP transport
+  logger.info('Starting mcp-pdf MCP server');
+
+  // Validate port for HTTP transport
+  if (!config.transport.port) {
+    throw new Error('Port is required for HTTP transport');
+  }
+
+  const { httpServer, cleanup } = await setupHttpServer({
+    serverFactory: () => mcpServer,
     logger,
-  };
+    app,
+    port: config.transport.port,
+  });
+
+  return { httpServer, mcpServer, cleanup, logger };
+}
+
+// ===== Shared: Create MCP Components =====
+function createMcpComponents(config: ServerConfig, transport: import('@mcpeasy/server').TransportConfig | undefined) {
+  // Create tools with transport awareness
+  const tools = [createPdfTool(config, transport), createSimplePdfTool(config, transport), createResumePdfTool(config, transport)];
+  const prompts = [createPdfPrompt()];
+
+  return { tools, prompts };
 }

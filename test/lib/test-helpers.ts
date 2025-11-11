@@ -9,7 +9,7 @@ import type { ServerConfig } from '../../src/types.ts';
  */
 export function createTestConfig(overrides?: Partial<ServerConfig>): ServerConfig {
   return {
-    transports: [{ type: 'stdio' }],
+    transport: { type: 'stdio' },
     storageDir: join(tmpdir(), '.tmp-mcp-pdf'),
     logLevel: 'silent',
     ...overrides,

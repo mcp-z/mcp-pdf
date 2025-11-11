@@ -79,22 +79,19 @@ describe('Config parsing', () => {
   describe('transport parsing', () => {
     it('defaults to stdio transport', () => {
       const config = parseServerConfig([], {});
-      assert.strictEqual(config.transports.length, 1);
-      assert.strictEqual(config.transports[0]?.type, 'stdio');
+      assert.strictEqual(config.transport.type, 'stdio');
     });
 
     it('parses --port for HTTP transport', () => {
       const config = parseServerConfig(['--port=3457'], {});
-      assert.strictEqual(config.transports.length, 1);
-      assert.strictEqual(config.transports[0]?.type, 'http');
-      assert.strictEqual(config.transports[0]?.port, 3457);
+      assert.strictEqual(config.transport.type, 'http');
+      assert.strictEqual(config.transport.port, 3457);
     });
 
     it('parses PORT env var for HTTP transport', () => {
       const config = parseServerConfig([], { PORT: '3457' });
-      assert.strictEqual(config.transports.length, 1);
-      assert.strictEqual(config.transports[0]?.type, 'http');
-      assert.strictEqual(config.transports[0]?.port, 3457);
+      assert.strictEqual(config.transport.type, 'http');
+      assert.strictEqual(config.transport.port, 3457);
     });
   });
 });
