@@ -63,7 +63,7 @@
   "dependencies": {
     "@mcpeasy/server": "^6.1.38",
     "@modelcontextprotocol/sdk": "^1.21.1",
-    "@napi-rs/canvas": "^0.1.81",
+    "@napi-rs/canvas": "^0.1.82",
     "cors": "^2.8.5",
     "emoji-regex": "^10.6.0",
     "express": "^5.1.0",
