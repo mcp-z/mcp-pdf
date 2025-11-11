@@ -19,7 +19,7 @@ export async function startServer(config: ServerConfig): Promise<void> {
   });
 
   // Log startup message using pino (goes to file for stdio transport)
-  result.logger.info(`Server started with ${config.transports.length} transport(s)`);
+  result.logger.info(`Server started with ${config.transport.type} transport`);
 
   // Keep process alive indefinitely
   await new Promise(() => {});
