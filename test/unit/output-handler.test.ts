@@ -1,7 +1,7 @@
 import { parseStoredName, writeFile } from '@mcpeasy/server';
 import assert from 'assert/strict';
 import { existsSync, rmSync } from 'fs';
-import { join } from 'path';
+import { join, resolve } from 'path';
 
 describe('output-handler', () => {
   describe('writeFile', () => {
@@ -17,7 +17,7 @@ describe('output-handler', () => {
       const result = await writeFile(buffer, 'test.pdf', { storageDir: testDir });
 
       assert.ok(existsSync(result.fullPath));
-      assert.ok(result.fullPath.startsWith(testDir));
+      assert.ok(result.fullPath.startsWith(resolve(testDir)));
       assert.ok(result.storedName.includes('test.pdf'));
       // Verify ID-prefixed format with tilde delimiter
       assert.ok(result.storedName.match(/^[0-9a-f-]+~test\.pdf$/));
