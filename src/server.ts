@@ -23,7 +23,7 @@ export async function createServer(config: ServerConfig) {
   const logger = pino({ level: config.logLevel || 'info' }, hasStdio ? pino.destination({ dest: logsPath, sync: false }) : pino.destination(1));
 
   // Create Express app IF HTTP/WS transports present
-  const needsHttpServer = config.transports.some((t) => t.type === 'http' || t.type === 'ws');
+  const needsHttpServer = config.transports.some((t) => t.type === 'http');
   let app: express.Application | undefined;
 
   if (needsHttpServer) {
