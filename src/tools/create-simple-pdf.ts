@@ -1,4 +1,4 @@
-import { getFileUri, type ToolModule, writeFileWithUUID } from '@mcpeasy/server';
+import { getFileUri, type ToolModule, writeFile } from '@mcpeasy/server';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import PDFDocument from 'pdfkit';
 import { z } from 'zod/v3';
@@ -53,8 +53,10 @@ export default function createTool(serverConfig: ServerConfig, transport?: impor
 
       const pdfBuffer = await pdfPromise;
 
-      // Write file with UUID prefix
-      const { storedName } = await writeFileWithUUID(pdfBuffer, filename, serverConfig.storageDir);
+      // Write file with ID prefix
+      const { storedName } = await writeFile(pdfBuffer, filename, {
+        storageDir: serverConfig.storageDir,
+      });
 
       // Generate URI based on transport type
       const fileUri = getFileUri(storedName, transport, {
