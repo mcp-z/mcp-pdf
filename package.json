@@ -61,7 +61,7 @@
     "version": "tsds version"
   },
   "dependencies": {
-    "@mcpeasy/server": "^6.1.52",
+    "@mcpeasy/server": "^6.1.53",
     "@modelcontextprotocol/sdk": "^1.21.1",
     "@napi-rs/canvas": "^0.1.82",
     "cors": "^2.8.5",
@@ -78,7 +78,7 @@
     "@types/express": "^5.0.5",
     "@types/fontkit": "^2.0.8",
     "@types/mocha": "*",
-    "@types/node": "^24.10.0",
+    "@types/node": "^24.10.1",
     "@types/pdfkit": "^0.17.3",
     "npm-check-prepublish": "^0.1.1",
     "typescript": "^5.9.3"
