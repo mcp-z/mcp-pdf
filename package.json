@@ -54,7 +54,7 @@
     "format": "biome check --write --unsafe",
     "postinstall": "node scripts/postinstall.cjs",
     "prepublish:check": "ncp",
-    "prepublish:only": "tsds validate",
+    "prepublishOnly": "tsds validate",
     "test": "tsds test:node --no-timeouts 'test/**/*.test.ts'",
     "test:engines": "nvu engines tsds test:node --no-timeouts 'test/**/*.test.ts'",
     "typecheck": "tsc --noEmit",
