@@ -1,4 +1,4 @@
-import { buildConfig } from './lib/config.ts';
+import { buildConfig } from './config.ts';
 import { createServer } from './server.ts';
 import type { ServerConfig } from './types.ts';
 

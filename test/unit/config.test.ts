@@ -1,5 +1,5 @@
 import assert from 'assert/strict';
-import { parseServerConfig } from '../../src/lib/config.ts';
+import { parseServerConfig } from '../../src/config.ts';
 
 describe('Config parsing', () => {
   describe('BASE_URL parsing', () => {
@@ -29,9 +29,9 @@ describe('Config parsing', () => {
   });
 
   describe('storageDir parsing', () => {
-    it('uses PDF_STORAGE_DIR env var', () => {
+    it('uses STORAGE_DIR env var', () => {
       const config = parseServerConfig([], {
-        PDF_STORAGE_DIR: '/custom/path',
+        STORAGE_DIR: '/custom/path',
       });
       assert.ok(config.storageDir.endsWith('/custom/path'));
     });
@@ -43,7 +43,7 @@ describe('Config parsing', () => {
 
     it('expands tilde in path', () => {
       const config = parseServerConfig([], {
-        PDF_STORAGE_DIR: '~/my-pdfs',
+        STORAGE_DIR: '~/my-pdfs',
       });
       assert.ok(!config.storageDir.startsWith('~'));
       assert.ok(config.storageDir.includes('my-pdfs'));

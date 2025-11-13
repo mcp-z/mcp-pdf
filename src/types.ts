@@ -13,4 +13,5 @@ export interface ServerConfig extends BaseServerConfig {
 
   // Application-level logging configuration
   logLevel: string;
+  baseDir: string;
 }

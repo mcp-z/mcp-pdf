@@ -1,8 +1,8 @@
 import { parseTransportConfig } from '@mcpeasy/server';
 import { homedir } from 'os';
-import { join, resolve } from 'path';
+import path, { resolve } from 'path';
 import { parseArgs } from 'util';
-import type { ServerConfig } from '../types.ts';
+import type { ServerConfig } from './types.ts';
 
 /**
  * Parse PDF server configuration from CLI arguments and environment.
@@ -10,10 +10,6 @@ import type { ServerConfig } from '../types.ts';
 export function parseServerConfig(args: string[], env: Record<string, string | undefined>): ServerConfig {
   // Parse shared transport config
   const transportConfig = parseTransportConfig(args, env);
-
-  // Parse PDF-specific config from environment variables
-  let storageDir = env.PDF_STORAGE_DIR || join(homedir(), '.mcp-pdf');
-  if (storageDir.startsWith('~')) storageDir = storageDir.replace(/^~/, homedir());
 
   // Parse application-level config (BASE_URL, LOG_LEVEL)
   const { values } = parseArgs({
@@ -26,6 +22,8 @@ export function parseServerConfig(args: string[], env: Record<string, string | u
     allowPositionals: true,
   });
 
+  const rootDir = process.cwd() === '/' ? homedir() : process.cwd();
+  const baseDir = path.join(rootDir, '.mcp-z');
   const cliBaseUrl = typeof values['base-url'] === 'string' ? values['base-url'] : undefined;
   const envBaseUrl = env.BASE_URL;
   const baseUrl = cliBaseUrl ?? envBaseUrl;
@@ -34,12 +32,19 @@ export function parseServerConfig(args: string[], env: Record<string, string | u
   const envLogLevel = env.LOG_LEVEL;
   const logLevel = cliLogLevel ?? envLogLevel ?? 'info';
 
+  // Parse file storage configuration
+  const cliStorageDir = typeof values['storage-dir'] === 'string' ? values['storage-dir'] : undefined;
+  const envStorageDir = env.STORAGE_DIR;
+  let storageDir = cliStorageDir ?? envStorageDir ?? path.join(baseDir, 'pdf', 'files');
+  if (storageDir.startsWith('~')) storageDir = storageDir.replace(/^~/, homedir());
+
   // Combine configs
   return {
     ...transportConfig,
     storageDir: resolve(storageDir),
     ...(baseUrl && { baseUrl }),
     logLevel,
+    baseDir,
   };
 }
 
