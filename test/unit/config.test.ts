@@ -36,9 +36,10 @@ describe('Config parsing', () => {
       assert.ok(config.storageDir.endsWith('/custom/path'));
     });
 
-    it('defaults to ~/.mcp-pdf when not provided', () => {
+    it('defaults to ~/.mcp-z/pdf/files when not provided', () => {
       const config = parseServerConfig([], {});
-      assert.ok(config.storageDir.includes('.mcp-pdf'));
+      assert.ok(config.storageDir.includes('.mcp-z'));
+      assert.ok(config.storageDir.includes('pdf'));
     });
 
     it('expands tilde in path', () => {
