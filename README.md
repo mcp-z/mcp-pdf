@@ -79,8 +79,7 @@ Config:
       "command": "npx",
       "args": ["-y", "mcp-pdf"],
       "env": {
-        "PDF_STORAGE_DIR": "~/.mcp-pdf",
-        "PDF_PURGE_HOURS": "24"
+        "STORAGE_DIR": "~/.mcp-pdf"
       }
     }
   }
@@ -144,7 +143,7 @@ This keeps PDFs out of the LLM's context until explicitly needed. PDFs are only 
 This server writes PDFs to a sandboxed directory to prevent path traversal attacks:
 
 - **Default location**: `~/.mcp-pdf/`
-- **Custom location**: Set `PDF_STORAGE_DIR` environment variable
+- **Custom location**: Set `STORAGE_DIR` environment variable
 - **Filename sanitization**: Blocks `..`, `/`, and unsafe characters
 - **No path parameters**: Tools accept only filenames, not full paths
 - **Server isolation**: Never writes outside its storage directory

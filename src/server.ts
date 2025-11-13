@@ -18,21 +18,15 @@ const pkg = JSON.parse(fs.readFileSync(path.join(moduleRoot(url.fileURLToPath(im
 
 // ===== Main Entry Point =====
 export async function createServer(config: ServerConfig) {
-  // Shared setup (both transports need this)
   const { logger } = await setupShared(config);
-
-  // ===== SINGLE DECISION POINT =====
-  if (config.transport.type === 'stdio') {
-    return await setupStdioServerComplete(config, { logger });
-  }
-
-  return await setupHttpServerComplete(config, { logger });
+  const hasStdio = config.transport.type === 'stdio';
+  return hasStdio ? await createStdioServer(config, { logger }) : await createHttpServer(config, { logger });
 }
 
 // ===== Helper: Shared Infrastructure =====
 async function setupShared(config: ServerConfig) {
   const hasStdio = config.transport.type === 'stdio';
-  const logsPath = path.join(process.cwd(), '.mcp-z', 'logs', 'mcp-pdf.log');
+  const logsPath = path.join(config.baseDir, 'logs', 'mcp-pdf.log');
   if (hasStdio) fs.mkdirSync(path.dirname(logsPath), { recursive: true });
 
   const logger = pino({ level: config.logLevel || 'info' }, hasStdio ? pino.destination({ dest: logsPath, sync: false }) : pino.destination(1));
@@ -41,7 +35,7 @@ async function setupShared(config: ServerConfig) {
 }
 
 // ===== stdio-ONLY Setup (Complete Path) =====
-async function setupStdioServerComplete(config: ServerConfig, shared: { logger: Logger }) {
+async function createStdioServer(config: ServerConfig, shared: { logger: Logger }) {
   const { logger } = shared;
 
   // Create MCP components (shared logic)
@@ -63,7 +57,7 @@ async function setupStdioServerComplete(config: ServerConfig, shared: { logger: 
 }
 
 // ===== HTTP-ONLY Setup (Complete Path) =====
-async function setupHttpServerComplete(config: ServerConfig, shared: { logger: Logger }) {
+async function createHttpServer(config: ServerConfig, shared: { logger: Logger }) {
   const { logger } = shared;
 
   // ✅ Create Express app ONLY for HTTP
