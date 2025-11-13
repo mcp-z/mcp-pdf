@@ -62,7 +62,7 @@
   },
   "dependencies": {
     "@mcpeasy/server": "^6.1.56",
-    "@modelcontextprotocol/sdk": "^1.21.1",
+    "@modelcontextprotocol/sdk": "^1.22.0",
     "@napi-rs/canvas": "^0.1.82",
     "cors": "^2.8.5",
     "emoji-regex": "^10.6.0",
