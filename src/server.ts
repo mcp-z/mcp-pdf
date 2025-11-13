@@ -4,17 +4,13 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import cors from 'cors';
 import express from 'express';
 import * as fs from 'fs';
-import moduleRoot from 'module-root-sync';
 import * as path from 'path';
 import pino from 'pino';
-import * as url from 'url';
 import createPdfPrompt from './prompts/pdf-instructions.ts';
 import createPdfTool from './tools/create-pdf.ts';
 import createSimplePdfTool from './tools/create-simple-pdf.ts';
 import createResumePdfTool from './tools/generate-resume-pdf.ts';
 import type { ServerConfig } from './types.ts';
-
-const pkg = JSON.parse(fs.readFileSync(path.join(moduleRoot(url.fileURLToPath(import.meta.url), { keyExists: 'name' }), 'package.json'), 'utf-8'));
 
 // ===== Main Entry Point =====
 export async function createServer(config: ServerConfig) {
@@ -26,7 +22,7 @@ export async function createServer(config: ServerConfig) {
 // ===== Helper: Shared Infrastructure =====
 async function setupShared(config: ServerConfig) {
   const hasStdio = config.transport.type === 'stdio';
-  const logsPath = path.join(config.baseDir, 'logs', 'mcp-pdf.log');
+  const logsPath = path.join(config.baseDir, 'logs', `${config.name}.log`);
   if (hasStdio) fs.mkdirSync(path.dirname(logsPath), { recursive: true });
 
   const logger = pino({ level: config.logLevel || 'info' }, hasStdio ? pino.destination({ dest: logsPath, sync: false }) : pino.destination(1));
@@ -42,7 +38,7 @@ async function createStdioServer(config: ServerConfig, shared: { logger: Logger 
   const { tools, prompts } = createMcpComponents(config, undefined); // stdio doesn't need transport parameter
 
   // Create and register MCP server
-  const mcpServer = new McpServer({ name: pkg.name, version: pkg.version });
+  const mcpServer = new McpServer({ name: config.name, version: config.version });
   registerTools(mcpServer, tools);
   registerPrompts(mcpServer, prompts);
 
@@ -81,7 +77,7 @@ async function createHttpServer(config: ServerConfig, shared: { logger: Logger }
   const { tools, prompts } = createMcpComponents(config, config.transport);
 
   // Create and register MCP server
-  const mcpServer = new McpServer({ name: pkg.name, version: pkg.version });
+  const mcpServer = new McpServer({ name: config.name, version: config.version });
   registerTools(mcpServer, tools);
   registerPrompts(mcpServer, prompts);
 
