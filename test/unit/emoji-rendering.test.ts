@@ -1,15 +1,20 @@
 import assert from 'assert/strict';
-import { createWriteStream, existsSync, readFileSync } from 'fs';
+import { createWriteStream, existsSync, mkdirSync, readFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import PDFDocument from 'pdfkit';
 import { needsUnicodeFont, setupFonts } from '../../src/lib/fonts.ts';
-import { cleanTmpDir, getTmpSubdir } from '../lib/test-helpers.ts';
 
 let testOutputDir: string;
 
 before(async () => {
-  await cleanTmpDir();
-  testOutputDir = await getTmpSubdir('emoji-tests');
+  testOutputDir = join(process.cwd(), '.tmp', 'emoji-tests');
+  mkdirSync(testOutputDir, { recursive: true });
+});
+
+after(async () => {
+  if (existsSync(testOutputDir)) {
+    rmSync(testOutputDir, { recursive: true, force: true });
+  }
 });
 
 async function createTestPDF(filename: string, text: string, fontSpec?: string): Promise<string> {
