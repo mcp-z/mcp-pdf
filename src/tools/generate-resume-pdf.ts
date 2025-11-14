@@ -2,7 +2,7 @@ import { getFileUri, type ToolModule, writeFile } from '@mcpeasy/server';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod/v3';
 import { jsonResumeSchema } from '../lib/json-resume-schema.ts';
-import { generateResumePDFBuffer } from '../lib/resume-generator.ts';
+import { generateResumePDFBuffer, type ResumeStyling } from '../lib/resume-generator.ts';
 import type { ServerConfig } from '../types.ts';
 
 const inputSchemaObject = z.object({
@@ -52,7 +52,7 @@ const inputSchemaObject = z.object({
 const config = {
   title: 'Generate Resume PDF',
   description: 'Generate a professional resume PDF from JSON Resume format. Supports styling, fonts, spacing, and multiple sections.',
-  inputSchema: inputSchemaObject.shape,
+  inputSchema: inputSchemaObject,
 } as const;
 
 type In = z.infer<typeof inputSchemaObject>;
@@ -68,7 +68,7 @@ export default function createTool(serverConfig: ServerConfig, transport?: impor
   async function handler(args: In): Promise<CallToolResult> {
     const { filename = 'resume.pdf', resume, font, styling } = args;
     try {
-      const pdfBuffer = await generateResumePDFBuffer(resume, font, styling);
+      const pdfBuffer = await generateResumePDFBuffer(resume, font, styling as ResumeStyling | undefined);
 
       // Write file with ID prefix
       const { storedName } = await writeFile(pdfBuffer, filename, {
@@ -100,5 +100,6 @@ export default function createTool(serverConfig: ServerConfig, transport?: impor
     name: 'generate-resume-pdf',
     config,
     handler,
-  };
+    // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed to bypass TypeScript deep instantiation limit with complex Zod schemas
+  } as any;
 }

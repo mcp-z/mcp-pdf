@@ -99,7 +99,7 @@ const inputSchemaObject = z.object({
 const config = {
   title: 'Create PDF',
   description: 'Create a PDF document with text, images, shapes, and layout control. Supports Unicode + emoji fonts, backgrounds, and vector shapes.',
-  inputSchema: inputSchemaObject.shape,
+  inputSchema: inputSchemaObject,
 } as const;
 
 type In = z.infer<typeof inputSchemaObject>;
@@ -314,5 +314,6 @@ export default function createTool(serverConfig: ServerConfig, transport?: impor
     name: 'create-pdf',
     config,
     handler,
-  };
+    // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed to bypass TypeScript deep instantiation limit with complex Zod schemas
+  } as any;
 }
