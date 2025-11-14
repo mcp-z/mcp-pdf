@@ -2,7 +2,15 @@ import assert from 'assert/strict';
 import PDFDocument from 'pdfkit';
 import { registerEmojiFont } from '../../src/lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts } from '../../src/lib/fonts.ts';
-import { renderTextWithEmoji } from '../../src/lib/pdf-helpers.ts';
+import { type PDFTextOptions, renderTextWithEmoji } from '../../src/lib/pdf-helpers.ts';
+
+type ContentItem =
+  | { type: 'text'; text: string; fontSize?: number; bold?: boolean; color?: string; x?: number; y?: number; width?: number; align?: string; oblique?: number | boolean; characterSpacing?: number; moveDown?: number }
+  | { type: 'heading'; text: string; fontSize?: number; bold?: boolean; color?: string; x?: number; y?: number; width?: number; align?: string; oblique?: number | boolean; characterSpacing?: number; moveDown?: number }
+  | { type: 'rect'; x: number; y: number; width: number; height: number; fillColor?: string; strokeColor?: string; lineWidth?: number }
+  | { type: 'circle'; x: number; y: number; radius: number; fillColor?: string; strokeColor?: string; lineWidth?: number }
+  | { type: 'line'; x1: number; y1: number; x2: number; y2: number; strokeColor?: string; lineWidth?: number }
+  | { type: 'pageBreak' };
 
 /**
  * Helper function that simulates the enhanced create-pdf tool
@@ -14,19 +22,17 @@ async function createPdfWithEnhancements(options: {
     margins?: { top: number; bottom: number; left: number; right: number };
     backgroundColor?: string;
   };
-  content: Array<
-    | { type: 'text'; text: string; fontSize?: number; bold?: boolean; color?: string; x?: number; y?: number; width?: number; align?: string; oblique?: number | boolean; characterSpacing?: number; moveDown?: number }
-    | { type: 'heading'; text: string; fontSize?: number; bold?: boolean; color?: string; x?: number; y?: number; width?: number; align?: string; oblique?: number | boolean; characterSpacing?: number; moveDown?: number }
-    | { type: 'rect'; x: number; y: number; width: number; height: number; fillColor?: string; strokeColor?: string; lineWidth?: number }
-    | { type: 'circle'; x: number; y: number; radius: number; fillColor?: string; strokeColor?: string; lineWidth?: number }
-    | { type: 'line'; x1: number; y1: number; x2: number; y2: number; strokeColor?: string; lineWidth?: number }
-    | { type: 'pageBreak' }
-  >;
+  content: ContentItem[];
 }): Promise<Buffer> {
   const { pageSetup, content } = options;
 
   // Create PDF document with optional page setup
-  const docOptions: any = {};
+  interface PDFDocOptions {
+    size?: [number, number];
+    margins?: { top: number; bottom: number; left: number; right: number };
+  }
+
+  const docOptions: PDFDocOptions = {};
   if (pageSetup?.size) docOptions.size = pageSetup.size;
   if (pageSetup?.margins) docOptions.margins = pageSetup.margins;
 
@@ -79,10 +85,10 @@ async function createPdfWithEnhancements(options: {
 
         if (item.color) doc.fillColor(item.color);
 
-        const options: any = {};
+        const options: PDFTextOptions = {};
         if (item.x !== undefined) options.x = item.x;
         if (item.y !== undefined) options.y = item.y;
-        if (item.align !== undefined) options.align = item.align;
+        if (item.align !== undefined) options.align = item.align as 'left' | 'center' | 'right' | 'justify';
         if (item.width !== undefined) options.width = item.width;
         if (item.oblique !== undefined) options.oblique = item.oblique;
         if (item.characterSpacing !== undefined) options.characterSpacing = item.characterSpacing;
@@ -238,7 +244,7 @@ describe('Enhanced API - Agent Workflow Simulation', () => {
     // Simulate agent calculating progressive font sizes
     const lines = ['This line starts small', 'This line is slightly bigger', 'This line is medium', 'This line is getting large', 'This line is very large'];
 
-    const content: any[] = [];
+    const content: ContentItem[] = [];
 
     for (let i = 0; i < lines.length; i++) {
       const progress = i / (lines.length - 1); // 0.0 to 1.0
@@ -265,7 +271,7 @@ describe('Enhanced API - Agent Workflow Simulation', () => {
     const lines = ['Narrow', 'Getting Wider', 'Even Wider Now', 'Maximum Width Here', 'Full Text Width'];
 
     const pageWidth = 612;
-    const content: any[] = [];
+    const content: ContentItem[] = [];
 
     for (let i = 0; i < lines.length; i++) {
       const progress = i / (lines.length - 1);
@@ -349,7 +355,7 @@ describe('Enhanced API - Space Journey Resume (Sci-Fi Style)', () => {
     ];
 
     const pageWidth = 612;
-    const content: any[] = [];
+    const content: ContentItem[] = [];
 
     // First, add the space opening line
     content.push({

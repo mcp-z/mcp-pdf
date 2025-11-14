@@ -3,6 +3,28 @@ import { renderEmojiToBuffer, splitTextAndEmoji } from './emoji-renderer.ts';
 import { hasEmoji } from './fonts.ts';
 
 /**
+ * PDFKit text rendering options
+ */
+export interface PDFTextOptions {
+  x?: number;
+  y?: number;
+  align?: 'left' | 'center' | 'right' | 'justify';
+  indent?: number;
+  lineGap?: number;
+  paragraphGap?: number;
+  width?: number;
+  underline?: boolean;
+  strike?: boolean;
+  oblique?: boolean | number;
+  link?: string;
+  characterSpacing?: number;
+  wordSpacing?: number;
+  continued?: boolean;
+  lineBreak?: boolean;
+  moveDown?: number;
+}
+
+/**
  * Render text with inline emoji support
  *
  * If emoji font is available and text contains emoji, renders emoji as inline images.
@@ -17,7 +39,7 @@ import { hasEmoji } from './fonts.ts';
  * @param emojiAvailable - Whether emoji font is available
  * @param options - Additional PDFKit text options
  */
-export function renderTextWithEmoji(doc: PDFKit.PDFDocument, text: string, fontSize: number, fontName: string, emojiAvailable: boolean, options: any = {}): void {
+export function renderTextWithEmoji(doc: PDFKit.PDFDocument, text: string, fontSize: number, fontName: string, emojiAvailable: boolean, options: PDFTextOptions = {}): void {
   if (!emojiAvailable || !hasEmoji(text)) {
     // No emoji support or no emoji in text - render normally
     doc.fontSize(fontSize).font(fontName);

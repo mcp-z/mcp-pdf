@@ -4,122 +4,105 @@ import PDFDocument from 'pdfkit';
 import { z } from 'zod/v3';
 import { registerEmojiFont } from '../lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts, validateTextForFont } from '../lib/fonts.ts';
-import { renderTextWithEmoji } from '../lib/pdf-helpers.ts';
+import { type PDFTextOptions, renderTextWithEmoji } from '../lib/pdf-helpers.ts';
 import type { ServerConfig } from '../types.ts';
+
+type ContentItem = z.infer<typeof contentItemSchema>;
+
+const textBaseSchema = z.object({
+  text: z.string().optional(),
+  fontSize: z.number().optional(),
+  bold: z.boolean().optional(),
+  color: z.string().optional(),
+  x: z.number().optional(),
+  y: z.number().optional(),
+  align: z.enum(['left', 'center', 'right', 'justify']).optional(),
+  indent: z.number().optional(),
+  lineGap: z.number().optional(),
+  paragraphGap: z.number().optional(),
+  width: z.number().optional(),
+  moveDown: z.number().optional(),
+  underline: z.boolean().optional(),
+  strike: z.boolean().optional(),
+  oblique: z.union([z.boolean(), z.number()]).optional(),
+  link: z.string().optional(),
+  characterSpacing: z.number().optional(),
+  wordSpacing: z.number().optional(),
+  continued: z.boolean().optional(),
+  lineBreak: z.boolean().optional(),
+});
+
+const contentItemSchema = z.union([
+  textBaseSchema.extend({ type: z.literal('text') }),
+  textBaseSchema.extend({ type: z.literal('heading') }),
+  z.object({
+    type: z.literal('image'),
+    imagePath: z.string(),
+    x: z.number().optional(),
+    y: z.number().optional(),
+    width: z.number().optional(),
+    height: z.number().optional(),
+  }),
+  z.object({
+    type: z.literal('rect'),
+    x: z.number(),
+    y: z.number(),
+    width: z.number(),
+    height: z.number(),
+    fillColor: z.string().optional(),
+    strokeColor: z.string().optional(),
+    lineWidth: z.number().optional(),
+  }),
+  z.object({
+    type: z.literal('circle'),
+    x: z.number(),
+    y: z.number(),
+    radius: z.number(),
+    fillColor: z.string().optional(),
+    strokeColor: z.string().optional(),
+    lineWidth: z.number().optional(),
+  }),
+  z.object({
+    type: z.literal('line'),
+    x1: z.number(),
+    y1: z.number(),
+    x2: z.number(),
+    y2: z.number(),
+    strokeColor: z.string().optional(),
+    lineWidth: z.number().optional(),
+  }),
+  z.object({ type: z.literal('pageBreak') }),
+]);
+
+const inputSchemaObject = z.object({
+  filename: z.string().optional().describe('Optional logical filename (metadata only). Storage uses UUID. Defaults to "document.pdf".'),
+  title: z.string().optional().describe('Document title metadata'),
+  author: z.string().optional().describe('Document author metadata'),
+  font: z.string().optional().describe('Font strategy (default: auto). Built-ins: Helvetica, Times-Roman, Courier. Use a path or URL for Unicode.'),
+  pageSetup: z
+    .object({
+      size: z.tuple([z.number(), z.number()]).optional(),
+      margins: z
+        .object({
+          top: z.number(),
+          bottom: z.number(),
+          left: z.number(),
+          right: z.number(),
+        })
+        .optional(),
+      backgroundColor: z.string().optional(),
+    })
+    .optional(),
+  content: z.array(contentItemSchema),
+});
 
 const config = {
   title: 'Create PDF',
   description: 'Create a PDF document with text, images, shapes, and layout control. Supports Unicode + emoji fonts, backgrounds, and vector shapes.',
-  inputSchema: {
-    filename: z.string().optional().describe('Optional logical filename (metadata only). Storage uses UUID. Defaults to "document.pdf".'),
-    title: z.string().optional().describe('Document title metadata'),
-    author: z.string().optional().describe('Document author metadata'),
-    font: z.string().optional().describe('Font strategy (default: auto). Built-ins: Helvetica, Times-Roman, Courier. Use a path or URL for Unicode.'),
-    pageSetup: z
-      .object({
-        size: z.tuple([z.number(), z.number()]).optional(),
-        margins: z
-          .object({
-            top: z.number(),
-            bottom: z.number(),
-            left: z.number(),
-            right: z.number(),
-          })
-          .optional(),
-        backgroundColor: z.string().optional(),
-      })
-      .optional(),
-    content: z.array(
-      z.union([
-        z.object({
-          type: z.literal('text'),
-          text: z.string().optional(),
-          fontSize: z.number().optional(),
-          bold: z.boolean().optional(),
-          color: z.string().optional(),
-          x: z.number().optional(),
-          y: z.number().optional(),
-          align: z.enum(['left', 'center', 'right', 'justify']).optional(),
-          indent: z.number().optional(),
-          lineGap: z.number().optional(),
-          paragraphGap: z.number().optional(),
-          width: z.number().optional(),
-          moveDown: z.number().optional(),
-          underline: z.boolean().optional(),
-          strike: z.boolean().optional(),
-          oblique: z.union([z.boolean(), z.number()]).optional(),
-          link: z.string().optional(),
-          characterSpacing: z.number().optional(),
-          wordSpacing: z.number().optional(),
-          continued: z.boolean().optional(),
-          lineBreak: z.boolean().optional(),
-        }),
-        z.object({
-          type: z.literal('heading'),
-          text: z.string().optional(),
-          fontSize: z.number().optional(),
-          bold: z.boolean().optional(),
-          color: z.string().optional(),
-          x: z.number().optional(),
-          y: z.number().optional(),
-          align: z.enum(['left', 'center', 'right', 'justify']).optional(),
-          indent: z.number().optional(),
-          lineGap: z.number().optional(),
-          paragraphGap: z.number().optional(),
-          width: z.number().optional(),
-          moveDown: z.number().optional(),
-          underline: z.boolean().optional(),
-          strike: z.boolean().optional(),
-          oblique: z.union([z.boolean(), z.number()]).optional(),
-          link: z.string().optional(),
-          characterSpacing: z.number().optional(),
-          wordSpacing: z.number().optional(),
-          continued: z.boolean().optional(),
-          lineBreak: z.boolean().optional(),
-        }),
-        z.object({
-          type: z.literal('image'),
-          imagePath: z.string(),
-          x: z.number().optional(),
-          y: z.number().optional(),
-          width: z.number().optional(),
-          height: z.number().optional(),
-        }),
-        z.object({
-          type: z.literal('rect'),
-          x: z.number(),
-          y: z.number(),
-          width: z.number(),
-          height: z.number(),
-          fillColor: z.string().optional(),
-          strokeColor: z.string().optional(),
-          lineWidth: z.number().optional(),
-        }),
-        z.object({
-          type: z.literal('circle'),
-          x: z.number(),
-          y: z.number(),
-          radius: z.number(),
-          fillColor: z.string().optional(),
-          strokeColor: z.string().optional(),
-          lineWidth: z.number().optional(),
-        }),
-        z.object({
-          type: z.literal('line'),
-          x1: z.number(),
-          y1: z.number(),
-          x2: z.number(),
-          y2: z.number(),
-          strokeColor: z.string().optional(),
-          lineWidth: z.number().optional(),
-        }),
-        z.object({ type: z.literal('pageBreak') }),
-      ])
-    ),
-  } as any,
+  inputSchema: inputSchemaObject.shape,
 } as const;
 
-type In = z.infer<z.ZodObject<typeof config.inputSchema>>;
+type In = z.infer<typeof inputSchemaObject>;
 
 export default function createTool(serverConfig: ServerConfig, transport?: import('@mcpeasy/server').TransportConfig): ToolModule {
   // Validate configuration at startup - fail fast if HTTP/WS transport without baseUrl or port
@@ -129,10 +112,46 @@ export default function createTool(serverConfig: ServerConfig, transport?: impor
     }
   }
 
+  // Helper function to extract PDF text options from content items
+  function extractTextOptions(item: Extract<ContentItem, { type: 'text' | 'heading' }>): PDFTextOptions {
+    const options: PDFTextOptions = {};
+    if (item.x !== undefined) options.x = item.x;
+    if (item.y !== undefined) options.y = item.y;
+    if (item.align !== undefined) options.align = item.align;
+    if (item.indent !== undefined) options.indent = item.indent;
+    if (item.lineGap !== undefined) options.lineGap = item.lineGap;
+    if (item.paragraphGap !== undefined) options.paragraphGap = item.paragraphGap;
+    if (item.width !== undefined) options.width = item.width;
+    if (item.underline !== undefined) options.underline = item.underline;
+    if (item.strike !== undefined) options.strike = item.strike;
+    if (item.oblique !== undefined) options.oblique = item.oblique;
+    if (item.link !== undefined) options.link = item.link;
+    if (item.characterSpacing !== undefined) options.characterSpacing = item.characterSpacing;
+    if (item.wordSpacing !== undefined) options.wordSpacing = item.wordSpacing;
+    if (item.continued !== undefined) options.continued = item.continued;
+    if (item.lineBreak !== undefined) options.lineBreak = item.lineBreak;
+    return options;
+  }
+
   async function handler(args: In): Promise<CallToolResult> {
     const { filename = 'document.pdf', title, author, font, pageSetup, content } = args;
     try {
-      const docOptions: any = {
+      interface PDFDocOptions {
+        info: {
+          Title?: string;
+          Author?: string;
+          Subject?: string;
+        };
+        size?: [number, number];
+        margins?: {
+          top: number;
+          bottom: number;
+          left: number;
+          right: number;
+        };
+      }
+
+      const docOptions: PDFDocOptions = {
         info: {
           ...(title && { Title: title }),
           ...(author && { Author: author }),
@@ -189,10 +208,7 @@ export default function createTool(serverConfig: ServerConfig, transport?: impor
             const fontSize = item.fontSize ?? 12;
             const fnt = item.bold ? boldFont : regularFont;
             if (item.color) doc.fillColor(item.color);
-            const options: any = {};
-            ['x', 'y', 'align', 'indent', 'lineGap', 'paragraphGap', 'width', 'underline', 'strike', 'oblique', 'link', 'characterSpacing', 'wordSpacing', 'continued', 'lineBreak'].forEach((k) => {
-              if ((item as any)[k] !== undefined) options[k] = (item as any)[k];
-            });
+            const options = extractTextOptions(item);
             renderTextWithEmoji(doc, item.text ?? '', fontSize, fnt, emojiAvailable, options);
             if (item.color) doc.fillColor('black');
             if (item.moveDown !== undefined) doc.moveDown(item.moveDown);
@@ -203,10 +219,7 @@ export default function createTool(serverConfig: ServerConfig, transport?: impor
             const fontSize = item.fontSize ?? 24;
             const fnt = item.bold !== false ? boldFont : regularFont;
             if (item.color) doc.fillColor(item.color);
-            const options: any = {};
-            ['x', 'y', 'align', 'indent', 'lineGap', 'paragraphGap', 'width', 'underline', 'strike', 'oblique', 'link', 'characterSpacing', 'wordSpacing', 'continued', 'lineBreak'].forEach((k) => {
-              if ((item as any)[k] !== undefined) options[k] = (item as any)[k];
-            });
+            const options = extractTextOptions(item);
             renderTextWithEmoji(doc, item.text ?? '', fontSize, fnt, emojiAvailable, options);
             if (item.color) doc.fillColor('black');
             if (item.moveDown !== undefined) doc.moveDown(item.moveDown);
