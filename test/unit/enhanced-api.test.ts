@@ -247,12 +247,15 @@ describe('Enhanced API - Agent Workflow Simulation', () => {
     const content: ContentItem[] = [];
 
     for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line) continue;
+
       const progress = i / (lines.length - 1); // 0.0 to 1.0
       const fontSize = 8 + progress * 16; // 8pt → 24pt
 
       content.push({
         type: 'text',
-        text: lines[i],
+        text: line,
         fontSize,
         align: 'center',
         moveDown: 0.5,
@@ -274,13 +277,16 @@ describe('Enhanced API - Agent Workflow Simulation', () => {
     const content: ContentItem[] = [];
 
     for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line) continue;
+
       const progress = i / (lines.length - 1);
       const width = 150 + progress * 300; // 150px → 450px
       const x = (pageWidth - width) / 2; // Center it
 
       content.push({
         type: 'text',
-        text: lines[i],
+        text: line,
         width,
         x,
         align: 'center',
@@ -358,14 +364,17 @@ describe('Enhanced API - Space Journey Resume (Sci-Fi Style)', () => {
     const content: ContentItem[] = [];
 
     // First, add the space opening line
-    content.push({
-      type: 'text',
-      text: resumeLines[0],
-      fontSize: 11,
-      color: '#00D9FF', // Cyan
-      align: 'center',
-      moveDown: 1.5,
-    });
+    const firstLine = resumeLines[0];
+    if (firstLine) {
+      content.push({
+        type: 'text',
+        text: firstLine,
+        fontSize: 11,
+        color: '#00D9FF', // Cyan
+        align: 'center',
+        moveDown: 1.5,
+      });
+    }
 
     // Calculate tapering for the rest
     const mainContent = resumeLines.slice(1);
