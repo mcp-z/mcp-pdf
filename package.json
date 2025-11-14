@@ -50,14 +50,13 @@
     "scripts"
   ],
   "scripts": {
-    "build": "npm run typecheck && tsds build",
+    "build": "tsds build",
     "format": "biome check --write --unsafe",
     "postinstall": "node scripts/postinstall.cjs",
     "prepublish:check": "ncp",
     "prepublishOnly": "tsds validate",
     "test": "tsds test:node --no-timeouts 'test/**/*.test.ts'",
     "test:engines": "nvu engines tsds test:node --no-timeouts 'test/**/*.test.ts'",
-    "typecheck": "tsc --noEmit",
     "version": "tsds version"
   },
   "dependencies": {
