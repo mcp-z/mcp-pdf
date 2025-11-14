@@ -1,0 +1,4 @@
+{"level":30,"time":1763101803559,"pid":46589,"hostname":"MacBook-Pro-47956.local","msg":"","msg":"Starting mcp-outlook MCP server"}
+{"level":30,"time":1763101803560,"pid":46589,"hostname":"MacBook-Pro-47956.local","msg":"","msg":"MCP server instance created. Transport: stdio"}
+{"level":30,"time":1763101803561,"pid":46589,"hostname":"MacBook-Pro-47956.local","msg":"","msg":"stdio transport ready"}
+{"level":30,"time":1763101803561,"pid":46589,"hostname":"MacBook-Pro-47956.local","msg":"","msg":"Server started with stdio transport"}

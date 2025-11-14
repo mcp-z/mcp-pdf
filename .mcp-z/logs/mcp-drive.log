@@ -1,0 +1,4 @@
+{"level":30,"time":1763101802476,"pid":46510,"hostname":"MacBook-Pro-47956.local","msg":"","msg":"Starting mcp-drive MCP server"}
+{"level":30,"time":1763101802477,"pid":46510,"hostname":"MacBook-Pro-47956.local","msg":"","msg":"MCP server instance created. Transport: stdio"}
+{"level":30,"time":1763101802477,"pid":46510,"hostname":"MacBook-Pro-47956.local","msg":"","msg":"stdio transport ready"}
+{"level":30,"time":1763101802478,"pid":46510,"hostname":"MacBook-Pro-47956.local","msg":"","msg":"Server started with stdio transport"}

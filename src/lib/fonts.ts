@@ -15,6 +15,15 @@ export interface FontConfig {
 // All 14 PDF Standard Fonts (built into PDF spec, no files needed)
 export const PDF_STANDARD_FONTS = ['Courier', 'Courier-Bold', 'Courier-Oblique', 'Courier-BoldOblique', 'Helvetica', 'Helvetica-Bold', 'Helvetica-Oblique', 'Helvetica-BoldOblique', 'Times-Roman', 'Times-Bold', 'Times-Italic', 'Times-BoldItalic', 'Symbol', 'ZapfDingbats'] as const;
 
+export type PDFStandardFont = (typeof PDF_STANDARD_FONTS)[number];
+
+/**
+ * Type guard to check if a string is a PDF standard font
+ */
+export function isPDFStandardFont(font: string): font is PDFStandardFont {
+  return (PDF_STANDARD_FONTS as readonly string[]).includes(font);
+}
+
 /**
  * Detect if text contains Unicode characters beyond ASCII + Latin-1
  * Returns true if font needs Unicode support (emoji, CJK, Cyrillic, Arabic, etc.)
@@ -122,7 +131,7 @@ async function downloadToTemp(url: string): Promise<string | null> {
  */
 export async function resolveFont(fontSpec: string): Promise<string | null> {
   // 1. Check if it's a PDF standard font (built-in, no file needed)
-  if (PDF_STANDARD_FONTS.includes(fontSpec as any)) {
+  if (isPDFStandardFont(fontSpec)) {
     return fontSpec;
   }
 
@@ -168,7 +177,7 @@ export async function setupFonts(doc: PDFKit.PDFDocument, fontSpec?: string): Pr
   }
 
   // If it's a standard PDF font, use its variants
-  if (PDF_STANDARD_FONTS.includes(resolvedFont as any)) {
+  if (isPDFStandardFont(resolvedFont)) {
     // Map to standard font families
     if (resolvedFont.startsWith('Helvetica')) {
       return {

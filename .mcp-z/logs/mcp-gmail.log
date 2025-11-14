@@ -1,0 +1,4 @@
+{"level":30,"time":1763101802499,"pid":46469,"hostname":"MacBook-Pro-47956.local","msg":"","msg":"Starting mcp-gmail MCP server"}
+{"level":30,"time":1763101802500,"pid":46469,"hostname":"MacBook-Pro-47956.local","msg":"","msg":"MCP server instance created. Transport: stdio"}
+{"level":30,"time":1763101802500,"pid":46469,"hostname":"MacBook-Pro-47956.local","msg":"","msg":"stdio transport ready"}
+{"level":30,"time":1763101802500,"pid":46469,"hostname":"MacBook-Pro-47956.local","msg":"","msg":"Server started with stdio transport"}

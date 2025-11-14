@@ -81,3 +81,7 @@
 {"level":30,"time":1762492761574,"pid":50706,"hostname":"MacBook-Pro-23743.local","msg":"MCP server instance created. Transport stdio"}
 {"level":30,"time":1762492761575,"pid":50706,"hostname":"MacBook-Pro-23743.local","msg":"stdio transport ready"}
 {"level":30,"time":1762492761575,"pid":50706,"hostname":"MacBook-Pro-23743.local","msg":"Server started with 1 transport(s)"}
+{"level":30,"time":1763101803138,"pid":46564,"hostname":"MacBook-Pro-47956.local","msg":"Starting mcp-pdf MCP server"}
+{"level":30,"time":1763101803138,"pid":46564,"hostname":"MacBook-Pro-47956.local","msg":"MCP server instance created. Transport: stdio"}
+{"level":30,"time":1763101803138,"pid":46564,"hostname":"MacBook-Pro-47956.local","msg":"stdio transport ready"}
+{"level":30,"time":1763101803138,"pid":46564,"hostname":"MacBook-Pro-47956.local","msg":"Server started with stdio transport"}

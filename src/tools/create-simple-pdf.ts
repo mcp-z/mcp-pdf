@@ -7,17 +7,19 @@ import { hasEmoji, setupFonts } from '../lib/fonts.ts';
 import { renderTextWithEmoji } from '../lib/pdf-helpers.ts';
 import type { ServerConfig } from '../types.ts';
 
+const inputSchemaObject = z.object({
+  filename: z.string().optional().describe('Optional logical filename (metadata only). Storage uses UUID. Defaults to "document.pdf".'),
+  text: z.string().describe('Text content for the PDF'),
+  title: z.string().optional().describe('Document title metadata'),
+});
+
 const config = {
   title: 'Create Simple PDF',
   description: 'Create a simple PDF with just text content. Supports emoji rendering.',
-  inputSchema: {
-    filename: z.string().optional().describe('Optional logical filename (metadata only). Storage uses UUID. Defaults to "document.pdf".'),
-    text: z.string().describe('Text content for the PDF'),
-    title: z.string().optional().describe('Document title metadata'),
-  } as any,
+  inputSchema: inputSchemaObject.shape,
 } as const;
 
-type In = z.infer<z.ZodObject<typeof config.inputSchema>>;
+type In = z.infer<typeof inputSchemaObject>;
 
 export default function createTool(serverConfig: ServerConfig, transport?: import('@mcpeasy/server').TransportConfig): ToolModule {
   // Validate configuration at startup - fail fast if HTTP/WS transport without baseUrl or port

@@ -5,55 +5,57 @@ import { jsonResumeSchema } from '../lib/json-resume-schema.ts';
 import { generateResumePDFBuffer } from '../lib/resume-generator.ts';
 import type { ServerConfig } from '../types.ts';
 
+const inputSchemaObject = z.object({
+  filename: z.string().optional().describe('Optional logical filename (metadata only). Storage uses UUID. Defaults to "resume.pdf".'),
+  resume: jsonResumeSchema.describe('Resume data in JSON Resume format'),
+  font: z.string().optional().describe('Font for the PDF. Defaults to "auto" (system font detection). Built-ins are limited to ASCII; provide a path or URL for full Unicode.'),
+  styling: z
+    .object({
+      fontSize: z
+        .object({
+          name: z.number().optional(),
+          label: z.number().optional(),
+          heading: z.number().optional(),
+          subheading: z.number().optional(),
+          body: z.number().optional(),
+          contact: z.number().optional(),
+        })
+        .optional(),
+      spacing: z
+        .object({
+          afterName: z.number().optional(),
+          afterLabel: z.number().optional(),
+          afterContact: z.number().optional(),
+          afterHeading: z.number().optional(),
+          afterSubheading: z.number().optional(),
+          afterText: z.number().optional(),
+          betweenSections: z.number().optional(),
+        })
+        .optional(),
+      alignment: z
+        .object({
+          header: z.enum(['left', 'center', 'right']).optional(),
+        })
+        .optional(),
+      margins: z
+        .object({
+          top: z.number().optional(),
+          bottom: z.number().optional(),
+          left: z.number().optional(),
+          right: z.number().optional(),
+        })
+        .optional(),
+    })
+    .optional(),
+});
+
 const config = {
   title: 'Generate Resume PDF',
   description: 'Generate a professional resume PDF from JSON Resume format. Supports styling, fonts, spacing, and multiple sections.',
-  inputSchema: {
-    filename: z.string().optional().describe('Optional logical filename (metadata only). Storage uses UUID. Defaults to "resume.pdf".'),
-    resume: jsonResumeSchema.describe('Resume data in JSON Resume format'),
-    font: z.string().optional().describe('Font for the PDF. Defaults to "auto" (system font detection). Built-ins are limited to ASCII; provide a path or URL for full Unicode.'),
-    styling: z
-      .object({
-        fontSize: z
-          .object({
-            name: z.number().optional(),
-            label: z.number().optional(),
-            heading: z.number().optional(),
-            subheading: z.number().optional(),
-            body: z.number().optional(),
-            contact: z.number().optional(),
-          })
-          .optional(),
-        spacing: z
-          .object({
-            afterName: z.number().optional(),
-            afterLabel: z.number().optional(),
-            afterContact: z.number().optional(),
-            afterHeading: z.number().optional(),
-            afterSubheading: z.number().optional(),
-            afterText: z.number().optional(),
-            betweenSections: z.number().optional(),
-          })
-          .optional(),
-        alignment: z
-          .object({
-            header: z.enum(['left', 'center', 'right']).optional(),
-          })
-          .optional(),
-        margins: z
-          .object({
-            top: z.number().optional(),
-            bottom: z.number().optional(),
-            left: z.number().optional(),
-            right: z.number().optional(),
-          })
-          .optional(),
-      })
-      .optional(),
-  } as any,
+  inputSchema: inputSchemaObject.shape,
 } as const;
 
-type In = z.infer<z.ZodObject<typeof config.inputSchema>>;
+type In = z.infer<typeof inputSchemaObject>;
 
 export default function createTool(serverConfig: ServerConfig, transport?: import('@mcpeasy/server').TransportConfig): ToolModule {
   // Validate configuration at startup - fail fast if HTTP/WS transport without baseUrl or port
