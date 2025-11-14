@@ -1,6 +1,6 @@
 {
   "name": "@mcpeasy/mcp-pdf",
-  "version": "1.2.64",
+  "version": "1.2.65",
   "description": "MCP server for creative PDF generation with full emoji, Unicode, and offline support",
   "keywords": [
     "pdf",
@@ -60,7 +60,7 @@
     "version": "tsds version"
   },
   "dependencies": {
-    "@mcpeasy/server": "^6.1.63",
+    "@mcpeasy/server": "^6.1.64",
     "@modelcontextprotocol/sdk": "^1.22.0",
     "@napi-rs/canvas": "^0.1.82",
     "cors": "^2.8.5",
