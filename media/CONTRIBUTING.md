@@ -33,7 +33,6 @@ npm run build
 ### Development Scripts
 
 - **`npm run build`** - Type check and build both ESM and CJS outputs
-- **`npm run typecheck`** - Run TypeScript type checking only
 - **`npm test`** - Run the test suite
 - **`npm run format`** - Format code with Biome
 
