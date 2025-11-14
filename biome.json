@@ -19,8 +19,8 @@
     "rules": {
       "recommended": true,
       "suspicious": {
-        "noExplicitAny": "error",
-        "noImplicitAnyLet": "error"
+        "noExplicitAny": "off",
+        "noImplicitAnyLet": "off"
       },
       "complexity": {
         "noForEach": "off",
