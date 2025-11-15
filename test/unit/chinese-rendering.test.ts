@@ -3,8 +3,8 @@ import { createWriteStream, existsSync, statSync, unlinkSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import PDFDocument from 'pdfkit';
-import { needsUnicodeFont, setupFonts } from '../../src/lib/fonts.ts';
 import { registerEmojiFont } from '../../src/lib/emoji-renderer.ts';
+import { needsUnicodeFont, setupFonts } from '../../src/lib/fonts.ts';
 import { renderTextWithEmoji } from '../../src/lib/pdf-helpers.ts';
 
 describe('Chinese/CJK Character Rendering', (): void => {
