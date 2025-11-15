@@ -1,5 +1,5 @@
 import { getFileUri, type ToolModule, type TransportConfig, writeFile } from '@mcpeasy/server';
-import { ErrorCode, McpError, type CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import PDFDocument from 'pdfkit';
 import { z } from 'zod/v3';
 import { registerEmojiFont } from '../../lib/emoji-renderer.ts';
@@ -116,5 +116,6 @@ export default function createTool(serverConfig: ServerConfig, transport?: Trans
     name: 'create-simple-pdf',
     config,
     handler,
+    // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed to bypass TypeScript deep instantiation limit with complex Zod schemas
   } as any;
 }

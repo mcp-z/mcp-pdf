@@ -1,11 +1,11 @@
 import { getFileUri, type ToolModule, type TransportConfig, writeFile } from '@mcpeasy/server';
-import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import PDFDocument from 'pdfkit';
 import { z } from 'zod/v3';
-import { registerEmojiFont } from '../lib/emoji-renderer.ts';
-import { hasEmoji, setupFonts, validateTextForFont } from '../lib/fonts.ts';
-import { type PDFTextOptions, renderTextWithEmoji } from '../lib/pdf-helpers.ts';
-import type { ServerConfig } from '../types.ts';
+import { registerEmojiFont } from '../../lib/emoji-renderer.ts';
+import { hasEmoji, setupFonts, validateTextForFont } from '../../lib/fonts.ts';
+import { type PDFTextOptions, renderTextWithEmoji } from '../../lib/pdf-helpers.ts';
+import type { ServerConfig } from '../../types.ts';
 
 type ContentItem = z.infer<typeof contentItemSchema>;
 
@@ -96,13 +96,30 @@ const inputSchema = z.object({
   content: z.array(contentItemSchema),
 });
 
+const outputSchema = z.object({
+  operationSummary: z.string(),
+  itemsProcessed: z.number(),
+  itemsChanged: z.number(),
+  completedAt: z.string(),
+  documentId: z.string(),
+  filename: z.string(),
+  uri: z.string(),
+  sizeBytes: z.number(),
+  pageCount: z.number().optional(),
+  warnings: z.array(z.string()).optional(),
+});
+
 const config = {
   title: 'Create PDF',
   description: 'Create a PDF document with text, images, shapes, and layout control. Supports Unicode + emoji fonts, backgrounds, and vector shapes.',
-  inputSchema: inputSchema,
+  inputSchema,
+  outputSchema: {
+    result: outputSchema,
+  } as const,
 } as const;
 
-type In = z.infer<typeof inputSchema>;
+export type Input = z.infer<typeof inputSchema>;
+export type Output = z.infer<typeof outputSchema>;
 
 export default function createTool(serverConfig: ServerConfig, transport?: TransportConfig): ToolModule {
   // Validate configuration at startup - fail fast if HTTP/WS transport without baseUrl or port
@@ -133,7 +150,7 @@ export default function createTool(serverConfig: ServerConfig, transport?: Trans
     return options;
   }
 
-  async function handler(args: In): Promise<CallToolResult> {
+  async function handler(args: Input): Promise<CallToolResult> {
     const { filename = 'document.pdf', title, author, font, pageSetup, content } = args;
     try {
       interface PDFDocOptions {
@@ -289,24 +306,34 @@ export default function createTool(serverConfig: ServerConfig, transport?: Trans
         endpoint: '/files',
       });
 
-      // Build response text
-      const parts = ['PDF created successfully', `URI: ${fileUri}`, `Size: ${pdfBuffer.length} bytes`];
-
-      if (warnings.length > 0) {
-        parts.push('', '⚠️  Character Warnings:', ...warnings.map((w) => `• ${w}`));
-      }
+      const result: Output = {
+        operationSummary: `Created PDF: ${filename}`,
+        itemsProcessed: 1,
+        itemsChanged: 1,
+        completedAt: new Date().toISOString(),
+        documentId: storedName,
+        filename,
+        uri: fileUri,
+        sizeBytes: pdfBuffer.length,
+        pageCount: content.filter((item) => item.type === 'pageBreak').length + 1,
+        ...(warnings.length > 0 && { warnings }),
+      };
 
       return {
         content: [
           {
             type: 'text' as const,
-            text: parts.join('\n'),
+            text: JSON.stringify(result, null, 2),
           },
         ],
+        structuredContent: result,
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      return { content: [{ type: 'text' as const, text: `Error creating PDF: ${message}` }], isError: true };
+
+      throw new McpError(ErrorCode.InternalError, `Error creating PDF: ${message}`, {
+        stack: error instanceof Error ? error.stack : undefined,
+      });
     }
   }
 

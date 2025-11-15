@@ -1,9 +1,9 @@
 import { getFileUri, type ToolModule, type TransportConfig, writeFile } from '@mcpeasy/server';
-import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod/v3';
-import { jsonResumeSchema } from '../lib/json-resume-schema.ts';
-import { generateResumePDFBuffer, type ResumeStyling } from '../lib/resume-generator.ts';
-import type { ServerConfig } from '../types.ts';
+import { jsonResumeSchema } from '../../lib/json-resume-schema.ts';
+import { generateResumePDFBuffer, type ResumeStyling } from '../../lib/resume-generator.ts';
+import type { ServerConfig } from '../../types.ts';
 
 const inputSchema = z.object({
   filename: z.string().optional().describe('Optional logical filename (metadata only). Storage uses UUID. Defaults to "resume.pdf".'),
@@ -49,13 +49,28 @@ const inputSchema = z.object({
     .optional(),
 });
 
+const outputSchema = z.object({
+  operationSummary: z.string(),
+  itemsProcessed: z.number(),
+  itemsChanged: z.number(),
+  completedAt: z.string(),
+  documentId: z.string(),
+  filename: z.string(),
+  uri: z.string(),
+  sizeBytes: z.number(),
+});
+
 const config = {
   title: 'Generate Resume PDF',
   description: 'Generate a professional resume PDF from JSON Resume format. Supports styling, fonts, spacing, and multiple sections.',
-  inputSchema: inputSchema,
+  inputSchema,
+  outputSchema: {
+    result: outputSchema,
+  } as const,
 } as const;
 
-type In = z.infer<typeof inputSchema>;
+export type Input = z.infer<typeof inputSchema>;
+export type Output = z.infer<typeof outputSchema>;
 
 export default function createTool(serverConfig: ServerConfig, transport?: TransportConfig): ToolModule {
   // Validate configuration at startup - fail fast if HTTP/WS transport without baseUrl or port
@@ -65,7 +80,7 @@ export default function createTool(serverConfig: ServerConfig, transport?: Trans
     }
   }
 
-  async function handler(args: In): Promise<CallToolResult> {
+  async function handler(args: Input): Promise<CallToolResult> {
     const { filename = 'resume.pdf', resume, font, styling } = args;
     try {
       const pdfBuffer = await generateResumePDFBuffer(resume, font, styling as ResumeStyling | undefined);
@@ -82,17 +97,32 @@ export default function createTool(serverConfig: ServerConfig, transport?: Trans
         endpoint: '/files',
       });
 
+      const result: Output = {
+        operationSummary: `Generated resume PDF: ${filename}`,
+        itemsProcessed: 1,
+        itemsChanged: 1,
+        completedAt: new Date().toISOString(),
+        documentId: storedName,
+        filename,
+        uri: fileUri,
+        sizeBytes: pdfBuffer.length,
+      };
+
       return {
         content: [
           {
             type: 'text' as const,
-            text: ['Resume PDF generated successfully', `URI: ${fileUri}`, `Size: ${pdfBuffer.length} bytes`].join('\n'),
+            text: JSON.stringify(result, null, 2),
           },
         ],
+        structuredContent: result,
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      return { content: [{ type: 'text' as const, text: `Error generating resume PDF: ${message}` }], isError: true };
+
+      throw new McpError(ErrorCode.InternalError, `Error generating resume PDF: ${message}`, {
+        stack: error instanceof Error ? error.stack : undefined,
+      });
     }
   }
 
