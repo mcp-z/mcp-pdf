@@ -1,11 +1,11 @@
 import { getFileUri, type ToolModule, type TransportConfig, writeFile } from '@mcpeasy/server';
-import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { ErrorCode, McpError, type CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import PDFDocument from 'pdfkit';
 import { z } from 'zod/v3';
-import { registerEmojiFont } from '../lib/emoji-renderer.ts';
-import { hasEmoji, setupFonts } from '../lib/fonts.ts';
-import { renderTextWithEmoji } from '../lib/pdf-helpers.ts';
-import type { ServerConfig } from '../types.ts';
+import { registerEmojiFont } from '../../lib/emoji-renderer.ts';
+import { hasEmoji, setupFonts } from '../../lib/fonts.ts';
+import { renderTextWithEmoji } from '../../lib/pdf-helpers.ts';
+import type { ServerConfig } from '../../types.ts';
 
 const inputSchema = z.object({
   filename: z.string().optional().describe('Optional logical filename (metadata only). Storage uses UUID. Defaults to "document.pdf".'),
@@ -13,13 +13,28 @@ const inputSchema = z.object({
   title: z.string().optional().describe('Document title metadata'),
 });
 
+const outputSchema = z.object({
+  operationSummary: z.string(),
+  itemsProcessed: z.number(),
+  itemsChanged: z.number(),
+  completedAt: z.string(),
+  documentId: z.string(),
+  filename: z.string(),
+  uri: z.string(),
+  sizeBytes: z.number(),
+});
+
 const config = {
   title: 'Create Simple PDF',
   description: 'Create a simple PDF with just text content. Supports emoji rendering.',
-  inputSchema: inputSchema,
+  inputSchema,
+  outputSchema: {
+    result: outputSchema,
+  } as const,
 } as const;
 
-type In = z.infer<typeof inputSchema>;
+export type Input = z.infer<typeof inputSchema>;
+export type Output = z.infer<typeof outputSchema>;
 
 export default function createTool(serverConfig: ServerConfig, transport?: TransportConfig): ToolModule {
   // Validate configuration at startup - fail fast if HTTP/WS transport without baseUrl or port
@@ -29,8 +44,9 @@ export default function createTool(serverConfig: ServerConfig, transport?: Trans
     }
   }
 
-  async function handler(args: In): Promise<CallToolResult> {
+  async function handler(args: Input): Promise<CallToolResult> {
     const { filename = 'document.pdf', text, title } = args;
+
     try {
       const doc = new PDFDocument({
         info: {
@@ -67,17 +83,32 @@ export default function createTool(serverConfig: ServerConfig, transport?: Trans
         endpoint: '/files',
       });
 
+      const result: Output = {
+        operationSummary: `Created simple PDF: ${filename}`,
+        itemsProcessed: 1,
+        itemsChanged: 1,
+        completedAt: new Date().toISOString(),
+        documentId: storedName,
+        filename,
+        uri: fileUri,
+        sizeBytes: pdfBuffer.length,
+      };
+
       return {
         content: [
           {
             type: 'text' as const,
-            text: ['PDF created successfully', `URI: ${fileUri}`, `Size: ${pdfBuffer.length} bytes`].join('\n'),
+            text: JSON.stringify(result, null, 2),
           },
         ],
+        structuredContent: result,
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      return { content: [{ type: 'text' as const, text: `Error creating PDF: ${message}` }], isError: true };
+
+      throw new McpError(ErrorCode.InternalError, `Error creating PDF: ${message}`, {
+        stack: error instanceof Error ? error.stack : undefined,
+      });
     }
   }
 
@@ -85,6 +116,5 @@ export default function createTool(serverConfig: ServerConfig, transport?: Trans
     name: 'create-simple-pdf',
     config,
     handler,
-    // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed to bypass TypeScript deep instantiation limit with complex Zod schemas
   } as any;
 }
