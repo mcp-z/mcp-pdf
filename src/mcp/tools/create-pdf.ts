@@ -113,7 +113,8 @@ const config = {
   title: 'Create PDF',
   description: 'Create a PDF document with text, images, shapes, and layout control. Supports Unicode + emoji fonts, backgrounds, and vector shapes.',
   inputSchema,
-outputSchema} as const;
+  outputSchema,
+} as const;
 
 export type Input = z.infer<typeof inputSchema>;
 export type Output = z.infer<typeof outputSchema>;

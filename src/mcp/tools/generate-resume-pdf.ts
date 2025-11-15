@@ -64,7 +64,8 @@ const config = {
   title: 'Generate Resume PDF',
   description: 'Generate a professional resume PDF from JSON Resume format. Supports styling, fonts, spacing, and multiple sections.',
   inputSchema,
-outputSchema} as const;
+  outputSchema,
+} as const;
 
 export type Input = z.infer<typeof inputSchema>;
 export type Output = z.infer<typeof outputSchema>;
