@@ -115,7 +115,7 @@ export default function createTool(serverConfig: ServerConfig, transport?: Trans
             text: JSON.stringify(result, null, 2),
           },
         ],
-        structuredContent: result,
+        structuredContent: { result },
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
