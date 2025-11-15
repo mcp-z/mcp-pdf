@@ -3,13 +3,12 @@ import { createWriteStream, existsSync, statSync, unlinkSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import PDFDocument from 'pdfkit';
-import { setupFonts } from '../../src/lib/fonts.ts';
+import { needsUnicodeFont, setupFonts } from '../../src/lib/fonts.ts';
+import { registerEmojiFont } from '../../src/lib/emoji-renderer.ts';
 import { renderTextWithEmoji } from '../../src/lib/pdf-helpers.ts';
 
 describe('Chinese/CJK Character Rendering', (): void => {
   it('should detect Chinese characters need Unicode font', async (): Promise<void> => {
-    const { needsUnicodeFont } = await import('../../src/lib/fonts.ts');
-
     // Traditional Chinese
     assert.strictEqual(needsUnicodeFont('很久很久以前'), true);
     assert.strictEqual(needsUnicodeFont('凱文·馬拉科夫的傳奇'), true);
@@ -174,7 +173,6 @@ describe('Chinese/CJK Character Rendering', (): void => {
       const stream = doc.pipe(createWriteStream(outputPath));
 
       // Register emoji font
-      const { registerEmojiFont } = await import('../../src/lib/emoji-renderer.ts');
       const emojiAvailable = registerEmojiFont();
 
       const fonts = await setupFonts(doc, 'auto');
