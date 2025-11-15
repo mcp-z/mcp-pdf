@@ -74,7 +74,7 @@ const contentItemSchema = z.union([
   z.object({ type: z.literal('pageBreak') }),
 ]);
 
-const inputSchemaObject = z.object({
+const inputSchema = z.object({
   filename: z.string().optional().describe('Optional logical filename (metadata only). Storage uses UUID. Defaults to "document.pdf".'),
   title: z.string().optional().describe('Document title metadata'),
   author: z.string().optional().describe('Document author metadata'),
@@ -99,10 +99,10 @@ const inputSchemaObject = z.object({
 const config = {
   title: 'Create PDF',
   description: 'Create a PDF document with text, images, shapes, and layout control. Supports Unicode + emoji fonts, backgrounds, and vector shapes.',
-  inputSchema: inputSchemaObject,
+  inputSchema: inputSchema,
 } as const;
 
-type In = z.infer<typeof inputSchemaObject>;
+type In = z.infer<typeof inputSchema>;
 
 export default function createTool(serverConfig: ServerConfig, transport?: import('@mcpeasy/server').TransportConfig): ToolModule {
   // Validate configuration at startup - fail fast if HTTP/WS transport without baseUrl or port

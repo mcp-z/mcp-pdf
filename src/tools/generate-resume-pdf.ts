@@ -5,7 +5,7 @@ import { jsonResumeSchema } from '../lib/json-resume-schema.ts';
 import { generateResumePDFBuffer, type ResumeStyling } from '../lib/resume-generator.ts';
 import type { ServerConfig } from '../types.ts';
 
-const inputSchemaObject = z.object({
+const inputSchema = z.object({
   filename: z.string().optional().describe('Optional logical filename (metadata only). Storage uses UUID. Defaults to "resume.pdf".'),
   resume: jsonResumeSchema.describe('Resume data in JSON Resume format'),
   font: z.string().optional().describe('Font for the PDF. Defaults to "auto" (system font detection). Built-ins are limited to ASCII; provide a path or URL for full Unicode.'),
@@ -52,10 +52,10 @@ const inputSchemaObject = z.object({
 const config = {
   title: 'Generate Resume PDF',
   description: 'Generate a professional resume PDF from JSON Resume format. Supports styling, fonts, spacing, and multiple sections.',
-  inputSchema: inputSchemaObject,
+  inputSchema: inputSchema,
 } as const;
 
-type In = z.infer<typeof inputSchemaObject>;
+type In = z.infer<typeof inputSchema>;
 
 export default function createTool(serverConfig: ServerConfig, transport?: import('@mcpeasy/server').TransportConfig): ToolModule {
   // Validate configuration at startup - fail fast if HTTP/WS transport without baseUrl or port
