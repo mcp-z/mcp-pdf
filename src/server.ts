@@ -6,10 +6,10 @@ import express from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 import pino from 'pino';
+import createPdfTool from './mcp/tools/create-pdf.ts';
+import createSimplePdfTool from './mcp/tools/create-simple-pdf.ts';
+import createResumePdfTool from './mcp/tools/generate-resume-pdf.ts';
 import createPdfPrompt from './prompts/pdf-instructions.ts';
-import createPdfTool from './tools/create-pdf.ts';
-import createSimplePdfTool from './tools/create-simple-pdf.ts';
-import createResumePdfTool from './tools/generate-resume-pdf.ts';
 import type { ServerConfig } from './types.ts';
 
 // ===== Main Entry Point =====
