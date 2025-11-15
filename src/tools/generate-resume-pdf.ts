@@ -1,4 +1,4 @@
-import { getFileUri, type ToolModule, writeFile } from '@mcpeasy/server';
+import { getFileUri, type ToolModule, type TransportConfig, writeFile } from '@mcpeasy/server';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod/v3';
 import { jsonResumeSchema } from '../lib/json-resume-schema.ts';
@@ -57,7 +57,7 @@ const config = {
 
 type In = z.infer<typeof inputSchema>;
 
-export default function createTool(serverConfig: ServerConfig, transport?: import('@mcpeasy/server').TransportConfig): ToolModule {
+export default function createTool(serverConfig: ServerConfig, transport?: TransportConfig): ToolModule {
   // Validate configuration at startup - fail fast if HTTP/WS transport without baseUrl or port
   if (transport && transport.type === 'http') {
     if (!serverConfig?.baseUrl && !transport.port) {
