@@ -1,4 +1,4 @@
-import type { Logger } from '@mcpeasy/server';
+import type { Logger, TransportConfig } from '@mcpeasy/server';
 import { createFileServingRouter, registerPrompts, registerTools, setupHttpServer, setupStdioServer } from '@mcpeasy/server';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import cors from 'cors';
@@ -100,7 +100,7 @@ async function createHttpServer(config: ServerConfig, shared: { logger: Logger }
 }
 
 // ===== Shared: Create MCP Components =====
-function createMcpComponents(config: ServerConfig, transport: import('@mcpeasy/server').TransportConfig | undefined) {
+function createMcpComponents(config: ServerConfig, transport: TransportConfig | undefined) {
   // Create tools with transport awareness
   const tools = [createPdfTool(config, transport), createSimplePdfTool(config, transport), createResumePdfTool(config, transport)];
   const prompts = [createPdfPrompt()];
