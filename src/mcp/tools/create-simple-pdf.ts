@@ -28,10 +28,7 @@ const config = {
   title: 'Create Simple PDF',
   description: 'Create a simple PDF with just text content. Supports emoji rendering.',
   inputSchema,
-  outputSchema: {
-    result: outputSchema,
-  } as const,
-} as const;
+outputSchema} as const;
 
 export type Input = z.infer<typeof inputSchema>;
 export type Output = z.infer<typeof outputSchema>;
