@@ -1,11 +1,11 @@
-import { getFileUri, type ToolModule, type TransportConfig, writeFile } from '@mcpeasy/server';
+import { getFileUri, type ToolModule, writeFile } from '@mcpeasy/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import PDFDocument from 'pdfkit';
 import { z } from 'zod/v3';
 import { registerEmojiFont } from '../../lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts, validateTextForFont } from '../../lib/fonts.ts';
 import { type PDFTextOptions, renderTextWithEmoji } from '../../lib/pdf-helpers.ts';
-import type { ServerConfig } from '../../types.ts';
+import type { ToolOptions } from '../../types.ts';
 
 type ContentItem = z.infer<typeof contentItemSchema>;
 
@@ -121,7 +121,10 @@ const config = {
 export type Input = z.infer<typeof inputSchema>;
 export type Output = z.infer<typeof outputSchema>;
 
-export default function createTool(serverConfig: ServerConfig, transport?: TransportConfig): ToolModule {
+export default function createTool(toolOptions: ToolOptions): ToolModule {
+  const { serverConfig } = toolOptions;
+  const { transport } = serverConfig;
+
   // Validate configuration at startup - fail fast if HTTP/WS transport without baseUrl or port
   if (transport && transport.type === 'http') {
     if (!serverConfig?.baseUrl && !transport.port) {
@@ -295,9 +298,7 @@ export default function createTool(serverConfig: ServerConfig, transport?: Trans
       const pdfBuffer = await pdfPromise;
 
       // Write file with ID prefix
-      const { storedName } = await writeFile(pdfBuffer, filename, {
-        storageDir: serverConfig.storageDir,
-      });
+      const { storedName } = await writeFile(pdfBuffer, filename, { storageDir: serverConfig.storageDir });
 
       // Generate URI based on transport type
       const fileUri = getFileUri(storedName, transport, {

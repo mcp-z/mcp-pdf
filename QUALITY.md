@@ -1509,7 +1509,7 @@ This encompasses violations where code:
 ### Example 1: Proper Logger Usage
 ```typescript
 // ✅ COMPLIANT: Use logger without console fallbacks
-function processQuery(query: string, logger?: Logger) {
+function processQuery(query: string, logger: Logger) {
   if (pageSize !== safePageSize && logger) {
     logger.warn('Page size bounded for API safety', { requested: pageSize, applied: safePageSize });
     // No fallback to console - would corrupt MCP stdio communication
