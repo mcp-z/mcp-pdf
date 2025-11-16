@@ -668,35 +668,6 @@ This encompasses violations where formatting:
   Examples: Lines that could fit comfortably but are broken arbitrarily
   But also: Complex expressions that should be broken but aren't
 
-## Diverse Examples (Non-Exhaustive)
-
-### Example 1: Concise Single-Line Statements
-```typescript
-// ✅ COMPLIANT: Simple statements stay compact
-if (email === '') throw new Error('Email required');
-if (!isValid) return null;
-const result = condition ? valueA : valueB;
-```
-
-### Example 2: Unnecessary Brace Violation
-```typescript
-// ❌ VIOLATION: Unnecessary braces for simple statements
-if (email === '') {
-  throw new Error('Email required');
-}
-// VIOLATION REASON: Simple statement doesn't need braces
-```
-
-### Example 3: Appropriate Multi-Line Formatting
-```typescript
-// ✅ COMPLIANT: Complex expressions benefit from breaks
-const connectionConfig = {
-  provider: 'google',
-  clientId: requiredEnv('GOOGLE_CLIENT_ID'),
-  redirectUri: `${baseUrl}/auth/callback`,
-  scope: ['email', 'profile']
-};
-```
 
 ## Generalization Guidance
 Ask yourself:
