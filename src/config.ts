@@ -12,7 +12,7 @@ const pkg = JSON.parse(fs.readFileSync(path.join(moduleRoot(url.fileURLToPath(im
 /**
  * Parse PDF server configuration from CLI arguments and environment.
  */
-export function parseServerConfig(args: string[], env: Record<string, string | undefined>): ServerConfig {
+export function parseConfig(args: string[], env: Record<string, string | undefined>): ServerConfig {
   // Parse shared transport config
   const transportConfig = parseTransportConfig(args, env);
 
@@ -61,5 +61,5 @@ export function parseServerConfig(args: string[], env: Record<string, string | u
  * Entry point for production server.
  */
 export function buildConfig(): ServerConfig {
-  return parseServerConfig(process.argv, process.env);
+  return parseConfig(process.argv, process.env);
 }
