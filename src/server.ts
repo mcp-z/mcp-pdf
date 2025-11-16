@@ -83,11 +83,7 @@ async function createHttpServer(config: ServerConfig, shared: { logger: Logger }
 
   // Setup HTTP transport
   logger.info('Starting mcp-pdf MCP server');
-
-  // Validate port for HTTP transport
-  if (!config.transport.port) {
-    throw new Error('Port is required for HTTP transport');
-  }
+  if (!config.transport.port) throw new Error('Port is required for HTTP transport');
 
   const { httpServer, cleanup } = await setupHttpServer({
     serverFactory: () => mcpServer,
