@@ -1,48 +1,73 @@
-# Node artifacts
+# OS specific
+.DS_Store
+
+# Node.js
 node_modules/
+.yarn/
+*.tgz
+
+# Build outputs
 dist/
 docs/
-
-# Downloaded fonts (generated during postinstall)
-.fonts/
-/.pnp*
-/package-lock.json
-/yarn.lock
-
-# Env
-.env
-.env.*
-
-# MCP 
-.mcp*.json
-.mcpregistry_*
-server.effective.json
+coverage
+coverage.lcov
+*.tsbuildinfo
+tsconfig.tsbuildinfo
 
 # Logs
+logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+dev-debug.log
 
-# MacOS
-.DS_Store
+# Project Specific
+# Environment files - per-package pattern
+**/.env.test
+.env.test
+.env.local
+.env.*.local
+**/.env.local
+**/.env.*.local
+.audit/
+.plans/
+data/
+.archive/
 
-# VSCode
+# Editor directories and files
+.idea/
 .vscode/
+
+# Agent files
+.agents/
 .claude/
+.taskmaster/
+.mcp.json
+.mcp.*.json
+.mcp-z/
+.mcpeasy/
+.tokens/
+*.agents.json
 
-# TypeScript
-*.tsbuildinfo
+# Backup files
+*.bak
+*.orig
+*.swp
 
-# Local database files
-*.db
+# Template files (should be generated)
+*.template
 
-# Temporary files
+# Cache files
+*.cache
+*.tmp
+*.temp
+.nyc_output
 .tmp/
 
-# Test/example files
-test-*.json
-test-*.pdf
-*-resume.json
-*-resume.pdf
-examples/
-/.agents/
+# Database files
+*.duckdb
+*.duckdb.wal
+
+# Downloaded fonts (generated during postinstall)
+.fonts/
