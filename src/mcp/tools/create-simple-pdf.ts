@@ -1,11 +1,11 @@
-import { getFileUri, type ToolModule, type TransportConfig, writeFile } from '@mcpeasy/server';
+import { getFileUri, type ToolModule, writeFile } from '@mcpeasy/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import PDFDocument from 'pdfkit';
 import { z } from 'zod/v3';
 import { registerEmojiFont } from '../../lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts } from '../../lib/fonts.ts';
 import { renderTextWithEmoji } from '../../lib/pdf-helpers.ts';
-import type { ServerConfig } from '../../types.ts';
+import type { ToolOptions } from '../../types.ts';
 
 const inputSchema = z.object({
   filename: z.string().optional().describe('Optional logical filename (metadata only). Storage uses UUID. Defaults to "document.pdf".'),
@@ -36,7 +36,10 @@ const config = {
 export type Input = z.infer<typeof inputSchema>;
 export type Output = z.infer<typeof outputSchema>;
 
-export default function createTool(serverConfig: ServerConfig, transport?: TransportConfig): ToolModule {
+export default function createTool(toolOptions: ToolOptions): ToolModule {
+  const { serverConfig } = toolOptions;
+  const { transport } = serverConfig;
+
   // Validate configuration at startup - fail fast if HTTP/WS transport without baseUrl or port
   if (transport && transport.type === 'http') {
     if (!serverConfig?.baseUrl && !transport.port) {

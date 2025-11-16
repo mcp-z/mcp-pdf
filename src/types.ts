@@ -11,9 +11,12 @@ export interface ServerConfig extends BaseServerConfig {
   storageDir: string;
   baseUrl?: string;
 
-  // Application-level logging configuration
   logLevel: string;
   baseDir: string;
   name: string;
   version: string;
+}
+
+export interface ToolOptions {
+  serverConfig: ServerConfig;
 }

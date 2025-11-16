@@ -1,4 +1,4 @@
-import type { Logger, TransportConfig } from '@mcpeasy/server';
+import type { Logger } from '@mcpeasy/server';
 import { createFileServingRouter, registerPrompts, registerTools, setupHttpServer, setupStdioServer } from '@mcpeasy/server';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import cors from 'cors';
@@ -6,10 +6,8 @@ import express from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 import pino from 'pino';
-import createPdfTool from './mcp/tools/create-pdf.ts';
-import createSimplePdfTool from './mcp/tools/create-simple-pdf.ts';
-import createResumePdfTool from './mcp/tools/generate-resume-pdf.ts';
-import createPdfPrompt from './prompts/pdf-instructions.ts';
+import * as promptFactories from './mcp/prompts/index.ts';
+import * as toolFactories from './mcp/tools/index.ts';
 import type { ServerConfig } from './types.ts';
 
 // ===== Main Entry Point =====
@@ -35,7 +33,7 @@ async function createStdioServer(config: ServerConfig, shared: { logger: Logger 
   const { logger } = shared;
 
   // Create MCP components (shared logic)
-  const { tools, prompts } = createMcpComponents(config, undefined); // stdio doesn't need transport parameter
+  const { tools, prompts } = createMcpComponents(config);
 
   // Create and register MCP server
   const mcpServer = new McpServer({ name: config.name, version: config.version });
@@ -74,7 +72,7 @@ async function createHttpServer(config: ServerConfig, shared: { logger: Logger }
   logger.debug('Created Express app for HTTP transport with PDF file serving');
 
   // Create MCP components (shared logic)
-  const { tools, prompts } = createMcpComponents(config, config.transport);
+  const { tools, prompts } = createMcpComponents(config);
 
   // Create and register MCP server
   const mcpServer = new McpServer({ name: config.name, version: config.version });
@@ -96,10 +94,8 @@ async function createHttpServer(config: ServerConfig, shared: { logger: Logger }
 }
 
 // ===== Shared: Create MCP Components =====
-function createMcpComponents(config: ServerConfig, transport: TransportConfig | undefined) {
-  // Create tools with transport awareness
-  const tools = [createPdfTool(config, transport), createSimplePdfTool(config, transport), createResumePdfTool(config, transport)];
-  const prompts = [createPdfPrompt()];
-
+function createMcpComponents(config: ServerConfig) {
+  const tools = Object.values(toolFactories).map((f) => f({ serverConfig: config }));
+  const prompts = Object.values(promptFactories).map((f) => f());
   return { tools, prompts };
 }
