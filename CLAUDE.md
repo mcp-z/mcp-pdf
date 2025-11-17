@@ -33,11 +33,7 @@ Run these commands before committing (from CONTRIBUTING.md):
 
 **Authentication Flow**: Direct OAuth2/MSAL with each service managing its own auth state. Services use AccountManager for multi-account support and AccessTokenProvider pattern for auth client abstraction.
 
-**Domain Libraries**:
-- `@mcpeasy/email`: Email processing and query DSL shared across Gmail/Outlook
-- `@mcpeasy/server`: Common MCP patterns and utilities
-
-**Testing Philosophy**: Service-backed unit tests using real provider APIs via dependency injection. Tests require valid credentials in `.env.test` files and use `createContext()` helper for auth setup.
+**Testing Philosophy**: Service-backed unit tests using real provider APIs via dependency injection. Tests require valid credentials in `.env.test` files and use `createMiddleware()` helper for auth setup.
 
 **Testing Hierarchy**: All packages follow consistent testing structure:
 - `test:unit` - Fast isolated tests with real service APIs
@@ -294,11 +290,11 @@ await setupStdioServer(serverFactory);
 
 **Environment**: Tests load `.env.test` files automatically
 **No Mocking**: Use real provider API calls as stable dependencies
-**Package-Local Tokens**: Use package-local `.tokens/{environment}/{provider}/` structure with provider isolation
+**Package-Local Tokens**: Use package-local `.tokens/store.json` for token storage
 **Cleanup**: Always cleanup created resources in `finally` blocks
-**Assertions**: Assert on `structuredContent.result`, not `content[0].text`
+**Assertions**: Assert on `structuredContent`, not `content[0].text`
 
-**Integration Tests**: Multi-server orchestration for cross-service workflows in `libs/test/`
+**Integration Tests**: Place in `test/integration/` directory
 
 ### Temporary Directory Standard (MANDATORY)
 
@@ -620,11 +616,11 @@ npm run test:unit    # ✅ Package.json handles all configuration
 ### Test File Organization
 **Quick reference** - For complete guidance see QUALITY.md rule T12:
 
-- **Domain-specific placement**: Tests go in `test/` directories within each package
+- **Domain-specific placement**: Tests go in `test/` directories within package
 - **Mirror source structure**: `src/mcp/tools/file.ts` → `test/unit/mcp/tools/file.test.ts`
 - **Never in root**: No test files in package root - always in appropriate test directory
-- **Integration tests**: Place in `servers/workflows/test/integration/` with clear scope
-- **Shared utilities**: `test/lib/` for cross-domain, `servers/{domain}/test/lib/` for domain-specific
+- **Integration tests**: Place in `test/integration/` with clear scope
+- **Shared utilities**: Place in `test/lib/` directory
 
 **Escalation**: Complex test organization → consult test-automator agent
 
@@ -659,29 +655,3 @@ npm run test:unit    # ✅ Package.json handles all configuration
 Your primary role is to help with coding tasks - implementing features, fixing bugs, refactoring code, and maintaining quality. Follow the project's established patterns, keep solutions simple, and focus on delivering working software that solves real problems.
 
 Remember: You're a coding collaborator, not a documentation generator. Focus on the code, and keep any supplementary materials organized appropriately.
-- Always Use mandatory types as required instead of optional types to avoid In-line default being set. Check all of the types at the entry point of the application and set the default there if they are truly 
- default. Have the rest of the app have mandatory strict types. Use the above as an example You're absolutely right to be concerned about defaults. Let me review the code I just changed and the implications of 
- using || 'search' and || '' defaults.
-
-   Problem with Current Approach:
-
-   1. In GoogleDirectClient/MicrosoftDirectClient, I used:
-   this.config.mode || 'search'
-   this.config.subdirectory || ''
-   2. In withAccountManagement, I used:
-   const mode: ResolutionMode = nodeEnv === 'test' ? 'test' : 'search';
-   const subdirectory = nodeEnv === 'test' ? 'test' : nodeEnv === 'development' ? 'development' : '';
-
-   Subtle Side Effects:
-
-   1. Silent fallback: If someone accidentally passes undefined or forgets to set these fields, the code silently falls back to 'search' mode with no subdirectory. This could cause tokens to be stored in the
-   wrong location.
-   2. Inconsistent behavior: Different entry points might calculate mode/subdirectory differently if they forget to set it, leading to tokens being stored in different places.
-   3. Hard to debug: When authentication fails, it won't be obvious that the issue is mismatched mode/subdirectory because there's no error indicating the problem.
-
-   Better Approach:
-
-   The auth client configs should make mode and subdirectory required fields (not optional), forcing entry points to explicitly provide them. This ensures:
-   - No silent fallbacks
-   - Consistent behavior across all entry points
-   - Clear errors if someone forgets to configure properly
