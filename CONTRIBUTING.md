@@ -1,4 +1,4 @@
-# Contributing to @mcpeasy/mcp-pdf
+# Contributing to @mcpeasy/server-pdf
 
 Thank you for your interest in contributing! This guide covers the development workflow, testing, and release process.
 
@@ -14,8 +14,8 @@ Thank you for your interest in contributing! This guide covers the development w
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/mcp-z/mcp-pdf.git
-cd mcp-pdf
+git clone https://github.com/mcp-z/server-pdf.git
+cd server-pdf
 ```
 
 2. Install dependencies:
@@ -99,10 +99,10 @@ After automated deployment, you may want to manually submit to:
 ### Check Registry Status
 
 Verify where the package is published:
-- **npm**: https://www.npmjs.com/package/@mcpeasy/mcp-pdf
+- **npm**: https://www.npmjs.com/package/@mcpeasy/server-pdf
 - **MCP Official**: https://modelcontextprotocol.io/registry
-- **GitHub**: https://github.com/mcp-z/mcp-pdf
-- **Smithery**: https://smithery.ai/server/@mcpeasy/mcp-pdf
+- **GitHub**: https://github.com/mcp-z/server-pdf
+- **Smithery**: https://smithery.ai/server/@mcpeasy/server-pdf
 - **PulseMCP**: https://www.pulsemcp.com/servers
 - **Awesome MCP**: https://mcpservers.org/
 
@@ -133,7 +133,7 @@ The formatter runs with `--unsafe` mode to auto-fix issues. Code style is enforc
 ## Project Structure
 
 ```
-mcp-pdf/
+server-pdf/
 ├── src/              # TypeScript source code
 │   ├── index.ts      # Main MCP server implementation
 │   └── lib/          # PDF generation helpers
@@ -156,8 +156,8 @@ mcp-pdf/
 
 ## Questions or Issues?
 
-- **Bug reports**: [GitHub Issues](https://github.com/mcp-z/mcp-pdf/issues)
-- **Feature requests**: [GitHub Issues](https://github.com/mcp-z/mcp-pdf/issues)
+- **Bug reports**: [GitHub Issues](https://github.com/mcp-z/server-pdf/issues)
+- **Feature requests**: [GitHub Issues](https://github.com/mcp-z/server-pdf/issues)
 - **Questions**: Open a discussion or issue
 
 ## License

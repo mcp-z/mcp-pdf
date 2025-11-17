@@ -1,10 +1,10 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
-  "name": "io.github.mcp-z/mcp-pdf",
+  "name": "io.github.mcp-z/server-pdf",
   "description": "MCP server for creative PDF generation with full emoji, Unicode, and offline support",
   "version": "0.0.0-auto",
   "repository": {
-    "url": "https://github.com/mcp-z/mcp-pdf.git",
+    "url": "https://github.com/mcp-z/server-pdf.git",
     "source": "github",
     "id": "1069486310"
   },
@@ -12,7 +12,7 @@
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
-      "identifier": "@mcpeasy/mcp-pdf",
+      "identifier": "@mcpeasy/server-pdf",
       "version": "0.0.0-auto",
       "runtimeHint": "npx",
       "transport": { "type": "stdio" }

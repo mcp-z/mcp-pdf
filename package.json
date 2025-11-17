@@ -1,6 +1,6 @@
 {
-  "name": "@mcpeasy/mcp-pdf",
-  "version": "1.2.92",
+  "name": "@mcpeasy/server-pdf",
+  "version": "0.0.0",
   "description": "MCP server for creative PDF generation with full emoji, Unicode, and offline support",
   "keywords": [
     "pdf",
@@ -22,13 +22,13 @@
     "ai agent",
     "claude"
   ],
-  "homepage": "https://github.com/mcp-z/mcp-pdf#readme",
+  "homepage": "https://github.com/mcp-z/server-pdf#readme",
   "bugs": {
-    "url": "https://github.com/mcp-z/mcp-pdf/issues"
+    "url": "https://github.com/mcp-z/server-pdf/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mcp-z/mcp-pdf.git"
+    "url": "git+https://github.com/mcp-z/server-pdf.git"
   },
   "license": "MIT",
   "author": "Kevin Malakoff <kmalakoff.info@gmail.com>",
@@ -85,7 +85,7 @@
   "engines": {
     "node": ">=20"
   },
-  "mcpName": "io.github.mcp-z/mcp-pdf",
+  "mcpName": "io.github.mcp-z/server-pdf",
   "tsds": {
     "source": "src/index.ts"
   }

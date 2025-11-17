@@ -7,7 +7,7 @@ import PDFDocument from 'pdfkit';
 import { setupFonts } from '../../src/lib/fonts.ts';
 import { renderTextWithEmoji } from '../../src/lib/pdf-helpers.ts';
 
-const testOutputDir = join(tmpdir(), 'mcp-pdf-layout-tests');
+const testOutputDir = join(tmpdir(), 'server-pdf-layout-tests');
 
 describe('Layout Options for create-pdf', () => {
   it('renders text with custom alignment', async () => {
