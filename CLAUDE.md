@@ -19,11 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Test Setup**: `npm run test:setup` (OAuth token generation, service packages only)
 
 ### Pre-Commit Requirements
-Run these commands before committing (from CONTRIBUTING.md):
-1. `npm run format` (lint/format)
-2. `ep -p -e npx depcheck` (dependency health)
-3. `ep -p npx ncu -u` (upgrade dependencies, review diffs)
-4. `ep -p npx sort-package-json` (sort package.json)
+Run before committing: `npm run format && tsds validate`
 
 ## Architecture Overview
 
@@ -556,10 +552,7 @@ npm run test:unit    # ✅ Package.json handles all configuration
 - **NEVER independently decide quality trade-offs** - always involve humans in quality decisions
 - Run quality checks before completing work:
   ```bash
-  npm run format
-  ep -p -e npx depcheck
-  ep -p npx ncu -u
-  ep -p npx sort-package-json
+  npm run format && tsds validate
   ```
 
 ### 5. Quality Decision Authority
