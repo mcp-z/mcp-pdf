@@ -482,10 +482,7 @@ npm run test:integration   # Integration tests only
 npm run test:setup         # Generate OAuth tokens (if applicable)
 
 # Quality checks (run before committing)
-npm run format
-npx depcheck               # Check for unused dependencies
-npx ncu -u                 # Check for dependency updates
-npx sort-package-json      # Sort package.json fields
+npm run format && tsds validate
 ```
 
 ### CRITICAL: Always Use package.json Scripts

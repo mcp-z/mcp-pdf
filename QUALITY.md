@@ -1422,10 +1422,7 @@ This encompasses violations where automation:
 ### Example 1: Standard Automation Commands
 ```bash
 # ✅ COMPLIANT: Run these commands regularly and fix all errors
-npm run format
-ep -p -e npx depcheck
-ep -p npx ncu -u
-ep -p npx sort-package-json
+npm run format && tsds validate
 ```
 
 ### Example 2: Ignoring Tool Output Violation
