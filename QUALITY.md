@@ -2457,8 +2457,8 @@ This encompasses violations where test placement:
 ### Example 1: Correct Server-Specific Test Placement
 ```typescript
 // ✅ COMPLIANT: Tests mirror source structure
-// Source: servers/gmail/src/mcp/tools/message-search.ts
-// Test:   servers/gmail/test/unit/mcp/tools/message-search.test.ts
+// Source: servers/server-gmail/src/mcp/tools/message-search.ts
+// Test:   servers/server-gmail/test/unit/mcp/tools/message-search.test.ts
 // Clear domain ownership and mirrored structure
 ```
 
@@ -2480,7 +2480,7 @@ This encompasses violations where test placement:
 ```typescript
 // ✅ COMPLIANT: Shared utilities in appropriate location
 // test/lib/context-helpers.ts - Cross-domain test utilities
-// servers/gmail/test/lib/gmail-helpers.ts - Gmail-specific utilities
+// servers/server-gmail/test/lib/gmail-helpers.ts - Gmail-specific utilities
 ```
 
 ## Generalization Guidance
