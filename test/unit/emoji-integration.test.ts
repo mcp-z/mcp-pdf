@@ -1,4 +1,4 @@
-import assert from 'assert/strict';
+import assert from 'assert';
 import type { JsonResume } from '../../src/lib/json-resume-schema.ts';
 import { generateResumePDFBuffer } from '../../src/lib/resume-generator.ts';
 

@@ -1,4 +1,4 @@
-import assert from 'assert/strict';
+import assert from 'assert';
 import PDFDocument from 'pdfkit';
 import { registerEmojiFont } from '../../src/lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts } from '../../src/lib/fonts.ts';
