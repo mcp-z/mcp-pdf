@@ -1,4 +1,4 @@
-import { parseTransportConfig } from '@mcpeasy/server';
+import { parseConfig as parseTransportConfig } from "@mcpeasy/server";
 import * as fs from 'fs';
 import moduleRoot from 'module-root-sync';
 import { homedir } from 'os';
@@ -13,7 +13,6 @@ const pkg = JSON.parse(fs.readFileSync(path.join(moduleRoot(url.fileURLToPath(im
  * Parse PDF server configuration from CLI arguments and environment.
  */
 export function parseConfig(args: string[], env: Record<string, string | undefined>): ServerConfig {
-  // Parse shared transport config
   const transportConfig = parseTransportConfig(args, env);
 
   // Parse application-level config (BASE_URL, LOG_LEVEL)
