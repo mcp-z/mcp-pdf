@@ -1422,7 +1422,7 @@ This encompasses violations where automation:
 ### Example 1: Standard Automation Commands
 ```bash
 # ✅ COMPLIANT: Run these commands regularly and fix all errors
-npm run format && tsds validate
+tsds validate
 ```
 
 ### Example 2: Ignoring Tool Output Violation

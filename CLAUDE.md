@@ -19,7 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Test Setup**: `npm run test:setup` (OAuth token generation, service packages only)
 
 ### Pre-Commit Requirements
-Run before committing: `npm run format && tsds validate`
+Run before committing: `tsds validate`
 
 ## Architecture Overview
 
@@ -352,7 +352,7 @@ await fs.promises.mkdir(tempDir, { recursive: true });
 
 **OAuth Client Configuration**:
 
-Most packages use **LoopbackOAuthClient**:
+Most packages use **LoopbackOAuthProvider**:
 - Interactive OAuth with ephemeral loopback server (RFC 8252)
 - Dynamically generates redirect URIs using OS-assigned ports
 - NO redirect URI environment variable needed
@@ -482,7 +482,7 @@ npm run test:integration   # Integration tests only
 npm run test:setup         # Generate OAuth tokens (if applicable)
 
 # Quality checks (run before committing)
-npm run format && tsds validate
+tsds validate
 ```
 
 ### CRITICAL: Always Use package.json Scripts
@@ -549,7 +549,7 @@ npm run test:unit    # ✅ Package.json handles all configuration
 - **NEVER independently decide quality trade-offs** - always involve humans in quality decisions
 - Run quality checks before completing work:
   ```bash
-  npm run format && tsds validate
+  tsds validate
   ```
 
 ### 5. Quality Decision Authority
