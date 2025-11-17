@@ -119,6 +119,6 @@ export default function createTool(toolOptions: ToolOptions): ToolModule {
     name: 'create-simple-pdf',
     config,
     handler,
-    // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed to bypass TypeScript deep instantiation limit with complex Zod schemas
+    // biome-ignore lint/suspicious/noExplicitAny: TypeScript instantiation limit
   } as any;
 }
