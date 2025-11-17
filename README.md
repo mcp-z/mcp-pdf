@@ -1,9 +1,9 @@
-# @mcpeasy/mcp-pdf
+# @mcpeasy/server-pdf
 
-[![npm](https://img.shields.io/npm/v/@mcpeasy/mcp-pdf.svg)](https://www.npmjs.com/package/@mcpeasy/mcp-pdf)
+[![npm](https://img.shields.io/npm/v/@mcpeasy/server-pdf.svg)](https://www.npmjs.com/package/@mcpeasy/server-pdf)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node](https://img.shields.io/node/v/@mcpeasy/mcp-pdf.svg)](https://nodejs.org)
-[![npm downloads](https://img.shields.io/npm/dm/@mcpeasy/mcp-pdf.svg)](https://www.npmjs.com/package/@mcpeasy/mcp-pdf)
+[![Node](https://img.shields.io/node/v/@mcpeasy/server-pdf.svg)](https://nodejs.org)
+[![npm downloads](https://img.shields.io/npm/dm/@mcpeasy/server-pdf.svg)](https://www.npmjs.com/package/@mcpeasy/server-pdf)
 
 MCP server for creative PDF generation with full emoji, Unicode, and offline support
 
@@ -28,13 +28,13 @@ From practical invoices and resumes to creative artwork—if it's a PDF, you can
 
 ```bash
 # npm
-npm install -g @mcpeasy/mcp-pdf
+npm install -g @mcpeasy/server-pdf
 
 # yarn
-yarn global add @mcpeasy/mcp-pdf
+yarn global add @mcpeasy/server-pdf
 
 # pnpm
-pnpm add -g @mcpeasy/mcp-pdf
+pnpm add -g @mcpeasy/server-pdf
 ```
 
 Then add to your `claude_desktop_config.json`:
@@ -43,7 +43,7 @@ Then add to your `claude_desktop_config.json`:
 {
   "mcpServers": {
     "pdf": {
-      "command": "mcp-pdf"
+      "command": "server-pdf"
     }
   }
 }
@@ -52,7 +52,7 @@ Then add to your `claude_desktop_config.json`:
 ### Option 2: Direct Usage (No Install)
 
 ```bash
-npx -y @mcpeasy/mcp-pdf
+npx -y @mcpeasy/server-pdf
 ```
 
 Config:
@@ -62,7 +62,7 @@ Config:
   "mcpServers": {
     "pdf": {
       "command": "npx",
-      "args": ["-y", "@mcpeasy/mcp-pdf"]
+      "args": ["-y", "@mcpeasy/server-pdf"]
     }
   }
 }
@@ -75,11 +75,11 @@ Config:
 ```json
 {
   "mcpServers": {
-    "mcp-pdf": {
+    "server-pdf": {
       "command": "npx",
-      "args": ["-y", "mcp-pdf"],
+      "args": ["-y", "server-pdf"],
       "env": {
-        "STORAGE_DIR": "~/.mcp-pdf"
+        "STORAGE_DIR": "~/.server-pdf"
       }
     }
   }
@@ -97,7 +97,7 @@ Once installed, create your first PDF:
 "Create a simple PDF with the text 'Hello World!'"
 
 // Claude will use the create-simple-pdf tool
-// Result: mcp-pdf://abc123 (resource URI)
+// Result: server-pdf://abc123 (resource URI)
 
 // View the PDF:
 "Show me that PDF"
@@ -105,7 +105,7 @@ Once installed, create your first PDF:
 // Claude retrieves the PDF content via the resource URI
 ```
 
-✅ Your PDF is at `~/.mcp-pdf/` ready to use!
+✅ Your PDF is at `~/.server-pdf/` ready to use!
 
 ---
 
@@ -113,12 +113,12 @@ Once installed, create your first PDF:
 
 Published on multiple MCP registries and package managers:
 
-- **[npm](https://www.npmjs.com/package/@mcpeasy/mcp-pdf)** - `@mcpeasy/mcp-pdf`
-- **[MCP Official Registry](https://modelcontextprotocol.io/registry)** - `io.github.kmalakoff/mcp-pdf`
-- **[Smithery](https://smithery.ai/server/@mcpeasy/mcp-pdf)** - One-click install via Smithery CLI
+- **[npm](https://www.npmjs.com/package/@mcpeasy/server-pdf)** - `@mcpeasy/server-pdf`
+- **[MCP Official Registry](https://modelcontextprotocol.io/registry)** - `io.github.kmalakoff/server-pdf`
+- **[Smithery](https://smithery.ai/server/@mcpeasy/server-pdf)** - One-click install via Smithery CLI
 - **[Awesome MCP Servers](https://mcpservers.org/)** - Community curated list
 - **[Cline Marketplace](https://github.com/cline/mcp-marketplace)** - Built-in to Cline IDE (coming soon)
-- **[GitHub Repository](https://github.com/mcp-z/mcp-pdf)** - Source code and issues
+- **[GitHub Repository](https://github.com/mcp-z/server-pdf)** - Source code and issues
 
 ---
 
@@ -133,7 +133,7 @@ Runs anywhere Node.js >=16 runs. No Python, no Cairo, no Homebrew—just npm ins
 When you create a PDF, the server returns a resource URI instead of embedding the PDF content:
 
 ```
-Create PDF → Returns: mcp-pdf://uuid (just the URI, not the PDF)
+Create PDF → Returns: server-pdf://uuid (just the URI, not the PDF)
 ```
 
 This keeps PDFs out of the LLM's context until explicitly needed. PDFs are only loaded when you specifically request them via their resource URI.
@@ -142,7 +142,7 @@ This keeps PDFs out of the LLM's context until explicitly needed. PDFs are only 
 
 This server writes PDFs to a sandboxed directory to prevent path traversal attacks:
 
-- **Default location**: `~/.mcp-pdf/`
+- **Default location**: `~/.server-pdf/`
 - **Custom location**: Set `STORAGE_DIR` environment variable
 - **Filename sanitization**: Blocks `..`, `/`, and unsafe characters
 - **No path parameters**: Tools accept only filenames, not full paths
@@ -152,7 +152,7 @@ All generated PDFs are written to the configured storage directory with sanitize
 
 ### Storage Directory
 
-PDFs are stored in `~/.mcp-pdf` by default. This works everywhere - local, containers, remote servers.
+PDFs are stored in `~/.server-pdf` by default. This works everywhere - local, containers, remote servers.
 
 Most users should just use the default. No configuration needed.
 

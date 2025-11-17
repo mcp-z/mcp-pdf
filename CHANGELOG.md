@@ -53,7 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.3] - 2025-10-03
 
 ### Added
-- **Sandboxed output directory**: PDFs are now written to a secure sandboxed directory (`~/.mcp-pdf/` by default) instead of being embedded in responses
+- **Sandboxed output directory**: PDFs are now written to a secure sandboxed directory (`~/.server-pdf/` by default) instead of being embedded in responses
 - **Filename sanitization**: Added security measures to prevent path traversal attacks - filenames are sanitized and only written to the configured output directory
 - **Custom output location**: Set `PDF_OUTPUT_DIR` environment variable to customize the output directory
 - **Smithery configuration**: Added `smithery.yaml` for Smithery marketplace integration

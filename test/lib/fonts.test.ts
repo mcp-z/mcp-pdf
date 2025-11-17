@@ -207,7 +207,7 @@ describe('resolveFont', (): void => {
   describe('absolute paths', (): void => {
     it('resolves existing absolute path', async (): Promise<void> => {
       // Create a temp file to test
-      const tempDir: string = join(tmpdir(), 'mcp-pdf-test');
+      const tempDir: string = join(tmpdir(), 'server-pdf-test');
       mkdirSync(tempDir, { recursive: true });
       const testFont: string = join(tempDir, 'test.ttf');
       writeFileSync(testFont, 'fake font data');

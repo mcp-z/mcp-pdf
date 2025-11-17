@@ -9,7 +9,7 @@ describe('output-handler', () => {
 
     beforeEach(() => {
       // Create a test directory
-      testDir = join('.tmp', `mcp-pdf-test-${Date.now()}`);
+      testDir = join('.tmp', `server-pdf-test-${Date.now()}`);
     });
 
     it('writes PDF to specified directory with ID prefix', async () => {
@@ -41,7 +41,7 @@ describe('output-handler', () => {
     });
 
     it('creates directory if it does not exist', async () => {
-      const newDir = join('.tmp', `mcp-pdf-new-${Date.now()}`);
+      const newDir = join('.tmp', `server-pdf-new-${Date.now()}`);
 
       const buffer = Buffer.from('test pdf content');
       const result = await writeFile(buffer, 'test.pdf', { storageDir: newDir });

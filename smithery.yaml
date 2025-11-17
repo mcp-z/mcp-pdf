@@ -1,4 +1,4 @@
-# Smithery configuration for mcp-pdf
+# Smithery configuration for server-pdf
 # Documentation: https://smithery.ai/docs/build/project-config/smithery-yaml
 
 runtime: "typescript"
@@ -11,4 +11,4 @@ startCommand:
       PDF_OUTPUT_DIR:
         type: "string"
         title: "PDF Output Directory"
-        description: "Custom directory for PDF output (defaults to ~/.mcp-pdf/)"
+        description: "Custom directory for PDF output (defaults to ~/.server-pdf/)"

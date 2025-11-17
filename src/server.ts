@@ -41,7 +41,7 @@ async function createStdioServer(config: ServerConfig, shared: { logger: Logger 
   registerPrompts(mcpServer, prompts);
 
   // Setup stdio transport
-  logger.info('Starting mcp-pdf MCP server');
+  logger.info('Starting server-pdf MCP server');
   const { cleanup } = await setupStdioServer({
     serverFactory: () => mcpServer,
     logger,
@@ -80,7 +80,7 @@ async function createHttpServer(config: ServerConfig, shared: { logger: Logger }
   registerPrompts(mcpServer, prompts);
 
   // Setup HTTP transport
-  logger.info('Starting mcp-pdf MCP server');
+  logger.info('Starting server-pdf MCP server');
   if (!config.transport.port) throw new Error('Port is required for HTTP transport');
 
   const { httpServer, cleanup } = await setupHttpServer({
