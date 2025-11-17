@@ -1849,7 +1849,7 @@ This encompasses violations where tests:
 
 ## Recognition Signals
 - Signal: Mixed test setup patterns
-  Examples: Some tests use createContext(), others use different setup approaches
+  Examples: Some tests use createMiddleware(), others use different setup approaches
   But also: Inconsistent patterns for similar test scenarios
 
 - Signal: Weak typing in test code
@@ -1860,20 +1860,22 @@ This encompasses violations where tests:
 
 ### Example 1: Consistent Context Creation
 ```typescript
-// ✅ COMPLIANT: Uses established createContext() pattern
-test('gmail operations', async () => {
-  const context = await createGmailContext();
-  // Strongly typed context with all necessary setup
+// ✅ COMPLIANT: Uses established createMiddleware() pattern
+test('tool operations', async () => {
+  const middleware = await createMiddleware();
+  const tool = createTool();
+  const wrappedTool = middleware.withAuth(tool);
+  // Strongly typed middleware with all necessary setup
 });
 ```
 
 ### Example 2: Inconsistent Setup Violation
 ```typescript
 // ❌ VIOLATION: Different test uses ad-hoc setup
-test('outlook operations', async () => {
+test('tool operations', async () => {
   const config = { clientId: 'test', secret: 'test' }; // Manual setup
-  const client = new OutlookClient(config);
-  // VIOLATION REASON: Should use createOutlookContext() like other tests
+  const client = new Client(config);
+  // VIOLATION REASON: Should use createMiddleware() like other tests
 });
 ```
 
@@ -2454,11 +2456,11 @@ This encompasses violations where test placement:
 
 ## Diverse Examples (Non-Exhaustive)
 
-### Example 1: Correct Server-Specific Test Placement
+### Example 1: Correct Test Placement
 ```typescript
 // ✅ COMPLIANT: Tests mirror source structure
-// Source: servers/server-gmail/src/mcp/tools/message-search.ts
-// Test:   servers/server-gmail/test/unit/mcp/tools/message-search.test.ts
+// Source: src/mcp/tools/message-search.ts
+// Test:   test/unit/mcp/tools/message-search.test.ts
 // Clear domain ownership and mirrored structure
 ```
 
@@ -2466,21 +2468,21 @@ This encompasses violations where test placement:
 ```typescript
 // ❌ VIOLATION: Test in wrong location
 // Root level: message-search.test.ts
-// VIOLATION REASON: Which service does this test? Gmail? Outlook? Unclear domain ownership
+// VIOLATION REASON: Test should be in test/unit/ directory with proper organization
 ```
 
-### Example 3: Cross-Domain Integration Test
+### Example 3: Integration Test
 ```typescript
 // ✅ COMPLIANT: Integration test with clear scope
-// servers/workflows/test/integration/gmail-to-sheets.integration.test.ts
-// Tests workflow functionality, not individual service behavior
+// test/integration/api-validation.integration.test.ts
+// Tests cross-cutting functionality with clear purpose
 ```
 
 ### Example 4: Shared Test Utilities Location
 ```typescript
 // ✅ COMPLIANT: Shared utilities in appropriate location
-// test/lib/context-helpers.ts - Cross-domain test utilities
-// servers/server-gmail/test/lib/gmail-helpers.ts - Gmail-specific utilities
+// test/lib/create-middleware.ts - Common test setup utilities
+// test/lib/create-extra.ts - Test context helpers
 ```
 
 ## Generalization Guidance
