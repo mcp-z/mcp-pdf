@@ -1,4 +1,4 @@
-import { parseConfig as parseTransportConfig } from "@mcpeasy/server";
+import { parseConfig as parseTransportConfig } from '@mcpeasy/server';
 import * as fs from 'fs';
 import moduleRoot from 'module-root-sync';
 import { homedir } from 'os';
