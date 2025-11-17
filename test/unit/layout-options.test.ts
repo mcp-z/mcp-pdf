@@ -1,4 +1,4 @@
-import assert from 'assert/strict';
+import assert from 'assert';
 import { createWriteStream, existsSync, readFileSync } from 'fs';
 import { mkdir } from 'fs/promises';
 import { tmpdir } from 'os';

@@ -1,5 +1,5 @@
 import { parseStoredName, writeFile } from '@mcpeasy/server';
-import assert from 'assert/strict';
+import assert from 'assert';
 import { existsSync, rmSync } from 'fs';
 import { join, resolve } from 'path';
 

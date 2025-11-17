@@ -1,4 +1,4 @@
-import assert from 'assert/strict';
+import assert from 'assert';
 import { createWriteStream, existsSync, mkdirSync, readFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import PDFDocument from 'pdfkit';

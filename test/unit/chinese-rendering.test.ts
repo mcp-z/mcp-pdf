@@ -1,4 +1,4 @@
-import assert from 'assert/strict';
+import assert from 'assert';
 import { createWriteStream, existsSync, statSync, unlinkSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';

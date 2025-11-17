@@ -1,5 +1,5 @@
-import assert from 'assert/strict';
-import { parseConfig } from '../../src/config.ts';
+import assert from 'assert';
+import { buildConfig, parseConfig } from '../../../src/config.ts';
 
 describe('Config parsing', () => {
   describe('BASE_URL parsing', () => {
@@ -23,7 +23,7 @@ describe('Config parsing', () => {
     });
 
     it('baseUrl is undefined when not provided', () => {
-      const config = parseConfig([], {});
+      const config = buildConfig();
       assert.strictEqual(config.baseUrl, undefined);
     });
   });
@@ -37,7 +37,7 @@ describe('Config parsing', () => {
     });
 
     it('defaults to ~/.mcp-z/pdf/files when not provided', () => {
-      const config = parseConfig([], {});
+      const config = buildConfig();
       assert.ok(config.storageDir.includes('.mcp-z'));
       assert.ok(config.storageDir.includes('pdf'));
     });
@@ -72,14 +72,14 @@ describe('Config parsing', () => {
     });
 
     it('defaults to info when not provided', () => {
-      const config = parseConfig([], {});
+      const config = buildConfig();
       assert.strictEqual(config.logLevel, 'info');
     });
   });
 
   describe('transport parsing', () => {
     it('defaults to stdio transport', () => {
-      const config = parseConfig([], {});
+      const config = buildConfig();
       assert.strictEqual(config.transport.type, 'stdio');
     });
 
