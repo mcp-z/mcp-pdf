@@ -60,7 +60,7 @@
     "version": "tsds version"
   },
   "dependencies": {
-    "@mcpeasy/server": "^0.1.7",
+    "@mcpeasy/server": "^0.1.8",
     "@modelcontextprotocol/sdk": "^1.22.0",
     "@napi-rs/canvas": "^0.1.82",
     "cors": "^2.8.5",
