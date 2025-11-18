@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Essential Commands
 - **Build**: `npm run build` (compiles TypeScript to dist/ with ESM/CJS dual exports using ts-dev-stack)
-- **Test**: `npm test` (runs all test types across all workspaces: unit + integration)
+- **Test**: `npm test` (runs all test types: unit + integration)
 - **Test Unit**: `npm run test:unit` (fast unit tests only)
 - **Test Integration**: `npm run test:integration` (cross-service integration tests)
 - **Format**: `npm run format` (Biome formatter and linter with auto-fix)
@@ -131,7 +131,7 @@ async function handler(params: In, extra: EnrichedExtra): Promise<CallToolResult
 
 ### Tool Development Pattern
 
-**MCP Tool Checklist** (from docs/testing.md):
+**MCP Tool Checklist**:
 - Define `inputSchema` and `outputSchema` inline with `as const`
 - Use `.min(1)` for required string fields
 - Snake_case filenames, hyphenated tool names (`{service}-{resource}-{action}`)
@@ -260,13 +260,13 @@ const serverFactory = () => {
 await setupStdioServer(serverFactory);
 ```
 
-**See also**: `docs/typescript.md` for comprehensive TypeScript guidelines and type safety patterns
+**See also**: TypeScript guidelines and type safety patterns documented in this file
 
 ## Environment Setup
 
 **Required Node Version**: >=24 (uses native TypeScript support)
 **Native TypeScript Execution**: Node.js 24+ can execute `.ts` files directly without flags - DO NOT use `--experimental-strip-types` flag
-**Package Manager**: npm with workspaces (no-hoist as specified in .npmrc)
+**Package Manager**: npm
 **TypeScript**: Strict mode with `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`
 **Formatter**: Biome with 320 line width, single quotes, trailing commas
 
@@ -276,9 +276,8 @@ await setupStdioServer(serverFactory);
 - All code should use direct `.ts` file execution without additional flags
 - This applies to scripts, test runners, and all TypeScript execution
 
-### Workspace Dependencies
-- Workspace packages reference internal deps by package name
-- External deps: MCP SDK, Express, Google APIs, Microsoft Graph, Zod v4
+### Dependencies
+- MCP SDK, Express, Google APIs, Microsoft Graph, Zod v4
 - Dev tools: TypeScript 5.9+, Biome, Node types
 
 ## Testing Requirements
@@ -517,7 +516,7 @@ npm run test:unit    # ✅ Package.json handles all configuration
 - Uses ts-dev-stack for dual ESM/CJS compilation with type definitions
 - Import TypeScript files with `.ts` extensions in source code
 - All packages export compiled `.js` files with `.d.ts` type definitions
-- See `docs/typescript.md` for detailed TypeScript guidelines
+- Follow TypeScript guidelines documented above
 
 ## Core Principles for Successful Collaboration
 
@@ -538,7 +537,7 @@ npm run test:unit    # ✅ Package.json handles all configuration
 - Use real service integration, not mocks
 - Keep tests simple, self-contained, and portable
 - **Test placement**: Place tests in domain-specific directories that mirror source structure (see QUALITY.md rule T12 for details)
-- Follow the project's testing conventions in `docs/testing.md`
+- Follow the project's testing conventions documented in CLAUDE.md and QUALITY.md
 
 ### 4. Collaborate Effectively
 - Communicate clearly about what you're doing and why
@@ -594,7 +593,7 @@ npm run test:unit    # ✅ Package.json handles all configuration
 - Use `.ts` extensions for internal imports
 - Leverage TypeScript's type system - avoid `any` and type escapes
 - Follow the project's Node.js type stripping configuration
-- Reference `docs/typescript.md` for detailed guidelines
+- Follow TypeScript guidelines documented above
 
 ### Environment and Configuration
 - Access environment variables only at entry points (test files, src/index.ts, scripts)
