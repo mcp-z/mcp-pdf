@@ -196,8 +196,7 @@ export default function createTool(): ToolModule {
 **Test Structure**:
 ```typescript
 // Use this pattern for all tool tests
-import { describe, it } from 'node:test';
-import assert from 'node:assert';
+import assert from 'assert';
 import { createMiddleware, createExtra } from '../lib/create-middleware.ts';
 
 it('tool behaves as expected (service-backed)', async () => {
