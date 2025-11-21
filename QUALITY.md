@@ -1861,7 +1861,7 @@ This encompasses violations where tests:
 test('tool operations', async () => {
   const middleware = await createMiddleware();
   const tool = createTool();
-  const wrappedTool = middleware.withAuth(tool);
+  const wrappedTool = withAuth(tool);
   // Strongly typed middleware with all necessary setup
 });
 ```

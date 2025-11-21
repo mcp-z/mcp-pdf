@@ -202,7 +202,7 @@ import { createMiddleware, createExtra } from '../lib/create-middleware.ts';
 it('tool behaves as expected (service-backed)', async () => {
   const middleware = await createMiddleware(); // Validates credentials, throws if missing
   const tool = createTool();
-  const wrappedTool = middleware.withAuth(tool);
+  const wrappedTool = withAuth(tool);
   const result = await wrappedTool.handler({ /* validated inputs */ }, createExtra());
   assert.ok(result.structuredContent);
 });
@@ -225,7 +225,7 @@ describe('tool tests', () => {
 
   it('executes tool with auth', async () => {
     const tool = createTool();
-    const wrappedTool = middleware.withAuth(tool);
+    const wrappedTool = withAuth(tool);
     const handler = wrappedTool.handler;
 
     const result = await handler(
