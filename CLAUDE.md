@@ -5,14 +5,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ### Essential Commands
-- **Build**: `npm run build` (compiles TypeScript to dist/ with ESM/CJS dual exports using ts-dev-stack)
+- **Build**: `tsds validate` (compiles TypeScript to dist/ with ESM/CJS dual exports using ts-dev-stack)
 - **Test**: `npm test` (runs all test types: unit + integration)
 - **Test Unit**: `npm run test:unit` (fast unit tests only)
 - **Test Integration**: `npm run test:integration` (cross-service integration tests)
 - **Format**: `npm run format` (Biome formatter and linter with auto-fix)
 
 ### Package Commands
-- **Build**: `npm run build` (compiles TypeScript to dist/ with ESM/CJS dual exports)
+- **Build**: `tsds validate` (compiles TypeScript to dist/ with ESM/CJS dual exports)
 - **All Tests**: `npm test` (runs all tests - unit + integration)
 - **Unit Tests**: `npm run test:unit` (fast unit tests only)
 - **Integration Tests**: `npm run test:integration` (cross-service tests)
@@ -200,9 +200,9 @@ import assert from 'assert';
 import { createMiddleware, createExtra } from '../lib/create-middleware.ts';
 
 it('tool behaves as expected (service-backed)', async () => {
-  const {withAuth} = await createMiddleware(); // Validates credentials, throws if missing
+  const middleware = await createMiddleware();
   const tool = createTool();
-  const wrappedTool = withAuth.forTool(tool);
+  const wrappedTool = middleware.withToolAuth(tool);
   const result = await wrappedTool.handler({ /* validated inputs */ }, createExtra());
   assert.ok(result.structuredContent);
 });
@@ -225,7 +225,7 @@ describe('tool tests', () => {
 
   it('executes tool with auth', async () => {
     const tool = createTool();
-    const wrappedTool = withAuth.forTool(tool);
+    const wrappedTool = middleware.withToolAuth(tool);
     const handler = wrappedTool.handler;
 
     const result = await handler(
@@ -462,13 +462,13 @@ This guide helps AI agents be effective coding collaborators on the MCP-Z projec
 
 ### Build System
 - **ts-dev-stack** is used for TypeScript compilation with dual ESM/CJS exports
-- **Build command**: `npm run build` compiles to `dist/` directory
+- **Build command**: `tsds validate` compiles to `dist/` directory
 - **Package exports**: Exports from `dist/esm/index.js` and `dist/cjs/index.js`
 
 ### Core Commands
 ```bash
 # Build package (compiles TypeScript to dist/)
-npm run build
+tsds validate
 
 # Formatting and linting
 npm run format
