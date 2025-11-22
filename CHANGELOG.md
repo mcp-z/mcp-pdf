@@ -96,7 +96,7 @@ Version 1.0.2's embedded resource approach (returning PDF data inline) caused to
 - Basic PDF generation tools with emoji and Unicode support
 
 ### Features
-- Three tools: `create-simple-pdf`, `create-pdf`, `generate-resume-pdf`
+- Three tools: `pdf-create-simple`, `pdf-create`, `pdf-create-resume`
 - Color emoji rendering using canvas-based image generation
 - Full Unicode support with automatic font detection
 - PDFKit integration for flexible PDF creation

@@ -9,7 +9,7 @@ import { renderTextWithEmoji } from '../../src/lib/pdf-helpers.ts';
 
 const testOutputDir = join(tmpdir(), 'server-pdf-layout-tests');
 
-describe('Layout Options for create-pdf', () => {
+describe('Layout Options for pdf-create', () => {
   it('renders text with custom alignment', async () => {
     await mkdir(testOutputDir, { recursive: true });
     const outputPath = join(testOutputDir, 'alignment-test.pdf');

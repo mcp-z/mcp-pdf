@@ -1,3 +1,3 @@
-export { default as createPDF } from './create-pdf.ts';
-export { default as createResumePDF } from './create-resume-pdf.ts';
-export { default as createSimplePDF } from './create-simple-pdf.ts';
+export { default as createPDF } from './pdf-create.ts';
+export { default as createResumePDF } from './pdf-create-resume.ts';
+export { default as createSimplePDF } from './pdf-create-simple.ts';
