@@ -13,7 +13,7 @@ type ContentItem =
   | { type: 'pageBreak' };
 
 /**
- * Helper function that simulates the enhanced create-pdf tool
+ * Helper function that simulates the enhanced pdf-create tool
  * This is what an agent would call with calculated values
  */
 async function createPdfWithEnhancements(options: {
