@@ -96,7 +96,7 @@ Once installed, create your first PDF:
 // Ask Claude:
 "Create a simple PDF with the text 'Hello World!'"
 
-// Claude will use the create-simple-pdf tool
+// Claude will use the pdf-create-simple tool
 // Result: server-pdf://abc123 (resource URI)
 
 // View the PDF:
@@ -173,7 +173,7 @@ Most users should just use the default. No configuration needed.
 Start simple with plain text:
 
 ```typescript
-create-simple-pdf({
+pdf-create-simple({
   filename: "letter.pdf",
   text: "Dear Customer,\n\nThank you for your business.\n\nBest regards,\nACME Corp",
   title: "Customer Thank You"
@@ -185,7 +185,7 @@ create-simple-pdf({
 Add visual style with colors and formatting:
 
 ```typescript
-create-pdf({
+pdf-create({
   filename: "notice.pdf",
   content: [
     {
@@ -215,7 +215,7 @@ create-pdf({
 Combine shapes and text for visual impact:
 
 ```typescript
-create-pdf({
+pdf-create({
   filename: "certificate.pdf",
   pageSetup: {
     backgroundColor: "#FFF8DC"
@@ -264,7 +264,7 @@ create-pdf({
 Handle complex structured data with JSON Resume:
 
 ```typescript
-generate-resume-pdf({
+pdf-create-resume({
   filename: "john-doe-resume.pdf",
   resume: {
     basics: {
@@ -304,11 +304,11 @@ generate-resume-pdf({
 
 Beyond standard documents, this tool creates artistic PDFs through layered shapes, gradients, and effects. Examples include Bob Ross-style landscape paintings, space-themed documents with stars and cosmic effects, and visually striking community notices.
 
-The `create-pdf` tool provides direct access to PDFKit's capabilities for combining shapes, colors, positioning, and text into virtually anything.
+The `pdf-create` tool provides direct access to PDFKit's capabilities for combining shapes, colors, positioning, and text into virtually anything.
 
 ## Available Tools
 
-### `generate-resume-pdf`
+### `pdf-create-resume`
 
 Generate professional resumes from JSON Resume format.
 
@@ -328,7 +328,7 @@ See the resume example above for structure.
 
 ---
 
-### `create-simple-pdf`
+### `pdf-create-simple`
 
 Create basic text PDFs quickly.
 
@@ -339,7 +339,7 @@ Create basic text PDFs quickly.
 
 ---
 
-### `create-pdf`
+### `pdf-create`
 
 Advanced PDF creation with full layout control.
 

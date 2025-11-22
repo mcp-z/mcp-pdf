@@ -43,7 +43,7 @@ export default function createTool(toolOptions: ToolOptions): ToolModule {
   // Validate configuration at startup - fail fast if HTTP/WS transport without baseUrl or port
   if (transport && transport.type === 'http') {
     if (!serverConfig?.baseUrl && !transport.port) {
-      throw new Error('create-simple-pdf: HTTP/WS transport requires either baseUrl in server config or port in transport config. This is a server configuration error - please provide --base-url or --port.');
+      throw new Error('pdf-create-simple: HTTP/WS transport requires either baseUrl in server config or port in transport config. This is a server configuration error - please provide --base-url or --port.');
     }
   }
 
@@ -116,7 +116,7 @@ export default function createTool(toolOptions: ToolOptions): ToolModule {
   }
 
   return {
-    name: 'create-simple-pdf',
+    name: 'pdf-create-simple',
     config,
     handler,
     // biome-ignore lint/suspicious/noExplicitAny: TypeScript instantiation limit

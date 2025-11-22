@@ -21,7 +21,7 @@ export default function createPrompt(): PromptModule {
             content: {
               type: 'text' as const,
               text: [
-                'You can create PDFs with create-pdf (complex layouts) or create-simple-pdf (plain text).',
+                'You can create PDFs with pdf-create (complex layouts) or pdf-create-simple (plain text).',
                 'After a tool runs you receive a line: Resource: mcp://<uuid>.',
                 'Fetch the binary via ReadResource using that URI when needed; do NOT request local filesystem paths.',
                 'Only extract or embed large PDF text into the model when the user explicitly asks for analysis or summary.',
