@@ -70,7 +70,16 @@ Config:
 
 **Note:** On first install, emoji font (~15MB) downloads automatically. After that, works completely offline.
 
-## Environment Variables and Arguments
+## Configuration Reference
+
+See [server.json](./server.json) for the complete list of:
+- Environment variables
+- CLI arguments
+- Default values
+
+The `server.json` file follows the official [MCP Server Schema](https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json).
+
+### Example Configuration
 
 ```json
 {
