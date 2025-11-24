@@ -60,7 +60,7 @@
     "version": "tsds version"
   },
   "dependencies": {
-    "@mcpeasy/server": "^0.1.22",
+    "@mcpeasy/server": "^0.1.23",
     "@modelcontextprotocol/sdk": "^1.22.0",
     "@napi-rs/canvas": "^0.1.82",
     "cors": "^2.8.5",
@@ -70,7 +70,7 @@
     "module-root-sync": "^1.2.3",
     "pdfkit": "^0.17.2",
     "pino": "^10.1.0",
-    "zod": "^4.1.12"
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@types/cors": "*",
