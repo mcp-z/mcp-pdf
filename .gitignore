@@ -11,29 +11,16 @@ dist/
 docs/
 coverage
 coverage.lcov
-*.tsbuildinfo
-tsconfig.tsbuildinfo
+
+# Test files
+.env.test
+.tmp/
+.tokens/
 
 # Logs
 logs
 *.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-dev-debug.log
-
-# Project Specific
-# Environment files - per-package pattern
-**/.env.test
-.env.test
-.env.local
-.env.*.local
-**/.env.local
-**/.env.*.local
-.audit/
-.plans/
-data/
-.archive/
 
 # Editor directories and files
 .idea/
@@ -42,29 +29,15 @@ data/
 # Agent files
 .agents/
 .claude/
-.taskmaster/
-*.agents.json
 .mcp.json
 .mcp.*.json
-.mcp-z/
 
 # mcp-z
-.mcpeasy/
-.tokens/
+.mcp-z/
+service-account*.json
 examples/
 !examples/.mcp.*.json
+examples/service-account.json
 
 # Backup files
 *.bak
-*.orig
-*.swp
-
-# Template files (should be generated)
-*.template
-
-# Cache files
-*.cache
-*.tmp
-*.temp
-.nyc_output
-.tmp/
