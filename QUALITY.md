@@ -1085,7 +1085,7 @@ This encompasses violations where quality tools:
 ### Example 1: Fixing Instead of Ignoring
 ```typescript
 // ❌ VIOLATION: Suppressing instead of fixing
-// biome-ignore lint/complexity/noExtraBooleanCast: legacy code
+// biome-ignore lint/complexity/noExtraBooleanCast: needed for truthy check
 if (!!isAuthenticated) { ... }
 
 // ✅ COMPLIANT: Fix the underlying issue
