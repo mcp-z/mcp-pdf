@@ -1,4 +1,4 @@
-import { getFileUri, type ToolModule, writeFile } from '@mcpeasy/server';
+import { getFileUri, writeFile } from '@mcpeasy/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import PDFDocument from 'pdfkit';
 import { z } from 'zod';
@@ -121,7 +121,7 @@ const config = {
 export type Input = z.infer<typeof inputSchema>;
 export type Output = z.infer<typeof outputSchema>;
 
-export default function createTool(toolOptions: ToolOptions): ToolModule {
+export default function createTool(toolOptions: ToolOptions) {
   const { serverConfig } = toolOptions;
   const { transport } = serverConfig;
 
@@ -342,6 +342,5 @@ export default function createTool(toolOptions: ToolOptions): ToolModule {
     name: 'pdf-create',
     config,
     handler,
-    // biome-ignore lint/suspicious/noExplicitAny: TypeScript instantiation limit
-  } as any;
+  } satisfies { name: string; config: unknown; handler: unknown };
 }
