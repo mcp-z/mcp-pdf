@@ -1,13 +1,13 @@
 import assert from 'assert';
 import { createWriteStream, existsSync, readFileSync } from 'fs';
 import { mkdir } from 'fs/promises';
-import { tmpdir } from 'os';
 import { join } from 'path';
 import PDFDocument from 'pdfkit';
 import { setupFonts } from '../../src/lib/fonts.ts';
 import { renderTextWithEmoji } from '../../src/lib/pdf-helpers.ts';
 
-const testOutputDir = join(tmpdir(), 'server-pdf-layout-tests');
+// Use .tmp/ in package root per QUALITY.md rule T8
+const testOutputDir = join(process.cwd(), '.tmp', 'layout-tests');
 
 describe('Layout Options for pdf-create', () => {
   it('renders text with custom alignment', async () => {
