@@ -1,4 +1,4 @@
-import { getFileUri, writeFile } from '@mcpeasy/server';
+import { getFileUri, type ToolModule, writeFile } from '@mcpeasy/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { jsonResumeSchema } from '../../lib/json-resume-schema.ts';
@@ -133,5 +133,5 @@ export default function createTool(toolOptions: ToolOptions) {
     name: 'pdf-create-resume',
     config,
     handler,
-  } satisfies { name: string; config: unknown; handler: unknown };
+  } satisfies ToolModule;
 }
