@@ -1,10 +1,12 @@
 import assert from 'assert';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
-import { tmpdir } from 'os';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
 // Import functions from source with proper TypeScript types
 import { getSystemFont, hasEmoji, needsUnicodeFont, PDF_STANDARD_FONTS, resolveFont } from '../../src/lib/fonts.ts';
+
+// Use .tmp/ in package root per QUALITY.md rule T8
+const testOutputDir = join(process.cwd(), '.tmp', 'fonts-tests');
 
 describe('PDF_STANDARD_FONTS', (): void => {
   it('should contain all 14 standard PDF fonts', (): void => {
@@ -205,11 +207,19 @@ describe('resolveFont', (): void => {
   });
 
   describe('absolute paths', (): void => {
+    before(() => {
+      mkdirSync(testOutputDir, { recursive: true });
+    });
+
+    after(() => {
+      if (existsSync(testOutputDir)) {
+        rmSync(testOutputDir, { recursive: true, force: true });
+      }
+    });
+
     it('resolves existing absolute path', async (): Promise<void> => {
       // Create a temp file to test
-      const tempDir: string = join(tmpdir(), 'server-pdf-test');
-      mkdirSync(tempDir, { recursive: true });
-      const testFont: string = join(tempDir, 'test.ttf');
+      const testFont: string = join(testOutputDir, 'test.ttf');
       writeFileSync(testFont, 'fake font data');
 
       const result: string | null = await resolveFont(testFont);
