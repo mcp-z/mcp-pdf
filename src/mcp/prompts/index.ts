@@ -1,1 +1,1 @@
-export { default as pdfInstructions } from './instructions.ts';
+export { default as resourceFetching } from './resource-fetching.ts';
