@@ -2,13 +2,13 @@ import type { PromptModule } from '@mcpeasy/server';
 
 export default function createPrompt() {
   const config = {
-    title: 'How to use PDF tools effectively',
-    description: 'Guidance for creating PDFs and fetching binary data via resources',
+    title: 'Fetching PDF Resources',
+    description: 'How to fetch generated PDF binary data via MCP resources',
     argsSchema: {} as const,
   };
 
   return {
-    name: 'instructions',
+    name: 'resource-fetching',
     config,
     handler: async () => {
       return {
