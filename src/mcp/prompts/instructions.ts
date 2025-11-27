@@ -1,5 +1,4 @@
 import type { PromptModule } from '@mcpeasy/server';
-import type { z } from 'zod/v3';
 
 export default function createPrompt(): PromptModule {
   const config = {
@@ -8,12 +7,10 @@ export default function createPrompt(): PromptModule {
     argsSchema: {} as const,
   };
 
-  type Args = z.infer<z.ZodObject<typeof config.argsSchema>>;
-
   return {
     name: 'instructions',
     config,
-    handler: async (_args: Args) => {
+    handler: async () => {
       return {
         messages: [
           {

@@ -1,6 +1,6 @@
 import { getFileUri, type ToolModule, writeFile } from '@mcpeasy/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { z } from 'zod/v3';
+import { z } from 'zod';
 import { jsonResumeSchema } from '../../lib/json-resume-schema.ts';
 import { generateResumePDFBuffer, type ResumeStyling } from '../../lib/resume-generator.ts';
 import type { ToolOptions } from '../../types.ts';
