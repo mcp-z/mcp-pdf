@@ -1,4 +1,4 @@
-import { z } from 'zod/v3';
+import { z } from 'zod';
 
 // ISO8601 date pattern: YYYY, YYYY-MM, or YYYY-MM-DD
 const iso8601Date = z.string().regex(/^\d{4}(-\d{2}(-\d{2})?)?$/);
