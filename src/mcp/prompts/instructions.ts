@@ -1,6 +1,4 @@
-import type { PromptModule } from '@mcpeasy/server';
-
-export default function createPrompt(): PromptModule {
+export default function createPrompt() {
   const config = {
     title: 'How to use PDF tools effectively',
     description: 'Guidance for creating PDFs and fetching binary data via resources',
@@ -28,5 +26,5 @@ export default function createPrompt(): PromptModule {
         ],
       };
     },
-  };
+  } satisfies { name: string; config: unknown; handler: unknown };
 }
