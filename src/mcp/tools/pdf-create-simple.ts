@@ -1,4 +1,4 @@
-import { getFileUri, writeFile } from '@mcpeasy/server';
+import { getFileUri, type ToolModule, writeFile } from '@mcpeasy/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import PDFDocument from 'pdfkit';
 import { z } from 'zod';
@@ -119,5 +119,5 @@ export default function createTool(toolOptions: ToolOptions) {
     name: 'pdf-create-simple',
     config,
     handler,
-  } satisfies { name: string; config: unknown; handler: unknown };
+  } satisfies ToolModule;
 }

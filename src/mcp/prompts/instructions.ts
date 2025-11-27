@@ -1,3 +1,5 @@
+import type { PromptModule } from '@mcpeasy/server';
+
 export default function createPrompt() {
   const config = {
     title: 'How to use PDF tools effectively',
@@ -26,5 +28,5 @@ export default function createPrompt() {
         ],
       };
     },
-  } satisfies { name: string; config: unknown; handler: unknown };
+  } satisfies PromptModule;
 }
