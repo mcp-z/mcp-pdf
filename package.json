@@ -65,7 +65,7 @@
     "@napi-rs/canvas": "^0.1.83",
     "cors": "^2.8.5",
     "emoji-regex": "^10.6.0",
-    "express": "^5.1.0",
+    "express": "^5.2.1",
     "fontkit": "^2.0.4",
     "module-root-sync": "^1.2.3",
     "pdfkit": "^0.17.2",
@@ -74,7 +74,7 @@
   },
   "devDependencies": {
     "@types/cors": "*",
-    "@types/express": "^5.0.5",
+    "@types/express": "^5.0.6",
     "@types/fontkit": "^2.0.8",
     "@types/mocha": "*",
     "@types/node": "^24.10.1",
