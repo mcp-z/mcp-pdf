@@ -79,7 +79,7 @@
     "@types/mocha": "*",
     "@types/node": "^24.10.1",
     "@types/pdfkit": "^0.17.4",
-    "npm-check-prepublish": "^0.1.1",
+    "npm-check-prepublish": "^1.0.0",
     "typescript": "^5.9.3"
   },
   "engines": {
