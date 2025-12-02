@@ -61,7 +61,7 @@
   },
   "dependencies": {
     "@mcpeasy/server": "^0.1.49",
-    "@modelcontextprotocol/sdk": "^1.23.0",
+    "@modelcontextprotocol/sdk": "^1.24.0",
     "@napi-rs/canvas": "^0.1.83",
     "cors": "^2.8.5",
     "emoji-regex": "^10.6.0",
@@ -79,7 +79,6 @@
     "@types/mocha": "*",
     "@types/node": "^24.10.1",
     "@types/pdfkit": "^0.17.4",
-    "npm-check-prepublish": "^1.0.0",
     "typescript": "^5.9.3"
   },
   "engines": {
