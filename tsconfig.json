@@ -1,22 +1,8 @@
 {
+  "extends": "tsds-config/tsconfig.json",
   "compilerOptions": {
-    "target": "esnext",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "strict": true,
-    "declaration": true,
-    "sourceMap": true,
-    "rewriteRelativeImportExtensions": true,
-    "erasableSyntaxOnly": true,
-    "verbatimModuleSyntax": true,
-    "noEmit": true,
-    "types": ["node", "mocha"],
-    "noImplicitAny": true,
-    "noImplicitReturns": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "newLine": "lf",
-    "skipLibCheck": true
+    "outDir": "dist",
+    "types": ["node", "mocha"]
   },
   "include": ["src/**/*", "test/**/*"],
   "exclude": ["node_modules/**/*"]
