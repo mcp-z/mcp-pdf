@@ -51,7 +51,7 @@
   ],
   "scripts": {
     "build": "tsds build",
-    "format": "biome check --write --unsafe",
+    "format": "tsds format",
     "postinstall": "node scripts/postinstall.cjs",
     "prepublish:check": "ncp",
     "prepublishOnly": "tsds validate",
@@ -81,6 +81,7 @@
     "@types/pdfkit": "*",
     "node-version-use": "*",
     "ts-dev-stack": "*",
+    "tsds-config": "*",
     "typescript": "*"
   },
   "engines": {

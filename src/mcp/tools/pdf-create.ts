@@ -178,7 +178,7 @@ export default function createTool(toolOptions: ToolOptions) {
           ...(filename && { Subject: filename }),
         },
       };
-      if (pageSetup?.size) docOptions.size = pageSetup.size;
+      if (pageSetup?.size && pageSetup.size.length >= 2) docOptions.size = [pageSetup.size[0]!, pageSetup.size[1]!] as [number, number];
       if (pageSetup?.margins) docOptions.margins = pageSetup.margins;
       const doc = new PDFDocument(docOptions);
 
@@ -190,7 +190,7 @@ export default function createTool(toolOptions: ToolOptions) {
       });
 
       if (pageSetup?.backgroundColor) {
-        const pageSize = pageSetup?.size || [612, 792];
+        const pageSize: [number, number] = pageSetup?.size && pageSetup.size.length >= 2 ? [pageSetup.size[0]!, pageSetup.size[1]!] : [612, 792];
         doc.rect(0, 0, pageSize[0], pageSize[1]).fill(pageSetup.backgroundColor);
       }
 
