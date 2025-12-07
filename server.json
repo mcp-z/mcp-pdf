@@ -32,7 +32,7 @@
         {
           "name": "BASE_URL",
           "description": "Base URL for file serving (optional, used for HTTP transport)",
-          "placeholder": "http://localhost:9001",
+          "placeholder": "http://{HOST}:{PORT}",
           "isRequired": false,
           "isSecret": false
         },
@@ -93,7 +93,7 @@
         {
           "name": "BASE_URL",
           "description": "Base URL for file serving (optional, defaults to http://localhost:{PORT})",
-          "placeholder": "http://localhost:9001",
+          "placeholder": "http://{HOST}:{PORT}",
           "isRequired": false,
           "isSecret": false
         },
