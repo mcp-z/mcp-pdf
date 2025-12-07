@@ -26,7 +26,8 @@
           "description": "Directory for storing generated PDF files",
           "placeholder": "~/.server-pdf",
           "isRequired": false,
-          "isSecret": false
+          "isSecret": false,
+          "default": "~/.mcp-z/server-pdf/files"
         },
         {
           "name": "BASE_URL",
@@ -43,7 +44,8 @@
           "choices": ["debug", "info", "warn", "error"],
           "isRequired": false,
           "isSecret": false,
-          "isMandatoryForMatrix": false
+          "isMandatoryForMatrix": false,
+          "default": "info"
         }
       ],
       "packageArguments": [
@@ -85,7 +87,8 @@
           "description": "Directory for storing generated PDF files",
           "placeholder": "~/.server-pdf",
           "isRequired": false,
-          "isSecret": false
+          "isSecret": false,
+          "default": "~/.mcp-z/server-pdf/files"
         },
         {
           "name": "BASE_URL",
@@ -102,7 +105,8 @@
           "choices": ["debug", "info", "warn", "error"],
           "isRequired": false,
           "isSecret": false,
-          "isMandatoryForMatrix": false
+          "isMandatoryForMatrix": false,
+          "default": "info"
         }
       ],
       "packageArguments": [
