@@ -47,13 +47,13 @@
   "files": [
     "dist",
     "bin",
-    "schemas",
+    "assets",
     "scripts"
   ],
   "scripts": {
     "build": "tsds build",
     "format": "tsds format",
-    "generate:types": "json2ts schemas/resume.schema.json schemas/resume.d.ts --bannerComment \"/* eslint-disable */\n/* Auto-generated from schemas/resume.schema.json - DO NOT EDIT */\"",
+    "generate:types": "json2ts assets/resume.schema.json assets/resume.d.ts --bannerComment \"/* eslint-disable */\n/* Auto-generated from assets/resume.schema.json - DO NOT EDIT */\"",
     "postinstall": "node scripts/postinstall.cjs",
     "prepublish:check": "ncp",
     "prepublishOnly": "tsds validate",
@@ -72,7 +72,7 @@
     "express": "^5.2.1",
     "fontkit": "^2.0.4",
     "liquidjs": "^10.24.0",
-    "module-root-sync": "^1.2.6",
+    "module-root-sync": "^1.2.8",
     "pdfkit": "^0.17.2",
     "pino": "^10.1.0",
     "zod": "^4.1.13"
@@ -82,10 +82,10 @@
     "@types/express": "^5.0.6",
     "@types/fontkit": "^2.0.8",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^24.10.1",
+    "@types/node": "^24.10.2",
     "@types/pdfkit": "^0.17.4",
     "json-schema-to-typescript": "^15.0.4",
-    "node-version-use": "^1.9.7",
+    "node-version-use": "^1.9.9",
     "ts-dev-stack": "^1.21.2",
     "tsds-config": "^0.2.0",
     "typescript": "^5.9.3"

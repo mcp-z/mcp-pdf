@@ -97,6 +97,10 @@ export default function createTool(toolOptions: ToolOptions) {
         doc.moveDown(0.5);
       }
 
+      // Get page count before ending document
+      const pageRange = doc.bufferedPageRange();
+      const pageCount = pageRange.count || 1;
+
       doc.end();
 
       const pdfBuffer = await pdfPromise;
@@ -112,10 +116,6 @@ export default function createTool(toolOptions: ToolOptions) {
         ...(serverConfig.baseUrl && { baseUrl: serverConfig.baseUrl }),
         endpoint: '/files',
       });
-
-      // Get page count from buffered pages
-      const pageRange = doc.bufferedPageRange();
-      const pageCount = pageRange.count || 1;
 
       const result: Output = {
         operationSummary: `Created simple PDF: ${filename}`,
