@@ -18,6 +18,7 @@ import type {
   EntryData,
   EntryListElement,
   FormattingOptions,
+  GroupElement,
   HeaderElement,
   KeywordListElement,
   LanguageListElement,
@@ -256,7 +257,11 @@ function transformData(data: unknown, source: string, config: SectionConfig): La
 }
 
 /**
- * Transform a section config into IR elements
+ * Transform a section config into IR elements.
+ *
+ * For sections with titles and entry-list content, creates an atomic group
+ * containing the section title + first entry. This implements react-pdf style
+ * wrap={false} behavior to prevent orphaned section titles.
  */
 function transformSection(resume: ResumeSchema, config: SectionConfig): LayoutElement[] {
   const elements: LayoutElement[] = [];
@@ -289,27 +294,69 @@ function transformSection(resume: ResumeSchema, config: SectionConfig): LayoutEl
   if (data === undefined || data === null) return elements;
   if (Array.isArray(data) && data.length === 0) return elements;
 
-  // Add section title if specified
-  if (title) {
-    elements.push({
-      type: 'section-title',
-      title,
-      style,
-    } as SectionTitleElement);
-  }
-
-  // Transform content
+  // Transform content first to determine grouping strategy
+  let contentElement: LayoutElement | null = null;
   if (template) {
     // Use custom template
-    elements.push({
+    contentElement = {
       type: 'template',
       template,
       data: (typeof data === 'object' ? data : { value: data }) as Record<string, unknown>,
       style,
-    } as TemplateElement);
+    } as TemplateElement;
   } else {
     // Use inferred type
-    const contentElement = transformData(data, source, config);
+    contentElement = transformData(data, source, config);
+  }
+
+  // Create section title element if specified
+  const sectionTitleElement: SectionTitleElement | null = title
+    ? {
+        type: 'section-title',
+        title,
+        style,
+      }
+    : null;
+
+  // If we have both a section title and an entry-list, create atomic groups
+  // to prevent orphaned section titles (react-pdf style wrap={false})
+  if (sectionTitleElement && contentElement && contentElement.type === 'entry-list') {
+    const entryList = contentElement as EntryListElement;
+    const entries = entryList.entries;
+
+    if (entries.length > 0) {
+      // Create entry-list with just the first entry for the atomic group
+      const firstEntryList: EntryListElement = {
+        ...entryList,
+        entries: [entries[0] as EntryData],
+      };
+
+      // Create atomic group: section-title + first entry stay together
+      const atomicGroup: GroupElement = {
+        type: 'group',
+        wrap: false,
+        children: [sectionTitleElement, firstEntryList],
+      };
+      elements.push(atomicGroup);
+
+      // Add remaining entries as separate entry-list (flow normally)
+      if (entries.length > 1) {
+        const remainingEntryList: EntryListElement = {
+          ...entryList,
+          entries: entries.slice(1) as EntryData[],
+        };
+        elements.push(remainingEntryList);
+      }
+    } else {
+      // Empty entry list - just add title (shouldn't happen with earlier empty check)
+      elements.push(sectionTitleElement);
+    }
+  } else {
+    // No entry-list or no title - add elements normally
+    // (Other content types handle their own page breaks)
+    if (sectionTitleElement) {
+      elements.push(sectionTitleElement);
+    }
     if (contentElement) {
       elements.push(contentElement);
     }
