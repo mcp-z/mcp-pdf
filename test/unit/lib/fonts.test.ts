@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
 // Import functions from source with proper TypeScript types
-import { getSystemFont, hasEmoji, needsUnicodeFont, PDF_STANDARD_FONTS, resolveFont } from '../../src/lib/fonts.ts';
+import { getSystemFont, hasEmoji, needsUnicodeFont, PDF_STANDARD_FONTS, resolveFont } from '../../../src/lib/fonts.ts';
 
 // Use .tmp/ in package root per QUALITY.md rule T8
 const testOutputDir = join(process.cwd(), '.tmp', 'fonts-tests');

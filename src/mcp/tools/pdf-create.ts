@@ -2,12 +2,16 @@ import { getFileUri, type ToolModule, writeFile } from '@mcpeasy/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import PDFDocument from 'pdfkit';
 import { z } from 'zod';
+import { measureTextHeight } from '../../lib/content-measure.ts';
 import { registerEmojiFont } from '../../lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts, validateTextForFont } from '../../lib/fonts.ts';
+import { LayoutEngine } from '../../lib/layout-engine.ts';
 import { type PDFTextOptions, renderTextWithEmoji } from '../../lib/pdf-helpers.ts';
 import type { ToolOptions } from '../../types.ts';
 
+// Forward declare for recursive type
 type ContentItem = z.infer<typeof contentItemSchema>;
+type GroupItem = z.infer<typeof groupSchema>;
 
 const textBaseSchema = z.object({
   text: z.string().optional(),
@@ -32,7 +36,8 @@ const textBaseSchema = z.object({
   lineBreak: z.boolean().optional(),
 });
 
-const contentItemSchema = z.union([
+// Base content items (without group to avoid circular reference)
+const baseContentItemSchema = z.union([
   textBaseSchema.extend({ type: z.literal('text') }),
   textBaseSchema.extend({ type: z.literal('heading') }),
   z.object({
@@ -74,11 +79,30 @@ const contentItemSchema = z.union([
   z.object({ type: z.literal('pageBreak') }),
 ]);
 
+// Group schema - contains children that should stay together
+const groupSchema = z.object({
+  type: z.literal('group'),
+  wrap: z.literal(false).optional().describe('When false, group stays together on one page (atomic)'),
+  children: z.array(baseContentItemSchema).describe('Nested content items'),
+});
+
+// Full content item schema including groups
+const contentItemSchema = z.union([baseContentItemSchema, groupSchema]);
+
+// Layout configuration schema
+const layoutSchema = z
+  .object({
+    mode: z.enum(['document', 'fixed']).optional().default('document').describe("Layout mode: 'document' = auto page breaks (default), 'fixed' = no auto breaks (flyers/posters)"),
+  })
+  .optional()
+  .describe('Layout configuration for page break behavior');
+
 const inputSchema = z.object({
   filename: z.string().optional().describe('Optional logical filename (metadata only). Storage uses UUID. Defaults to "document.pdf".'),
   title: z.string().optional().describe('Document title metadata'),
   author: z.string().optional().describe('Document author metadata'),
   font: z.string().optional().describe('Font strategy (default: auto). Built-ins: Helvetica, Times-Roman, Courier. Use a path or URL for Unicode.'),
+  layout: layoutSchema,
   pageSetup: z
     .object({
       size: z.tuple([z.number(), z.number()]).optional(),
@@ -154,7 +178,9 @@ export default function createTool(toolOptions: ToolOptions) {
   }
 
   async function handler(args: Input): Promise<CallToolResult> {
-    const { filename = 'document.pdf', title, author, font, pageSetup, content } = args;
+    const { filename = 'document.pdf', title, author, font, layout, pageSetup, content } = args;
+    const layoutMode = layout?.mode ?? 'document';
+
     try {
       interface PDFDocOptions {
         info: {
@@ -178,7 +204,12 @@ export default function createTool(toolOptions: ToolOptions) {
           ...(filename && { Subject: filename }),
         },
       };
-      if (pageSetup?.size && pageSetup.size.length >= 2) docOptions.size = [pageSetup.size[0]!, pageSetup.size[1]!] as [number, number];
+      if (pageSetup?.size && pageSetup.size.length >= 2) {
+        const [width, height] = pageSetup.size;
+        if (width !== undefined && height !== undefined) {
+          docOptions.size = [width, height] as [number, number];
+        }
+      }
       if (pageSetup?.margins) docOptions.margins = pageSetup.margins;
       const doc = new PDFDocument(docOptions);
 
@@ -190,9 +221,13 @@ export default function createTool(toolOptions: ToolOptions) {
       });
 
       if (pageSetup?.backgroundColor) {
-        const pageSize: [number, number] = pageSetup?.size && pageSetup.size.length >= 2 ? [pageSetup.size[0]!, pageSetup.size[1]!] : [612, 792];
+        const pageSize: [number, number] = pageSetup?.size && pageSetup.size.length >= 2 ? [pageSetup.size[0] ?? 612, pageSetup.size[1] ?? 792] : [612, 792];
         doc.rect(0, 0, pageSize[0], pageSize[1]).fill(pageSetup.backgroundColor);
       }
+
+      // Initialize LayoutEngine for document mode
+      const engine = new LayoutEngine();
+      engine.init(doc, { mode: layoutMode });
 
       const contentText = JSON.stringify(content);
       const containsEmoji = hasEmoji(contentText);
@@ -221,7 +256,44 @@ export default function createTool(toolOptions: ToolOptions) {
       };
       doc.on('pageAdded', drawBackgroundOnPage);
 
-      for (const item of content) {
+      // Measure height of a single content item
+      function measureItem(item: ContentItem | z.infer<typeof baseContentItemSchema>): number {
+        if (item.type === 'text' || item.type === 'heading') {
+          if (!item.text) return 0;
+          const fontSize = item.type === 'heading' ? (item.fontSize ?? 24) : (item.fontSize ?? 12);
+          const fontName = item.type === 'heading' ? (item.bold !== false ? boldFont : regularFont) : item.bold ? boldFont : regularFont;
+          return measureTextHeight(doc, item.text, fontSize, fontName, emojiAvailable, {
+            width: item.width,
+            indent: item.indent,
+            lineGap: item.lineGap,
+          });
+        }
+        if (item.type === 'image') {
+          return item.height ?? 100; // Default height estimate
+        }
+        if (item.type === 'rect') {
+          return item.height;
+        }
+        if (item.type === 'circle') {
+          return item.radius * 2;
+        }
+        if (item.type === 'line') {
+          return Math.abs(item.y2 - item.y1);
+        }
+        return 0;
+      }
+
+      // Measure height of a group (sum of children)
+      function measureGroup(group: GroupItem): number {
+        let totalHeight = 0;
+        for (const child of group.children) {
+          totalHeight += measureItem(child);
+        }
+        return totalHeight;
+      }
+
+      // Render a single base content item
+      function renderBaseItem(item: z.infer<typeof baseContentItemSchema>) {
         switch (item.type) {
           case 'text': {
             if (item.x !== undefined && item.align !== undefined) throw new Error('Cannot use both x and align in text element');
@@ -289,9 +361,40 @@ export default function createTool(toolOptions: ToolOptions) {
           }
           case 'pageBreak': {
             doc.addPage();
+            engine.init(doc, { mode: layoutMode }); // Re-init engine after page break
             break;
           }
         }
+      }
+
+      // Render content item with layout engine support
+      function renderItem(item: ContentItem) {
+        if (item.type === 'group') {
+          // Handle group
+          const groupHeight = measureGroup(item);
+
+          // If wrap: false, ensure entire group fits or move to new page
+          if (item.wrap === false && engine.isDocumentMode()) {
+            engine.ensureSpace(doc, groupHeight);
+          }
+
+          // Render all children
+          for (const child of item.children) {
+            renderBaseItem(child);
+          }
+        } else {
+          // Regular item - measure and ensure space in document mode
+          if (engine.isDocumentMode()) {
+            const height = measureItem(item);
+            engine.ensureSpace(doc, height);
+          }
+          renderBaseItem(item);
+        }
+      }
+
+      // Render all content
+      for (const item of content) {
+        renderItem(item);
       }
 
       doc.end();

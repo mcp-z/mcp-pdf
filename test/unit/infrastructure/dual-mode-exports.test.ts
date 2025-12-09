@@ -10,7 +10,7 @@ const require = createRequire(import.meta.url);
 describe('PDF Server Dual-Mode Exports', () => {
   it('should load successfully in CommonJS mode', () => {
     // Tests dual ESM/CJS exports for cross-platform compatibility
-    const serverPath = path.resolve(__dirname, '../../dist/cjs/index.js');
+    const serverPath = path.resolve(__dirname, '../../../dist/cjs/index.js');
 
     // This will throw if there are any import/export issues
     const pdfServer = require(serverPath);
