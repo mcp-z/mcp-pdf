@@ -95,15 +95,25 @@ export class LayoutEngine {
 
   /**
    * Get the content width (page width minus margins).
+   * This is the usable width for text and content.
    */
   getContentWidth(): number {
     return this.contentWidth;
   }
 
   /**
-   * Get the full page width.
+   * Get the content width (page width minus margins).
+   * Named getPageWidth for API compatibility with handlers that expect
+   * "page width" to mean the usable content area.
    */
   getPageWidth(): number {
+    return this.contentWidth;
+  }
+
+  /**
+   * Get the full page width including margins.
+   */
+  getFullPageWidth(): number {
     return this.pageWidth;
   }
 
