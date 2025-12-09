@@ -1,5 +1,5 @@
 /* eslint-disable */
-/* Auto-generated from schemas/resume.schema.json - DO NOT EDIT */
+/* Auto-generated from assets/resume.schema.json - DO NOT EDIT */
 
 /**
  * Similar to the standard date type, but each section after the year is optional. e.g. 2014-06-29 or 2023-04

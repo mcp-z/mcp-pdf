@@ -29,7 +29,7 @@ function getValidator(): ReturnType<typeof ajv.compile> {
   }
 
   // Load and compile the schema once
-  const schemaPath = resolve(__dirname, '../../schemas/resume.schema.json');
+  const schemaPath = resolve(__dirname, '../../assets/resume.schema.json');
   const schemaContent = readFileSync(schemaPath, 'utf-8');
   const schema = JSON.parse(schemaContent);
 

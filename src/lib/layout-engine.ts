@@ -108,16 +108,9 @@ export class LayoutEngine {
   }
 
   /**
-   * Get the left margin (alias for getMarginLeft for handler compatibility).
-   */
-  getMargin(): number {
-    return this.marginLeft;
-  }
-
-  /**
    * Get the left margin.
    */
-  getMarginLeft(): number {
+  getMargin(): number {
     return this.marginLeft;
   }
 

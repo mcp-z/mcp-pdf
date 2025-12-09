@@ -209,7 +209,7 @@ export interface LayoutDocument {
   elements: LayoutElement[];
 }
 
-// ===== Type Guards =====
+// ===== Config Type Guards =====
 
 export function isDividerConfig(config: SectionConfig | DividerConfig): config is DividerConfig {
   return 'type' in config && config.type === 'divider';
@@ -217,50 +217,4 @@ export function isDividerConfig(config: SectionConfig | DividerConfig): config i
 
 export function isSectionConfig(config: SectionConfig | DividerConfig): config is SectionConfig {
   return 'source' in config;
-}
-
-// ===== Element Type Guards =====
-
-export function isTextElement(el: LayoutElement): el is TextElement {
-  return el.type === 'text';
-}
-
-export function isDividerElement(el: LayoutElement): el is DividerElement {
-  return el.type === 'divider';
-}
-
-export function isSectionTitleElement(el: LayoutElement): el is SectionTitleElement {
-  return el.type === 'section-title';
-}
-
-export function isEntryListElement(el: LayoutElement): el is EntryListElement {
-  return el.type === 'entry-list';
-}
-
-export function isKeywordListElement(el: LayoutElement): el is KeywordListElement {
-  return el.type === 'keyword-list';
-}
-
-export function isLanguageListElement(el: LayoutElement): el is LanguageListElement {
-  return el.type === 'language-list';
-}
-
-export function isCredentialListElement(el: LayoutElement): el is CredentialListElement {
-  return el.type === 'credential-list';
-}
-
-export function isReferenceListElement(el: LayoutElement): el is ReferenceListElement {
-  return el.type === 'reference-list';
-}
-
-export function isSummaryHighlightsElement(el: LayoutElement): el is SummaryHighlightsElement {
-  return el.type === 'summary-highlights';
-}
-
-export function isHeaderElement(el: LayoutElement): el is HeaderElement {
-  return el.type === 'header';
-}
-
-export function isTemplateElement(el: LayoutElement): el is TemplateElement {
-  return el.type === 'template';
 }

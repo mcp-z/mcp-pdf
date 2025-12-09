@@ -4,7 +4,7 @@
 
 import PDFDocument from 'pdfkit';
 // Import generated type from JSON Schema
-import type { ResumeSchema } from '../../schemas/resume.d.ts';
+import type { ResumeSchema } from '../../assets/resume.d.ts';
 import { registerEmojiFont } from './emoji-renderer.ts';
 import { hasEmoji, isPDFStandardFont, needsUnicodeFont, resolveFont } from './fonts.ts';
 import { renderLayoutDocument } from './handlers/index.ts';
@@ -14,9 +14,8 @@ import { DEFAULT_LAYOUT, transformToLayout } from './ir/transform.ts';
 import type { FormattingOptions, LayoutConfig } from './ir/types.ts';
 import { LayoutEngine } from './layout-engine.ts';
 
-// Re-export for backwards compatibility
+// Re-export types for external use
 export type { ResumeSchema };
-export type JsonResume = ResumeSchema;
 
 /**
  * Render options for resume PDF generation

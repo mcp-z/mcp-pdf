@@ -1,9 +1,9 @@
 import assert from 'assert';
-import { generateResumePDFBuffer, type JsonResume } from '../../../../src/lib/resume-pdf-generator.ts';
+import { generateResumePDFBuffer, type ResumeSchema } from '../../../../src/lib/resume-pdf-generator.ts';
 
 describe('Emoji Integration in PDFs', () => {
   it('renders resume with emoji in name', async () => {
-    const resume: JsonResume = {
+    const resume: ResumeSchema = {
       basics: {
         name: 'John Doe 👨‍💻',
         label: 'Software Engineer',
@@ -19,7 +19,7 @@ describe('Emoji Integration in PDFs', () => {
   });
 
   it('renders resume with emoji in skills', async () => {
-    const resume: JsonResume = {
+    const resume: ResumeSchema = {
       basics: {
         name: 'Jane Developer',
       },
@@ -43,7 +43,7 @@ describe('Emoji Integration in PDFs', () => {
   });
 
   it('renders resume with emoji in job highlights', async () => {
-    const resume: JsonResume = {
+    const resume: ResumeSchema = {
       basics: {
         name: 'Alex Engineer',
       },
@@ -64,7 +64,7 @@ describe('Emoji Integration in PDFs', () => {
   });
 
   it('renders resume with various emoji types', async () => {
-    const resume: JsonResume = {
+    const resume: ResumeSchema = {
       basics: {
         name: 'Emoji Test 🎯',
         label: 'Full Stack Developer',
@@ -101,7 +101,7 @@ describe('Emoji Integration in PDFs', () => {
   });
 
   it('handles resume without emoji gracefully', async () => {
-    const resume: JsonResume = {
+    const resume: ResumeSchema = {
       basics: {
         name: 'Plain Name',
         label: 'Regular Job',
@@ -122,7 +122,7 @@ describe('Emoji Integration in PDFs', () => {
   });
 
   it('renders standard Unicode symbols correctly (Greek, geometric, symbols)', async () => {
-    const resume: JsonResume = {
+    const resume: ResumeSchema = {
       basics: {
         name: 'Symbol Test Resume',
         label: 'Director of Operations',
@@ -145,7 +145,7 @@ describe('Emoji Integration in PDFs', () => {
   });
 
   it('correctly distinguishes between symbols and true emoji', async () => {
-    const resume: JsonResume = {
+    const resume: ResumeSchema = {
       basics: {
         name: 'Mixed Content Test',
         summary: 'This resume tests both standard symbols (Ξ △ ☐ ○) and true emoji (😀 👋 🎉)',

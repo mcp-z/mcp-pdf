@@ -6,7 +6,7 @@
  * can be rendered by type-specific handlers.
  */
 
-import type { ResumeSchema } from '../../../schemas/resume.d.ts';
+import type { ResumeSchema } from '../../../assets/resume.d.ts';
 import { DEFAULT_FORMATTING, registerFormattingHelpers } from '../formatting.ts';
 import type {
   ContactItem,
