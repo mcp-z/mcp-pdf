@@ -2,8 +2,10 @@ import { getFileUri, type ToolModule, writeFile } from '@mcpeasy/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import PDFDocument from 'pdfkit';
 import { z } from 'zod';
+import { measureTextHeight } from '../../lib/content-measure.ts';
 import { registerEmojiFont } from '../../lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts } from '../../lib/fonts.ts';
+import { LayoutEngine } from '../../lib/layout-engine.ts';
 import { renderTextWithEmoji } from '../../lib/pdf-helpers.ts';
 import type { ToolOptions } from '../../types.ts';
 
@@ -22,6 +24,7 @@ const outputSchema = z.object({
   filename: z.string(),
   uri: z.string(),
   sizeBytes: z.number(),
+  pageCount: z.number().optional(),
 });
 
 const config = {
@@ -69,7 +72,31 @@ export default function createTool(toolOptions: ToolOptions) {
       const fonts = await setupFonts(doc);
       const { regular: regularFont } = fonts;
 
-      renderTextWithEmoji(doc, text, 12, regularFont, emojiAvailable);
+      // Initialize LayoutEngine for auto page breaks
+      const engine = new LayoutEngine();
+      engine.init(doc, { mode: 'document' });
+
+      const fontSize = 12;
+
+      // Split text into paragraphs and render with auto page breaks
+      const paragraphs = text.split(/\n\n+/);
+
+      for (const paragraph of paragraphs) {
+        if (!paragraph.trim()) continue;
+
+        // Measure paragraph height
+        const height = measureTextHeight(doc, paragraph, fontSize, regularFont, emojiAvailable);
+
+        // Ensure space for this paragraph (auto page break if needed)
+        engine.ensureSpace(doc, height);
+
+        // Render the paragraph
+        renderTextWithEmoji(doc, paragraph, fontSize, regularFont, emojiAvailable);
+
+        // Add paragraph spacing
+        doc.moveDown(0.5);
+      }
+
       doc.end();
 
       const pdfBuffer = await pdfPromise;
@@ -86,6 +113,10 @@ export default function createTool(toolOptions: ToolOptions) {
         endpoint: '/files',
       });
 
+      // Get page count from buffered pages
+      const pageRange = doc.bufferedPageRange();
+      const pageCount = pageRange.count || 1;
+
       const result: Output = {
         operationSummary: `Created simple PDF: ${filename}`,
         itemsProcessed: 1,
@@ -95,6 +126,7 @@ export default function createTool(toolOptions: ToolOptions) {
         filename,
         uri: fileUri,
         sizeBytes: pdfBuffer.length,
+        pageCount,
       };
 
       return {

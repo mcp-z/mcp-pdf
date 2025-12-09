@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { splitTextAndEmoji } from '../../src/lib/emoji-renderer.ts';
+import { splitTextAndEmoji } from '../../../src/lib/emoji-renderer.ts';
 
 describe('splitTextAndEmoji', (): void => {
   it('returns single text segment for ASCII-only text', (): void => {

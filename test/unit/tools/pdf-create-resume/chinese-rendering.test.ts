@@ -2,9 +2,9 @@ import assert from 'assert';
 import { createWriteStream, existsSync, mkdirSync, rmSync, statSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import PDFDocument from 'pdfkit';
-import { registerEmojiFont } from '../../src/lib/emoji-renderer.ts';
-import { needsUnicodeFont, setupFonts } from '../../src/lib/fonts.ts';
-import { renderTextWithEmoji } from '../../src/lib/pdf-helpers.ts';
+import { registerEmojiFont } from '../../../../src/lib/emoji-renderer.ts';
+import { needsUnicodeFont, setupFonts } from '../../../../src/lib/fonts.ts';
+import { renderTextWithEmoji } from '../../../../src/lib/pdf-helpers.ts';
 
 // Use .tmp/ in package root per QUALITY.md rule T8
 const testOutputDir = join(process.cwd(), '.tmp', 'chinese-tests');

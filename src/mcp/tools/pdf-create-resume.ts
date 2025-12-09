@@ -1,52 +1,93 @@
 import { getFileUri, type ToolModule, writeFile } from '@mcpeasy/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { jsonResumeSchema } from '../../lib/json-resume-schema.ts';
-import { generateResumePDFBuffer, type ResumeStyling } from '../../lib/resume-generator.ts';
+import { generateResumePDFBuffer, type RenderOptions, type TypographyOptions } from '../../lib/resume-pdf-generator.ts';
+import { validateResume } from '../../lib/validator.ts';
 import type { ToolOptions } from '../../types.ts';
+
+// Use loose Zod schema for MCP input, AJV validates strictly
+const resumeInputSchema = z.record(z.string(), z.any()).describe('Resume data in JSON Resume format');
+
+// Section configuration schema
+const sectionConfigSchema = z.object({
+  source: z.string().describe('Data source path (e.g., "work", "education", "meta.valueProp")'),
+  title: z.string().optional().describe('Section title (omit for no title)'),
+  showTenure: z.boolean().optional().describe('Show tenure duration for work/volunteer sections'),
+  template: z.string().optional().describe('LiquidJS template for custom rendering'),
+});
+
+// Divider configuration schema
+const dividerConfigSchema = z.object({
+  type: z.literal('divider'),
+  thickness: z.number().optional().describe('Line thickness in points'),
+  color: z.string().optional().describe('Line color (hex or named)'),
+});
+
+// Layout configuration schema
+const layoutConfigSchema = z
+  .object({
+    sections: z
+      .array(z.union([sectionConfigSchema, dividerConfigSchema]))
+      .optional()
+      .describe('Section order and configuration'),
+    formatting: z
+      .object({
+        dateFormat: z.string().optional().describe('Date format string (e.g., "MMM YYYY", "DD/MM/YYYY")'),
+        dateSeparator: z.string().optional().describe('Separator between start and end dates (e.g., " - ", " to ")'),
+        presentText: z.string().optional().describe('Text for current/ongoing dates (e.g., "Present", "Current")'),
+        contactSeparator: z.string().optional().describe('Separator between contact items (e.g., " | ")'),
+      })
+      .optional()
+      .describe('Date and text formatting options'),
+  })
+  .optional()
+  .describe('Layout configuration for section ordering and formatting');
+
+// Typography/styling schema (points-based, not moveDown)
+const stylingSchema = z
+  .object({
+    fontSize: z
+      .object({
+        name: z.number().optional().describe('Name font size (default: 30)'),
+        heading: z.number().optional().describe('Section heading font size (default: 12)'),
+        subheading: z.number().optional().describe('Entry title font size (default: 11)'),
+        body: z.number().optional().describe('Body text font size (default: 10)'),
+        contact: z.number().optional().describe('Contact info font size (default: 10)'),
+      })
+      .optional(),
+    spacing: z
+      .object({
+        afterName: z.number().optional().describe('Space after name in points'),
+        afterHeading: z.number().optional().describe('Space after section headings in points'),
+        afterSubheading: z.number().optional().describe('Space after entry titles in points'),
+        afterText: z.number().optional().describe('Space after paragraphs in points'),
+        betweenSections: z.number().optional().describe('Space between sections in points'),
+      })
+      .optional(),
+    margins: z
+      .object({
+        top: z.number().optional().describe('Top margin in points (default: 50)'),
+        bottom: z.number().optional().describe('Bottom margin in points (default: 50)'),
+        left: z.number().optional().describe('Left margin in points (default: 54)'),
+        right: z.number().optional().describe('Right margin in points (default: 54)'),
+      })
+      .optional(),
+    alignment: z
+      .object({
+        header: z.enum(['left', 'center', 'right']).optional().describe('Header alignment (default: center)'),
+      })
+      .optional(),
+  })
+  .optional()
+  .describe('Typography and styling options');
 
 const inputSchema = z.object({
   filename: z.string().optional().describe('Optional logical filename (metadata only). Storage uses UUID. Defaults to "resume.pdf".'),
-  resume: jsonResumeSchema.describe('Resume data in JSON Resume format'),
+  resume: resumeInputSchema,
   font: z.string().optional().describe('Font for the PDF. Defaults to "auto" (system font detection). Built-ins are limited to ASCII; provide a path or URL for full Unicode.'),
-  styling: z
-    .object({
-      fontSize: z
-        .object({
-          name: z.number().optional(),
-          label: z.number().optional(),
-          heading: z.number().optional(),
-          subheading: z.number().optional(),
-          body: z.number().optional(),
-          contact: z.number().optional(),
-        })
-        .optional(),
-      spacing: z
-        .object({
-          afterName: z.number().optional(),
-          afterLabel: z.number().optional(),
-          afterContact: z.number().optional(),
-          afterHeading: z.number().optional(),
-          afterSubheading: z.number().optional(),
-          afterText: z.number().optional(),
-          betweenSections: z.number().optional(),
-        })
-        .optional(),
-      alignment: z
-        .object({
-          header: z.enum(['left', 'center', 'right']).optional(),
-        })
-        .optional(),
-      margins: z
-        .object({
-          top: z.number().optional(),
-          bottom: z.number().optional(),
-          left: z.number().optional(),
-          right: z.number().optional(),
-        })
-        .optional(),
-    })
-    .optional(),
+  layout: layoutConfigSchema,
+  styling: stylingSchema,
+  showTenure: z.boolean().optional().describe('Show tenure duration after date ranges (e.g., "May 2024 – Jul 2025 · 1 yr 3 mos")'),
 });
 
 const outputSchema = z.object({
@@ -62,7 +103,7 @@ const outputSchema = z.object({
 
 const config = {
   title: 'Generate Resume PDF',
-  description: 'Generate a professional resume PDF from JSON Resume format. Supports styling, fonts, spacing, and multiple sections.',
+  description: 'Generate a professional resume PDF from JSON Resume format. Supports layout customization, date/locale formatting, styling, fonts, and automatic page breaks.',
   inputSchema,
   outputSchema: z.object({
     result: outputSchema,
@@ -84,9 +125,115 @@ export default function createTool(toolOptions: ToolOptions) {
   }
 
   async function handler(args: Input): Promise<CallToolResult> {
-    const { filename = 'resume.pdf', resume, font, styling } = args;
+    const { filename = 'resume.pdf', resume, font, layout, styling, showTenure } = args;
+
     try {
-      const pdfBuffer = await generateResumePDFBuffer(resume, font, styling as ResumeStyling | undefined);
+      // Validate resume against JSON Schema
+      const validation = validateResume(resume);
+      if (!validation.valid) {
+        throw new McpError(ErrorCode.InvalidParams, `Resume validation failed: ${validation.errors?.join('; ') || 'Unknown error'}`);
+      }
+
+      // Build render options
+      const renderOptions: RenderOptions = {
+        font,
+        showTenure,
+      };
+
+      // Map layout config
+      if (layout) {
+        renderOptions.layout = {
+          sections:
+            layout.sections?.map((section) => {
+              if ('type' in section && section.type === 'divider') {
+                return {
+                  type: 'divider' as const,
+                  thickness: section.thickness,
+                  color: section.color,
+                };
+              }
+              // TypeScript needs explicit narrowing for discriminated unions
+              const sectionConfig = section as { source: string; title?: string; showTenure?: boolean; template?: string };
+              return {
+                source: sectionConfig.source,
+                title: sectionConfig.title,
+                showTenure: sectionConfig.showTenure,
+                template: sectionConfig.template,
+              };
+            }) || [],
+          formatting: layout.formatting,
+        };
+      }
+
+      // Map styling to typography
+      if (styling) {
+        renderOptions.typography = {
+          text: {
+            fontSize: styling.fontSize?.body ?? 10,
+            lineHeight: 1.2,
+            marginTop: styling.spacing?.afterText ?? 2,
+            marginBottom: styling.spacing?.afterText ?? 2,
+            blockMarginBottom: styling.spacing?.betweenSections ?? 8,
+          },
+          header: {
+            marginTop: 0,
+            marginBottom: styling.spacing?.afterName ?? 5,
+            name: {
+              fontSize: styling.fontSize?.name ?? 30,
+              marginTop: 0,
+              marginBottom: styling.spacing?.afterName ?? 5,
+              letterSpacing: 2,
+            },
+            contact: {
+              fontSize: styling.fontSize?.contact ?? 10,
+              letterSpacing: 0.5,
+            },
+          },
+          sectionTitle: {
+            fontSize: styling.fontSize?.heading ?? 12,
+            marginTop: styling.spacing?.betweenSections ?? 12,
+            marginBottom: styling.spacing?.afterHeading ?? 4,
+            letterSpacing: 1.5,
+            underlineGap: 2,
+            underlineThickness: 0.5,
+          },
+          entry: {
+            position: {
+              fontSize: styling.fontSize?.subheading ?? 11,
+              marginTop: 0,
+              marginBottom: styling.spacing?.afterSubheading ?? 1,
+            },
+            company: {
+              fontSize: 10,
+              color: '#333333',
+            },
+            location: {
+              fontSize: 10,
+              color: '#666666',
+            },
+            date: {
+              width: 90,
+            },
+          },
+          bullet: {
+            indent: 15,
+            marginTop: 0,
+            marginBottom: 2,
+          },
+          quote: {
+            indent: 20,
+          },
+          divider: {
+            marginTop: 10,
+            marginBottom: 10,
+            thickness: 0.5,
+            color: '#cccccc',
+          },
+        } as Partial<TypographyOptions>;
+      }
+
+      // Generate PDF
+      const pdfBuffer = await generateResumePDFBuffer(resume, renderOptions);
 
       // Write file with ID prefix
       const { storedName } = await writeFile(pdfBuffer, filename, {
@@ -121,6 +268,10 @@ export default function createTool(toolOptions: ToolOptions) {
         structuredContent: { result },
       };
     } catch (error) {
+      if (error instanceof McpError) {
+        throw error;
+      }
+
       const message = error instanceof Error ? error.message : String(error);
 
       throw new McpError(ErrorCode.InternalError, `Error generating resume PDF: ${message}`, {

@@ -1,6 +1,5 @@
 import assert from 'assert';
-import type { JsonResume } from '../../src/lib/json-resume-schema.ts';
-import { generateResumePDFBuffer } from '../../src/lib/resume-generator.ts';
+import { generateResumePDFBuffer, type JsonResume } from '../../../../src/lib/resume-pdf-generator.ts';
 
 describe('Emoji Integration in PDFs', () => {
   it('renders resume with emoji in name', async () => {
