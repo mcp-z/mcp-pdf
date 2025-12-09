@@ -23,11 +23,11 @@ export function renderSectionTitleHandler(doc: PDFKit.PDFDocument, layout: Layou
   doc.font(typography.fonts.bold).fontSize(sectionTitle.fontSize);
   const titleHeight = doc.heightOfString(title.toUpperCase(), { width: pageWidth });
 
-  // Ensure we can fit the title + underline + at least the first entry header
-  // Entry header = org name + position + date = ~60px minimum
-  const minContentHeight = 60;
-  const headerBlock = titleHeight + 8 + minContentHeight;
-  layout.ensureSpace(doc, headerBlock);
+  // Ensure space for title + underline only
+  // Note: The group handler (react-pdf style wrap={false}) ensures the section title
+  // stays with the first entry. We only need to ensure space for the title itself.
+  const underlineHeight = (sectionTitle.underlineGap ?? 0) + 1;
+  layout.ensureSpace(doc, titleHeight + underlineHeight + (sectionTitle.marginBottom ?? 0));
 
   const y = layout.getCurrentY();
 
