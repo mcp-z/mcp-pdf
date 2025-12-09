@@ -11,6 +11,7 @@ import type { LayoutEngine } from '../layout-engine.ts';
 import { renderCredentialListHandler } from './credentialList.ts';
 import { renderDividerHandler } from './divider.ts';
 import { renderEntryListHandler } from './entryList.ts';
+import { renderGroupHandler, setRenderElementFn } from './group.ts';
 import { renderHeaderHandler } from './header.ts';
 import { renderKeywordListHandler } from './keywordList.ts';
 import { renderLanguageListHandler } from './languageList.ts';
@@ -41,6 +42,7 @@ const handlers: Record<string, ElementHandler> = {
   'reference-list': renderReferenceListHandler as ElementHandler,
   'summary-highlights': renderSummaryHighlightsHandler as ElementHandler,
   template: renderTemplateHandler as ElementHandler,
+  group: renderGroupHandler as ElementHandler,
 };
 
 /**
@@ -61,6 +63,10 @@ export function renderElement(doc: PDFKitDocument, layout: LayoutEngine, element
     console.warn(`No handler for element type: ${element.type}`);
   }
 }
+
+// Set up circular dependency for group handler
+// Group handler needs to call renderElement for its children
+setRenderElementFn(renderElement as (doc: PDFKitDocument, layout: LayoutEngine, element: unknown, typography: TypographyOptions, formatting: FormattingOptions, emojiAvailable: boolean) => void);
 
 /**
  * Render the complete layout document with emoji support

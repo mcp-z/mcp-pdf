@@ -192,8 +192,17 @@ export interface TemplateElement extends BaseElement {
   data: Record<string, unknown>;
 }
 
+/** Group element - atomic block for page break control (react-pdf style wrap={false}) */
+export interface GroupElement {
+  type: 'group';
+  /** When false, entire group moves to next page if it doesn't fit (atomic) */
+  wrap?: boolean;
+  /** Child elements to render together */
+  children: LayoutElement[];
+}
+
 /** Discriminated union of all layout elements */
-export type LayoutElement = TextElement | DividerElement | SectionTitleElement | EntryListElement | KeywordListElement | LanguageListElement | CredentialListElement | ReferenceListElement | SummaryHighlightsElement | HeaderElement | TemplateElement;
+export type LayoutElement = TextElement | DividerElement | SectionTitleElement | EntryListElement | KeywordListElement | LanguageListElement | CredentialListElement | ReferenceListElement | SummaryHighlightsElement | HeaderElement | TemplateElement | GroupElement;
 
 // ===== Layout Document (complete IR) =====
 
