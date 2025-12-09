@@ -46,7 +46,10 @@ export function renderTextWithEmoji(doc: PDFKit.PDFDocument, text: string, fontS
 
     // PDFKit requires three-argument form for proper positioning with width
     if (options.x !== undefined || options.y !== undefined) {
-      const x = options.x;
+      // When y is specified but x is not, and align is used, default x to left margin
+      // for predictable centering within the content area. Without this, doc.x could
+      // be at an unexpected position after rendering shapes, causing misaligned text.
+      const x = options.x ?? (options.align ? doc.page.margins.left : undefined);
       const y = options.y;
       const textOptions = { ...options };
       delete textOptions.x;
@@ -62,7 +65,9 @@ export function renderTextWithEmoji(doc: PDFKit.PDFDocument, text: string, fontS
   doc.fontSize(fontSize).font(fontName);
 
   // Determine starting position
-  const startX = options.x !== undefined ? options.x : doc.x;
+  // When y is specified but x is not, and align is used, default x to left margin
+  // for predictable centering within the content area.
+  const startX = options.x !== undefined ? options.x : options.align ? doc.page.margins.left : doc.x;
   const startY = options.y !== undefined ? options.y : doc.y;
 
   // Calculate available width
