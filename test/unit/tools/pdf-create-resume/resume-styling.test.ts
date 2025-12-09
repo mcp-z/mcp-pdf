@@ -1,7 +1,7 @@
 import assert from 'assert';
-import { generateResumePDFBuffer, type JsonResume, type RenderOptions } from '../../../../src/lib/resume-pdf-generator.ts';
+import { generateResumePDFBuffer, type RenderOptions, type ResumeSchema } from '../../../../src/lib/resume-pdf-generator.ts';
 
-const sampleResume: JsonResume = {
+const sampleResume: ResumeSchema = {
   basics: {
     name: 'John Doe',
     label: 'Software Engineer',
