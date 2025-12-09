@@ -5,10 +5,11 @@
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 import { readFileSync } from 'fs';
-import { dirname, resolve } from 'path';
-import { fileURLToPath } from 'url';
+import moduleRoot from 'module-root-sync';
+import { join } from 'path';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+// Get package root directory (works in both src and dist)
+const packageRoot = moduleRoot(import.meta.filename);
 
 const ajv = new Ajv({
   allErrors: true,
@@ -29,7 +30,7 @@ function getValidator(): ReturnType<typeof ajv.compile> {
   }
 
   // Load and compile the schema once
-  const schemaPath = resolve(__dirname, '../../assets/resume.schema.json');
+  const schemaPath = join(packageRoot, 'assets/resume.schema.json');
   const schemaContent = readFileSync(schemaPath, 'utf-8');
   const schema = JSON.parse(schemaContent);
 
