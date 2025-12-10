@@ -7,12 +7,30 @@ import { registerEmojiFont } from '../../lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts, validateTextForFont } from '../../lib/fonts.ts';
 import { LayoutEngine } from '../../lib/layout-engine.ts';
 import { type PDFTextOptions, renderTextWithEmoji } from '../../lib/pdf-helpers.ts';
+import { calculateLayout, type LayoutContent, type LayoutNode } from '../../lib/yoga-layout.ts';
 import type { ToolOptions } from '../../types.ts';
 
-// Forward declare for recursive type
-type ContentItem = z.infer<typeof contentItemSchema>;
-type GroupItem = z.infer<typeof groupSchema>;
+// Padding schema - number or object
+const paddingSchema = z.union([
+  z.number(),
+  z.object({
+    top: z.number().optional(),
+    right: z.number().optional(),
+    bottom: z.number().optional(),
+    left: z.number().optional(),
+  }),
+]);
 
+// Size schema - number or percentage string
+const sizeSchema = z.union([z.number(), z.string().regex(/^\d+(\.\d+)?%$/)]);
+
+// Border schema
+const borderSchema = z.object({
+  color: z.string(),
+  width: z.number(),
+});
+
+// Text base properties (shared between text and heading)
 const textBaseSchema = z.object({
   text: z.string().optional(),
   fontSize: z.number().optional(),
@@ -79,15 +97,67 @@ const baseContentItemSchema = z.union([
   z.object({ type: z.literal('pageBreak') }),
 ]);
 
-// Group schema - contains children that should stay together
-const groupSchema = z.object({
-  type: z.literal('group'),
-  wrap: z.literal(false).optional().describe('When false, group stays together on one page (atomic)'),
-  children: z.array(baseContentItemSchema).describe('Nested content items'),
-});
+// Type for base content item
+type BaseContentItem = z.infer<typeof baseContentItemSchema>;
+
+// Group schema - flexbox container with children
+// Using z.lazy for recursive type
+const groupSchema: z.ZodType<GroupItem> = z.lazy(() =>
+  z.object({
+    type: z.literal('group'),
+
+    // Position (optional - omit for flow)
+    x: z.number().optional().describe('Absolute x position. Omit for flow layout.'),
+    y: z.number().optional().describe('Absolute y position. Omit for flow layout.'),
+
+    // Size
+    width: sizeSchema.optional().describe('Width in points or percentage (e.g., "50%")'),
+    height: sizeSchema.optional().describe('Height in points or percentage (e.g., "50%")'),
+
+    // Flexbox layout
+    direction: z.enum(['column', 'row']).optional().default('column').describe('Flex direction: column (default) or row'),
+    gap: z.number().optional().describe('Gap between children in points'),
+    flex: z.number().optional().describe('Flex grow factor (1 = equal share of remaining space)'),
+    justify: z.enum(['start', 'center', 'end', 'space-between', 'space-around']).optional().describe('Main axis alignment'),
+    alignItems: z.enum(['start', 'center', 'end', 'stretch']).optional().describe('Cross axis alignment for children'),
+
+    // Self-positioning
+    align: z.enum(['start', 'center', 'end']).optional().describe('Self alignment within parent. Use align: "center" to center this group.'),
+
+    // Visual
+    padding: paddingSchema.optional().describe('Inner spacing in points'),
+    background: z.string().optional().describe('Background fill color'),
+    border: borderSchema.optional().describe('Border with color and width'),
+
+    // Children
+    children: z.array(z.union([baseContentItemSchema, groupSchema])).describe('Nested content items'),
+  })
+);
+
+// Type for group item
+interface GroupItem {
+  type: 'group';
+  x?: number;
+  y?: number;
+  width?: number | string;
+  height?: number | string;
+  direction?: 'column' | 'row';
+  gap?: number;
+  flex?: number;
+  justify?: 'start' | 'center' | 'end' | 'space-between' | 'space-around';
+  alignItems?: 'start' | 'center' | 'end' | 'stretch';
+  align?: 'start' | 'center' | 'end';
+  padding?: number | { top?: number; right?: number; bottom?: number; left?: number };
+  background?: string;
+  border?: { color: string; width: number };
+  children: ContentItem[];
+}
 
 // Full content item schema including groups
 const contentItemSchema = z.union([baseContentItemSchema, groupSchema]);
+
+// Content item type
+type ContentItem = BaseContentItem | GroupItem;
 
 // Layout configuration schema
 const layoutSchema = z
@@ -135,7 +205,7 @@ const outputSchema = z.object({
 
 const config = {
   title: 'Create PDF',
-  description: 'Create a PDF document with text, images, shapes, and layout control. Supports Unicode + emoji fonts, backgrounds, and vector shapes.',
+  description: 'Create a PDF document with text, images, shapes, and layout control. Supports Unicode + emoji fonts, backgrounds, vector shapes, and flexbox layout via groups.',
   inputSchema,
   outputSchema: z.object({
     result: outputSchema,
@@ -157,7 +227,7 @@ export default function createTool(toolOptions: ToolOptions) {
   }
 
   // Helper function to extract PDF text options from content items
-  function extractTextOptions(item: Extract<ContentItem, { type: 'text' | 'heading' }>): PDFTextOptions {
+  function extractTextOptions(item: Extract<BaseContentItem, { type: 'text' | 'heading' }>): PDFTextOptions {
     const options: PDFTextOptions = {};
     if (item.x !== undefined) options.x = item.x;
     if (item.y !== undefined) options.y = item.y;
@@ -236,13 +306,21 @@ export default function createTool(toolOptions: ToolOptions) {
       const { regular: regularFont, bold: boldFont } = fonts;
 
       const warnings: string[] = [];
-      for (const item of content) {
-        if ((item.type === 'text' || item.type === 'heading') && item.text) {
-          const fnt = item.bold ? boldFont : regularFont;
-          const validation = validateTextForFont(item.text, fnt);
-          if (validation.hasUnsupportedCharacters) warnings.push(...validation.warnings);
+
+      // Validate text characters
+      const validateContent = (items: ContentItem[]) => {
+        for (const item of items) {
+          if ((item.type === 'text' || item.type === 'heading') && item.text) {
+            const fnt = item.bold ? boldFont : regularFont;
+            const validation = validateTextForFont(item.text, fnt);
+            if (validation.hasUnsupportedCharacters) warnings.push(...validation.warnings);
+          }
+          if (item.type === 'group' && item.children) {
+            validateContent(item.children);
+          }
         }
-      }
+      };
+      validateContent(content as ContentItem[]);
 
       const drawBackgroundOnPage = () => {
         if (pageSetup?.backgroundColor) {
@@ -256,72 +334,105 @@ export default function createTool(toolOptions: ToolOptions) {
       };
       doc.on('pageAdded', drawBackgroundOnPage);
 
-      // Measure height of a single content item
-      function measureItem(item: ContentItem | z.infer<typeof baseContentItemSchema>): number {
+      // Get page dimensions and margins
+      const pageWidth = doc.page.width;
+      const pageHeight = doc.page.height;
+      const margins = {
+        top: doc.page.margins.top,
+        right: doc.page.margins.right,
+        bottom: doc.page.margins.bottom,
+        left: doc.page.margins.left,
+      };
+
+      // Height measurer for Yoga layout
+      const measureHeight = (item: LayoutContent, availableWidth: number): number => {
         if (item.type === 'text' || item.type === 'heading') {
           if (!item.text) return 0;
-          const fontSize = item.type === 'heading' ? (item.fontSize ?? 24) : (item.fontSize ?? 12);
+          const fontSize = item.type === 'heading' ? ((item.fontSize as number) ?? 24) : ((item.fontSize as number) ?? 12);
           const fontName = item.type === 'heading' ? (item.bold !== false ? boldFont : regularFont) : item.bold ? boldFont : regularFont;
-          return measureTextHeight(doc, item.text, fontSize, fontName, emojiAvailable, {
-            width: item.width,
-            indent: item.indent,
-            lineGap: item.lineGap,
+          return measureTextHeight(doc, item.text as string, fontSize, fontName, emojiAvailable, {
+            width: availableWidth,
+            indent: item.indent as number | undefined,
+            lineGap: item.lineGap as number | undefined,
           });
         }
         if (item.type === 'image') {
-          return item.height ?? 100; // Default height estimate
+          return (item.height as number) ?? 100;
         }
         if (item.type === 'rect') {
-          return item.height;
+          return item.height as number;
         }
         if (item.type === 'circle') {
-          return item.radius * 2;
+          return (item.radius as number) * 2;
         }
         if (item.type === 'line') {
-          return Math.abs(item.y2 - item.y1);
+          return Math.abs((item.y2 as number) - (item.y1 as number));
         }
         return 0;
-      }
+      };
 
-      // Measure height of a group (sum of children)
-      function measureGroup(group: GroupItem): number {
-        let totalHeight = 0;
-        for (const child of group.children) {
-          totalHeight += measureItem(child);
-        }
-        return totalHeight;
-      }
-
-      // Render a single base content item
-      function renderBaseItem(item: z.infer<typeof baseContentItemSchema>) {
+      // Render a base content item at computed position
+      function renderBaseItem(item: BaseContentItem, computedX?: number, computedY?: number, computedWidth?: number) {
         switch (item.type) {
           case 'text': {
-            if (item.x !== undefined && item.align !== undefined && item.width === undefined) throw new Error('When using x with align, you must also specify width to define the centering box');
+            // Validate: x + align without width is an error
+            if (item.x !== undefined && item.align !== undefined && item.width === undefined) {
+              throw new Error("Cannot use 'x' with 'align' without 'width'. For page centering, omit x. For positioned text with alignment, specify width.");
+            }
+
             const fontSize = item.fontSize ?? 12;
             const fnt = item.bold ? boldFont : regularFont;
             if (item.color) doc.fillColor(item.color);
+
             const options = extractTextOptions(item);
+
+            // Use computed position if provided (from Yoga layout)
+            if (computedX !== undefined) options.x = computedX;
+            if (computedWidth !== undefined) options.width = computedWidth;
+
             // Smart defaults: when align is specified without x, center within page margins
-            if (item.align && item.x === undefined && item.width === undefined) {
-              options.x = doc.page.margins.left;
-              options.width = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+            if (item.align && options.x === undefined && options.width === undefined) {
+              options.x = margins.left;
+              options.width = pageWidth - margins.left - margins.right;
             }
+
+            // If we have a computed Y, move to that position
+            if (computedY !== undefined) {
+              doc.y = computedY;
+            }
+
             renderTextWithEmoji(doc, item.text ?? '', fontSize, fnt, emojiAvailable, options);
             if (item.color) doc.fillColor('black');
             if (item.moveDown !== undefined) doc.moveDown(item.moveDown);
             break;
           }
           case 'heading': {
-            if (item.x !== undefined && item.align !== undefined && item.width === undefined) throw new Error('When using x with align, you must also specify width to define the centering box');
+            // Validate: x + align without width is an error
+            if (item.x !== undefined && item.align !== undefined && item.width === undefined) {
+              throw new Error("Cannot use 'x' with 'align' without 'width'. For page centering, omit x. For positioned text with alignment, specify width.");
+            }
+
             const fontSize = item.fontSize ?? 24;
             const fnt = item.bold !== false ? boldFont : regularFont;
             if (item.color) doc.fillColor(item.color);
+
             const options = extractTextOptions(item);
+
+            // Use computed position if provided (from Yoga layout)
+            if (computedX !== undefined) options.x = computedX;
+            if (computedWidth !== undefined) options.width = computedWidth;
+
             // Smart defaults: when align is specified without x, center within page margins
-            if (item.align && item.x === undefined && item.width === undefined) {
-              options.x = doc.page.margins.left;
-              options.width = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+            if (item.align && options.x === undefined && options.width === undefined) {
+              options.x = margins.left;
+              options.width = pageWidth - margins.left - margins.right;
             }
+
+            // If we have a computed Y, move to that position
+            if (computedY !== undefined) {
+              doc.y = computedY;
+            }
+
             renderTextWithEmoji(doc, item.text ?? '', fontSize, fnt, emojiAvailable, options);
             if (item.color) doc.fillColor('black');
             if (item.moveDown !== undefined) doc.moveDown(item.moveDown);
@@ -331,17 +442,29 @@ export default function createTool(toolOptions: ToolOptions) {
             const opts: Record<string, unknown> = {};
             if (item.width !== undefined) opts.width = item.width;
             if (item.height !== undefined) opts.height = item.height;
-            if (item.x !== undefined && item.y !== undefined) doc.image(item.imagePath, item.x, item.y, opts);
-            else doc.image(item.imagePath, opts);
+
+            const imgX = computedX ?? item.x;
+            const imgY = computedY ?? item.y;
+
+            if (imgX !== undefined && imgY !== undefined) {
+              doc.image(item.imagePath, imgX, imgY, opts);
+            } else {
+              doc.image(item.imagePath, opts);
+            }
             break;
           }
           case 'rect': {
-            doc.rect(item.x, item.y, item.width, item.height);
+            const rectX = computedX ?? item.x;
+            const rectY = computedY ?? item.y;
+            const rectWidth = computedWidth ?? item.width;
+
+            doc.rect(rectX, rectY, rectWidth, item.height);
             if (item.fillColor && item.strokeColor) {
               if (item.lineWidth) doc.lineWidth(item.lineWidth);
               doc.fillAndStroke(item.fillColor, item.strokeColor);
-            } else if (item.fillColor) doc.fill(item.fillColor);
-            else if (item.strokeColor) {
+            } else if (item.fillColor) {
+              doc.fill(item.fillColor);
+            } else if (item.strokeColor) {
               if (item.lineWidth) doc.lineWidth(item.lineWidth);
               doc.stroke(item.strokeColor);
             }
@@ -349,12 +472,16 @@ export default function createTool(toolOptions: ToolOptions) {
             break;
           }
           case 'circle': {
-            doc.circle(item.x, item.y, item.radius);
+            const circleX = computedX ?? item.x;
+            const circleY = computedY ?? item.y;
+
+            doc.circle(circleX, circleY, item.radius);
             if (item.fillColor && item.strokeColor) {
               if (item.lineWidth) doc.lineWidth(item.lineWidth);
               doc.fillAndStroke(item.fillColor, item.strokeColor);
-            } else if (item.fillColor) doc.fill(item.fillColor);
-            else if (item.strokeColor) {
+            } else if (item.fillColor) {
+              doc.fill(item.fillColor);
+            } else if (item.strokeColor) {
               if (item.lineWidth) doc.lineWidth(item.lineWidth);
               doc.stroke(item.strokeColor);
             }
@@ -371,65 +498,58 @@ export default function createTool(toolOptions: ToolOptions) {
           }
           case 'pageBreak': {
             doc.addPage();
-            engine.init(doc, { mode: layoutMode }); // Re-init engine after page break
+            engine.init(doc, { mode: layoutMode });
             break;
           }
         }
       }
 
-      // Check for potential overflow in fixed mode and add warnings
-      function checkFixedModeOverflow(item: ContentItem | z.infer<typeof baseContentItemSchema>) {
-        if (layoutMode !== 'fixed') return;
+      // Render a group with its visual properties
+      function renderGroupVisuals(group: GroupItem, layoutNode: LayoutNode) {
+        // Draw background
+        if (group.background) {
+          doc.rect(layoutNode.x, layoutNode.y, layoutNode.width, layoutNode.height).fill(group.background);
+          doc.fillColor('black');
+        }
 
-        // Only check items with explicit y positioning
-        const y = 'y' in item ? item.y : undefined;
-        if (y === undefined) return;
-
-        const pageHeight = doc.page.height;
-        const bottomMargin = doc.page.margins.bottom;
-        const safeZoneEnd = pageHeight - bottomMargin;
-        const estimatedHeight = item.type === 'group' ? measureGroup(item as GroupItem) : measureItem(item);
-
-        if (y + estimatedHeight > safeZoneEnd) {
-          warnings.push(`Content at y=${y} may overflow (safe zone ends at y=${safeZoneEnd})`);
+        // Draw border
+        if (group.border) {
+          doc.lineWidth(group.border.width);
+          doc.rect(layoutNode.x, layoutNode.y, layoutNode.width, layoutNode.height).stroke(group.border.color);
         }
       }
 
-      // Render content item with layout engine support
-      function renderItem(item: ContentItem) {
+      // Render a layout node tree
+      function renderLayoutNode(node: LayoutNode) {
+        const item = node.content as ContentItem;
+
         if (item.type === 'group') {
-          // Handle group
-          const groupHeight = measureGroup(item);
+          const group = item as GroupItem;
 
-          // If wrap: false, ensure entire group fits or move to new page
-          if (item.wrap === false && engine.isDocumentMode()) {
-            engine.ensureSpace(doc, groupHeight);
-          }
+          // Render group visuals (background, border)
+          renderGroupVisuals(group, node);
 
-          // Check for overflow in fixed mode
-          checkFixedModeOverflow(item);
-
-          // Render all children
-          for (const child of item.children) {
-            renderBaseItem(child);
+          // Render children
+          if (node.children) {
+            for (const childNode of node.children) {
+              renderLayoutNode(childNode);
+            }
           }
         } else {
-          // Regular item - measure and ensure space in document mode
-          if (engine.isDocumentMode()) {
-            const height = measureItem(item);
-            engine.ensureSpace(doc, height);
-          }
-
-          // Check for overflow in fixed mode
-          checkFixedModeOverflow(item);
-
-          renderBaseItem(item);
+          // Render base content item at computed position
+          renderBaseItem(item as BaseContentItem, node.x, node.y, node.width);
         }
       }
 
-      // Render all content
-      for (const item of content) {
-        renderItem(item);
+      // Convert content to LayoutContent for Yoga
+      const layoutContent: LayoutContent[] = content.map((item) => item as unknown as LayoutContent);
+
+      // Calculate layout using Yoga
+      const layoutNodes = await calculateLayout(layoutContent, pageWidth, pageHeight, measureHeight, margins);
+
+      // Render all content using computed layout
+      for (const layoutNode of layoutNodes) {
+        renderLayoutNode(layoutNode);
       }
 
       doc.end();
@@ -454,7 +574,7 @@ export default function createTool(toolOptions: ToolOptions) {
         filename,
         uri: fileUri,
         sizeBytes: pdfBuffer.length,
-        pageCount: content.filter((item) => item.type === 'pageBreak').length + 1,
+        pageCount: (content as ContentItem[]).filter((item) => item.type === 'pageBreak').length + 1,
         ...(warnings.length > 0 && { warnings }),
       };
 
