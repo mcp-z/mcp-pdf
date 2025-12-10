@@ -259,6 +259,12 @@ function createYogaNode(
     }
   }
 
+  // Text/heading nodes default to 100% width (like CSS behavior)
+  // This ensures text fills container and uses internal alignment
+  if ((content.type === 'text' || content.type === 'heading') && content.width === undefined) {
+    node.setWidthPercent(100);
+  }
+
   return node;
 }
 
