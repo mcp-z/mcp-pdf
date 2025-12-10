@@ -516,6 +516,210 @@ pageSetup: {
 }
 ```
 
+---
+
+## Flexbox Layout Engine
+
+The `pdf-create` tool includes a flexbox layout engine powered by [Yoga](https://www.yogalayout.dev/) (Facebook's layout engine used in React Native). This allows you to create complex multi-column layouts without manual coordinate math.
+
+### Groups: Flexbox Containers
+
+Use `type: "group"` to create flexbox containers:
+
+```typescript
+{
+  type: "group",
+
+  // Flexbox properties
+  direction: "row",      // "column" (default) or "row"
+  gap: 20,               // Space between children (points)
+  flex: 1,               // Flex grow factor
+  justify: "center",     // Main axis: "start", "center", "end", "space-between", "space-around"
+  alignItems: "center",  // Cross axis: "start", "center", "end", "stretch"
+
+  // Self-positioning
+  align: "center",       // Center this group in its parent
+
+  // Size
+  width: 300,            // Points or percentage ("50%")
+  height: 200,
+
+  // Visual
+  padding: 15,           // Or { top, right, bottom, left }
+  background: "#f5f5f5",
+  border: { color: "#333", width: 1 },
+
+  // Nested content
+  children: [
+    { type: "text", text: "Child 1" },
+    { type: "text", text: "Child 2" }
+  ]
+}
+```
+
+### Common Layout Patterns
+
+**Two Equal Columns:**
+```typescript
+{
+  type: "group",
+  direction: "row",
+  gap: 20,
+  children: [
+    { type: "group", flex: 1, children: [{ type: "text", text: "Left" }] },
+    { type: "group", flex: 1, children: [{ type: "text", text: "Right" }] }
+  ]
+}
+```
+
+**Three Columns with Proportions (1:2:1):**
+```typescript
+{
+  type: "group",
+  direction: "row",
+  gap: 15,
+  children: [
+    { type: "group", flex: 1, children: [...] },  // 25%
+    { type: "group", flex: 2, children: [...] },  // 50%
+    { type: "group", flex: 1, children: [...] }   // 25%
+  ]
+}
+```
+
+**Centered Card:**
+```typescript
+{
+  type: "group",
+  width: 300,
+  align: "center",  // Centers horizontally on page
+  border: { color: "#333", width: 2 },
+  padding: 20,
+  children: [
+    { type: "heading", text: "Card Title", align: "center" },
+    { type: "text", text: "Card content here" }
+  ]
+}
+```
+
+**Space Between Items:**
+```typescript
+{
+  type: "group",
+  direction: "row",
+  justify: "space-between",
+  children: [
+    { type: "text", text: "Left" },
+    { type: "text", text: "Right" }
+  ]
+}
+```
+
+### Mixed Positioning
+
+You can mix flexbox groups with absolute-positioned elements:
+
+```typescript
+pdf-create({
+  layout: { mode: "fixed" },
+  content: [
+    // Absolute positioned header
+    { type: "heading", text: "TITLE", x: 54, y: 50 },
+
+    // Flexbox group at specific position
+    {
+      type: "group",
+      direction: "row",
+      gap: 20,
+      x: 54,
+      y: 100,
+      children: [
+        { type: "group", flex: 1, children: [...] },
+        { type: "group", flex: 1, children: [...] }
+      ]
+    },
+
+    // Absolute positioned footer
+    { type: "text", text: "Footer", x: 54, y: 700 }
+  ]
+})
+```
+
+### Complete Flyer Example
+
+```typescript
+pdf-create({
+  layout: { mode: "fixed" },
+  pageSetup: { backgroundColor: "#fffef5" },
+  content: [
+    // Header
+    {
+      type: "heading",
+      text: "SUMMER FESTIVAL 2024",
+      align: "center",
+      fontSize: 28,
+      y: 50
+    },
+    {
+      type: "text",
+      text: "July 15-17 | Central Park",
+      align: "center",
+      y: 90
+    },
+    // Two-column content
+    {
+      type: "group",
+      direction: "row",
+      gap: 20,
+      x: 54,
+      y: 130,
+      children: [
+        {
+          type: "group",
+          flex: 1,
+          border: { color: "#2196f3", width: 2 },
+          padding: 15,
+          children: [
+            { type: "heading", text: "MUSIC", align: "center", fontSize: 18 },
+            { type: "text", text: "Live bands all weekend" },
+            { type: "text", text: "- Main Stage" },
+            { type: "text", text: "- Acoustic Tent" }
+          ]
+        },
+        {
+          type: "group",
+          flex: 1,
+          border: { color: "#4caf50", width: 2 },
+          padding: 15,
+          children: [
+            { type: "heading", text: "FOOD", align: "center", fontSize: 18 },
+            { type: "text", text: "50+ local vendors" },
+            { type: "text", text: "- Food Court" },
+            { type: "text", text: "- Craft Beers" }
+          ]
+        }
+      ]
+    },
+    // Centered ticket box
+    {
+      type: "group",
+      width: 300,
+      align: "center",
+      y: 400,
+      border: { color: "#ff9800", width: 2 },
+      padding: 15,
+      background: "#fff8e1",
+      children: [
+        { type: "heading", text: "TICKETS", align: "center", fontSize: 16 },
+        { type: "text", text: "Early Bird: $25", align: "center" },
+        { type: "text", text: "At Door: $35", align: "center" }
+      ]
+    }
+  ]
+})
+```
+
+---
+
 ## Emoji & Unicode Support
 
 **Color Emoji** - True color emoji render as inline PNG images. Emoji like 😀 🎉 🚀 👋 appear in full color. The emoji font (NotoColorEmoji.ttf) downloads automatically on install.
