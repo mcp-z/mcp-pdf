@@ -233,9 +233,7 @@ describe('pdf-create-resume two-column layout', () => {
             highlights: ['Built ML pipeline', 'Improved model accuracy by 40%'],
           },
         ],
-        skills: [
-          { name: 'ML', keywords: ['Python', 'TensorFlow', 'PyTorch'] },
-        ],
+        skills: [{ name: 'ML', keywords: ['Python', 'TensorFlow', 'PyTorch'] }],
       },
       layout: {
         style: 'two-column',
