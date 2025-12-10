@@ -386,7 +386,7 @@ export default function createTool(toolOptions: ToolOptions) {
 
             const options = extractTextOptions(item);
 
-            // Use computed position if provided (from Yoga layout)
+            // Use computed position from Yoga layout
             if (computedX !== undefined) options.x = computedX;
             if (computedWidth !== undefined) options.width = computedWidth;
 
@@ -418,7 +418,7 @@ export default function createTool(toolOptions: ToolOptions) {
 
             const options = extractTextOptions(item);
 
-            // Use computed position if provided (from Yoga layout)
+            // Use computed position from Yoga layout
             if (computedX !== undefined) options.x = computedX;
             if (computedWidth !== undefined) options.width = computedWidth;
 
