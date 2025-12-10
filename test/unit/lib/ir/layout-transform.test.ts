@@ -1,52 +1,8 @@
 import assert from 'assert';
-import { buildElementSourceMap, isSingleColumnLayout, isTwoColumnLayout, transformToResumeLayout } from '../../../../src/lib/ir/layout-transform.ts';
+import { isSingleColumnLayout, isTwoColumnLayout, transformToResumeLayout } from '../../../../src/lib/ir/layout-transform.ts';
 import type { LayoutElement, SectionConfig } from '../../../../src/lib/ir/types.ts';
 
 describe('layout-transform', () => {
-  describe('buildElementSourceMap', () => {
-    it('maps elements to their section sources from element.source property', () => {
-      const elements: LayoutElement[] = [
-        { type: 'group', children: [], source: 'work' },
-        { type: 'group', children: [], source: 'education' },
-      ];
-      const sections: SectionConfig[] = [{ source: 'work' }, { source: 'education' }];
-
-      const sourceMap = buildElementSourceMap(elements, sections);
-
-      assert.equal(sourceMap.get(elements[0]), 'work');
-      assert.equal(sourceMap.get(elements[1]), 'education');
-    });
-
-    it('skips elements without source property', () => {
-      const elements: LayoutElement[] = [
-        { type: 'group', children: [], source: 'work' },
-        { type: 'divider' }, // No source
-        { type: 'group', children: [], source: 'skills' },
-      ];
-      const sections: SectionConfig[] = [{ source: 'work' }, { source: 'skills' }];
-
-      const sourceMap = buildElementSourceMap(elements, sections);
-
-      assert.equal(sourceMap.get(elements[0]), 'work');
-      assert.equal(sourceMap.get(elements[2]), 'skills');
-      assert.equal(sourceMap.has(elements[1] as LayoutElement), false);
-    });
-
-    it('reads source directly from elements regardless of section order', () => {
-      // Elements have source set directly - sections parameter is ignored (backwards compat)
-      const elements: LayoutElement[] = [
-        { type: 'group', children: [], source: 'work' },
-        { type: 'group', children: [], source: 'education' },
-      ];
-      const sections = [{ source: 'work' }, { type: 'divider' as const }, { source: 'education' }];
-
-      const sourceMap = buildElementSourceMap(elements, sections);
-
-      assert.equal(sourceMap.get(elements[0]), 'work');
-      assert.equal(sourceMap.get(elements[1]), 'education');
-    });
-  });
-
   describe('transformToResumeLayout', () => {
     it('returns single-column layout when no layout config provided', () => {
       const elements: LayoutElement[] = [{ type: 'text', content: 'Hello' }];

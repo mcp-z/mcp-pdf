@@ -375,11 +375,6 @@ export default function createTool(toolOptions: ToolOptions) {
       function renderBaseItem(item: BaseContentItem, computedX?: number, computedY?: number, computedWidth?: number) {
         switch (item.type) {
           case 'text': {
-            // Validate: x + align without width is an error
-            if (item.x !== undefined && item.align !== undefined && item.width === undefined) {
-              throw new Error("Cannot use 'x' with 'align' without 'width'. For page centering, omit x. For positioned text with alignment, specify width.");
-            }
-
             const fontSize = item.fontSize ?? 12;
             const fnt = item.bold ? boldFont : regularFont;
             if (item.color) doc.fillColor(item.color);
@@ -389,12 +384,6 @@ export default function createTool(toolOptions: ToolOptions) {
             // Use computed position from Yoga layout
             if (computedX !== undefined) options.x = computedX;
             if (computedWidth !== undefined) options.width = computedWidth;
-
-            // Smart defaults: when align is specified without x, center within page margins
-            if (item.align && options.x === undefined && options.width === undefined) {
-              options.x = margins.left;
-              options.width = pageWidth - margins.left - margins.right;
-            }
 
             // If we have a computed Y, move to that position
             if (computedY !== undefined) {
@@ -407,11 +396,6 @@ export default function createTool(toolOptions: ToolOptions) {
             break;
           }
           case 'heading': {
-            // Validate: x + align without width is an error
-            if (item.x !== undefined && item.align !== undefined && item.width === undefined) {
-              throw new Error("Cannot use 'x' with 'align' without 'width'. For page centering, omit x. For positioned text with alignment, specify width.");
-            }
-
             const fontSize = item.fontSize ?? 24;
             const fnt = item.bold !== false ? boldFont : regularFont;
             if (item.color) doc.fillColor(item.color);
@@ -421,12 +405,6 @@ export default function createTool(toolOptions: ToolOptions) {
             // Use computed position from Yoga layout
             if (computedX !== undefined) options.x = computedX;
             if (computedWidth !== undefined) options.width = computedWidth;
-
-            // Smart defaults: when align is specified without x, center within page margins
-            if (item.align && options.x === undefined && options.width === undefined) {
-              options.x = margins.left;
-              options.width = pageWidth - margins.left - margins.right;
-            }
 
             // If we have a computed Y, move to that position
             if (computedY !== undefined) {

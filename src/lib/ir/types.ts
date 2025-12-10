@@ -89,9 +89,6 @@ export interface SectionsConfig {
   sections: (SectionConfig | DividerConfig)[];
 }
 
-/** @deprecated Use SectionsConfig instead */
-export type LayoutConfig = SectionsConfig;
-
 // ===== IR Element Types (output of transform) =====
 
 interface BaseElement {

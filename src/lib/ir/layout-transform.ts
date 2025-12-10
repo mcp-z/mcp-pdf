@@ -57,26 +57,6 @@ function getElementSource(element: LayoutElement): string | undefined {
 }
 
 /**
- * Build a mapping from IR elements to their source paths.
- * Elements are now tagged with their source during transformation,
- * so we just read from the element directly.
- *
- * @deprecated This function exists for backwards compatibility.
- * Use element.source directly instead.
- */
-export function buildElementSourceMap(elements: LayoutElement[], _sections: (SectionConfig | DividerConfig)[]): Map<LayoutElement, string> {
-  const sourceMap = new Map<LayoutElement, string>();
-
-  for (const element of elements) {
-    if (element.source) {
-      sourceMap.set(element, element.source);
-    }
-  }
-
-  return sourceMap;
-}
-
-/**
  * Assign elements to columns based on layout configuration.
  *
  * Elements are assigned to columns based on their source paths matching
