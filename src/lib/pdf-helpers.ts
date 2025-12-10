@@ -143,9 +143,8 @@ export function renderTextWithEmoji(doc: PDFKit.PDFDocument, text: string, fontS
       currentX += options.indent;
     }
 
-    // Handle alignment - only if x coordinate was NOT explicitly provided
-    // (explicit x means absolute positioning, not flow-based alignment)
-    if (options.x === undefined && (options.align === 'center' || options.align === 'right')) {
+    // Handle alignment - center/right text within the available width
+    if (options.align === 'center' || options.align === 'right') {
       const lineWidth = line.reduce((sum, word) => sum + word.width, 0);
       if (options.align === 'center') {
         currentX += (effectiveWidth - lineWidth) / 2;
