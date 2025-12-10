@@ -3,24 +3,26 @@
  */
 
 import type PDFKit from 'pdfkit';
-import type { FormattingOptions, LanguageListElement } from '../ir/types.ts';
+import { renderField } from '../formatting.ts';
+import type { FieldTemplates, LanguageListElement } from '../ir/types.ts';
 import type { LayoutEngine } from '../layout-engine.ts';
 import { renderTextWithEmoji } from '../pdf-helpers.ts';
 import { resolveStyles } from './renderer-helpers.ts';
 import type { TypographyOptions } from './types.ts';
 
-export function renderLanguageListHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: LanguageListElement, typography: TypographyOptions, _formatting: FormattingOptions, emojiAvailable: boolean): void {
+export function renderLanguageListHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: LanguageListElement, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean): void {
   const { items } = element;
   if (!items.length) return;
 
   const style = resolveStyles(typography);
 
-  // Format each language as "Name (Fluency)" or just "Name"
+  // Format each language using the language field template
   const formatted = items
     .map((lang) => {
-      const name = lang.language || '';
-      const fluency = lang.fluency;
-      return fluency ? `${name} (${fluency})` : name;
+      return renderField(fieldTemplates.language, {
+        language: lang.language,
+        fluency: lang.fluency,
+      });
     })
     .filter(Boolean);
 

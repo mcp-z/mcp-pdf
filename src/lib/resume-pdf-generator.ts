@@ -11,7 +11,7 @@ import { renderLayoutDocument } from './handlers/index.ts';
 import type { TypographyOptions } from './handlers/types.ts';
 import { DEFAULT_TYPOGRAPHY } from './handlers/types.ts';
 import { DEFAULT_LAYOUT, transformToLayout } from './ir/transform.ts';
-import type { FormattingOptions, LayoutConfig } from './ir/types.ts';
+import type { FieldTemplates, LayoutConfig } from './ir/types.ts';
 import { LayoutEngine } from './layout-engine.ts';
 
 // Re-export types for external use
@@ -25,10 +25,8 @@ export interface RenderOptions {
   typography?: Partial<TypographyOptions>;
   /** Layout configuration (section order, titles, etc.) */
   layout?: LayoutConfig;
-  /** Formatting options (date format, locale strings) */
-  formatting?: FormattingOptions;
-  /** Show tenure duration after date ranges */
-  showTenure?: boolean;
+  /** Field templates for customizing field-level rendering (dates, locations, etc.) */
+  fieldTemplates?: FieldTemplates;
   /** Font specification (path, URL, 'auto', or standard font name) */
   font?: string;
 }
@@ -142,8 +140,6 @@ function mergeTypography(defaults: TypographyOptions, overrides?: Partial<Typogr
  * Renders a resume to PDF buffer using the transform → render pipeline
  */
 export async function generateResumePDFBuffer(resume: ResumeSchema, options: RenderOptions = {}): Promise<Buffer> {
-  const showTenure = options.showTenure ?? false;
-
   // Check if content has Unicode characters or emoji
   const resumeText = JSON.stringify(resume);
   const containsUnicode = needsUnicodeFont(resumeText);
@@ -165,39 +161,15 @@ export async function generateResumePDFBuffer(resume: ResumeSchema, options: Ren
     console.warn("⚠️  Unicode characters detected. If they don't render properly, " + 'provide a Unicode font URL. Find fonts at https://fontsource.org');
   }
 
-  // Build layout config with formatting options
+  // Build layout config with field templates
   const baseLayout = options.layout ?? DEFAULT_LAYOUT;
-  const formatting = options.formatting;
-
-  let layoutConfig: LayoutConfig = {
+  const layoutConfig: LayoutConfig = {
     ...baseLayout,
-    formatting: formatting ? { ...baseLayout.formatting, ...formatting } : baseLayout.formatting,
+    fieldTemplates: options.fieldTemplates ? { ...baseLayout.fieldTemplates, ...options.fieldTemplates } : baseLayout.fieldTemplates,
   };
-
-  // Inject showTenure into entry-list sections
-  if (showTenure) {
-    layoutConfig = {
-      ...layoutConfig,
-      sections: layoutConfig.sections.map((section) => {
-        if ('source' in section && (section.source === 'work' || section.source === 'volunteer' || section.source.includes('work') || section.source.includes('Work'))) {
-          return { ...section, showTenure: true };
-        }
-        return section;
-      }),
-    };
-  }
 
   // Transform resume to IR
   const layoutDoc = transformToLayout(resume, layoutConfig);
-
-  // Inject showTenure into entry-list elements
-  if (showTenure) {
-    for (const element of layoutDoc.elements) {
-      if (element.type === 'entry-list' && element.variant === 'work') {
-        element.showTenure = true;
-      }
-    }
-  }
 
   // Build ATS-friendly metadata from IR
   const { name, label, keywords } = layoutDoc.metadata;
@@ -246,4 +218,4 @@ export type { TypographyOptions } from './handlers/types.ts';
 export { DEFAULT_TYPOGRAPHY } from './handlers/types.ts';
 export { DEFAULT_LAYOUT } from './ir/transform.ts';
 // Re-export types for external use
-export type { FormattingOptions, LayoutConfig } from './ir/types.ts';
+export type { FieldTemplates, LayoutConfig } from './ir/types.ts';

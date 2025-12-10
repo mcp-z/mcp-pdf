@@ -3,12 +3,12 @@
  */
 
 import type PDFKit from 'pdfkit';
-import type { FormattingOptions, SectionTitleElement } from '../ir/types.ts';
+import type { FieldTemplates, SectionTitleElement } from '../ir/types.ts';
 import type { LayoutEngine } from '../layout-engine.ts';
 import { renderTextWithEmoji } from '../pdf-helpers.ts';
 import type { TypographyOptions } from './types.ts';
 
-export function renderSectionTitleHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: SectionTitleElement, typography: TypographyOptions, _formatting: FormattingOptions, emojiAvailable: boolean): void {
+export function renderSectionTitleHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: SectionTitleElement, typography: TypographyOptions, _fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean): void {
   const title = element.title;
   if (!title) return;
 

@@ -3,13 +3,13 @@
  */
 
 import type PDFKit from 'pdfkit';
-import type { FormattingOptions, TemplateElement } from '../ir/types.ts';
+import type { FieldTemplates, TemplateElement } from '../ir/types.ts';
 import type { LayoutEngine } from '../layout-engine.ts';
 import { render } from '../template.ts';
 import { renderParagraphs, resolveStyles } from './renderer-helpers.ts';
 import type { TypographyOptions } from './types.ts';
 
-export function renderTemplateHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: TemplateElement, typography: TypographyOptions, _formatting: FormattingOptions, emojiAvailable: boolean): void {
+export function renderTemplateHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: TemplateElement, typography: TypographyOptions, _fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean): void {
   // Render the template with the data
   const rendered = render(element.template, element.data);
 
