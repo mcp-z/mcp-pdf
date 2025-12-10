@@ -322,7 +322,10 @@ export default function createTool(toolOptions: ToolOptions) {
       };
       validateContent(content as ContentItem[]);
 
+      // Track actual page count
+      let actualPageCount = 1;
       const drawBackgroundOnPage = () => {
+        actualPageCount++;
         if (pageSetup?.backgroundColor) {
           const pageSize = pageSetup?.size || [612, 792];
           const x = doc.x;
@@ -381,14 +384,11 @@ export default function createTool(toolOptions: ToolOptions) {
 
             const options = extractTextOptions(item);
 
-            // Use computed position from Yoga layout
+            // Use computed position from Yoga layout - pass in options so renderTextWithEmoji
+            // uses the 3-arg form of doc.text() which prevents auto-pagination
             if (computedX !== undefined) options.x = computedX;
+            if (computedY !== undefined) options.y = computedY;
             if (computedWidth !== undefined) options.width = computedWidth;
-
-            // If we have a computed Y, move to that position
-            if (computedY !== undefined) {
-              doc.y = computedY;
-            }
 
             renderTextWithEmoji(doc, item.text ?? '', fontSize, fnt, emojiAvailable, options);
             if (item.color) doc.fillColor('black');
@@ -402,14 +402,11 @@ export default function createTool(toolOptions: ToolOptions) {
 
             const options = extractTextOptions(item);
 
-            // Use computed position from Yoga layout
+            // Use computed position from Yoga layout - pass in options so renderTextWithEmoji
+            // uses the 3-arg form of doc.text() which prevents auto-pagination
             if (computedX !== undefined) options.x = computedX;
+            if (computedY !== undefined) options.y = computedY;
             if (computedWidth !== undefined) options.width = computedWidth;
-
-            // If we have a computed Y, move to that position
-            if (computedY !== undefined) {
-              doc.y = computedY;
-            }
 
             renderTextWithEmoji(doc, item.text ?? '', fontSize, fnt, emojiAvailable, options);
             if (item.color) doc.fillColor('black');
@@ -552,7 +549,7 @@ export default function createTool(toolOptions: ToolOptions) {
         filename,
         uri: fileUri,
         sizeBytes: pdfBuffer.length,
-        pageCount: (content as ContentItem[]).filter((item) => item.type === 'pageBreak').length + 1,
+        pageCount: actualPageCount,
         ...(warnings.length > 0 && { warnings }),
       };
 
