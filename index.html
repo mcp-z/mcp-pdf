@@ -139,7 +139,7 @@
 <tr>
 <td><code>render</code></td>
 <td>string</td>
-<td>Renderer type override. Auto-inferred from data shape if omitted.</td>
+<td>Built-in renderer. Auto-inferred if omitted. Only needed for <code>'header'</code> (never auto-inferred) or to force a specific renderer. <strong>Not needed if using <code>template</code>.</strong></td>
 </tr>
 <tr>
 <td><code>title</code></td>
@@ -149,7 +149,7 @@
 <tr>
 <td><code>template</code></td>
 <td>string</td>
-<td>Custom LiquidJS template for rendering</td>
+<td>LiquidJS template for custom rendering. <strong>Use instead of <code>render</code></strong> for full control. Receives source data as context.</td>
 </tr>
 </tbody>
 </table>
