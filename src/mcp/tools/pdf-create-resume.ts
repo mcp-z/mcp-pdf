@@ -26,15 +26,15 @@ const dividerConfigSchema = z.object({
 const fieldTemplatesSchema = z
   .object({
     location: z.string().optional().describe('Location display template (default: "{{ city }}{% if region %}, {{ region }}{% endif %}")'),
-    dateRange: z.string().optional().describe('Date range template (default: "{{ start | date }} – {{ end | date | default: \'Present\' }}")'),
+    dateRange: z.string().optional().describe("Date range template. Date format tokens: YYYY (4-digit year), YY (2-digit), MMMM (January), MMM (Jan), MM (01), M (1), DD (05), D (5). Default: \"{{ start | date: 'MMM YYYY' }} – {{ end | date: 'MMM YYYY' | default: 'Present' }}\""),
     degree: z.string().optional().describe('Education degree template (default: "{{ studyType }}{% if area %}, {{ area }}{% endif %}")'),
-    credential: z.string().optional().describe('Credential metadata template'),
-    language: z.string().optional().describe('Language display template'),
-    skill: z.string().optional().describe('Skill display template'),
-    contactLine: z.string().optional().describe('Contact line template'),
+    credential: z.string().optional().describe('Credential metadata template (default: "{{ title | default: name }}{% if awarder %}, {{ awarder }}{% endif %}")'),
+    language: z.string().optional().describe('Language display template (default: "{{ language }}{% if fluency %} ({{ fluency }}){% endif %}")'),
+    skill: z.string().optional().describe('Skill display template (default: "{{ name }}: {{ keywords | join: \', \' }}")'),
+    contactLine: z.string().optional().describe('Contact line template (default: "{{ items | join: \' | \' }}")'),
   })
   .optional()
-  .describe('LiquidJS templates for field-level rendering (dates, locations, etc.)');
+  .describe('LiquidJS templates for field-level rendering. Filters: date (format dates), default (fallback value), tenure (calculate duration), join (join arrays)');
 
 // Layout configuration schema
 const layoutConfigSchema = z

@@ -296,22 +296,32 @@ export default function createTool(toolOptions: ToolOptions) {
       function renderBaseItem(item: z.infer<typeof baseContentItemSchema>) {
         switch (item.type) {
           case 'text': {
-            if (item.x !== undefined && item.align !== undefined) throw new Error('Cannot use both x and align in text element');
+            if (item.x !== undefined && item.align !== undefined && item.width === undefined) throw new Error('When using x with align, you must also specify width to define the centering box');
             const fontSize = item.fontSize ?? 12;
             const fnt = item.bold ? boldFont : regularFont;
             if (item.color) doc.fillColor(item.color);
             const options = extractTextOptions(item);
+            // Smart defaults: when align is specified without x, center within page margins
+            if (item.align && item.x === undefined && item.width === undefined) {
+              options.x = doc.page.margins.left;
+              options.width = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+            }
             renderTextWithEmoji(doc, item.text ?? '', fontSize, fnt, emojiAvailable, options);
             if (item.color) doc.fillColor('black');
             if (item.moveDown !== undefined) doc.moveDown(item.moveDown);
             break;
           }
           case 'heading': {
-            if (item.x !== undefined && item.align !== undefined) throw new Error('Cannot use both x and align in heading element');
+            if (item.x !== undefined && item.align !== undefined && item.width === undefined) throw new Error('When using x with align, you must also specify width to define the centering box');
             const fontSize = item.fontSize ?? 24;
             const fnt = item.bold !== false ? boldFont : regularFont;
             if (item.color) doc.fillColor(item.color);
             const options = extractTextOptions(item);
+            // Smart defaults: when align is specified without x, center within page margins
+            if (item.align && item.x === undefined && item.width === undefined) {
+              options.x = doc.page.margins.left;
+              options.width = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+            }
             renderTextWithEmoji(doc, item.text ?? '', fontSize, fnt, emojiAvailable, options);
             if (item.color) doc.fillColor('black');
             if (item.moveDown !== undefined) doc.moveDown(item.moveDown);
@@ -367,6 +377,24 @@ export default function createTool(toolOptions: ToolOptions) {
         }
       }
 
+      // Check for potential overflow in fixed mode and add warnings
+      function checkFixedModeOverflow(item: ContentItem | z.infer<typeof baseContentItemSchema>) {
+        if (layoutMode !== 'fixed') return;
+
+        // Only check items with explicit y positioning
+        const y = 'y' in item ? item.y : undefined;
+        if (y === undefined) return;
+
+        const pageHeight = doc.page.height;
+        const bottomMargin = doc.page.margins.bottom;
+        const safeZoneEnd = pageHeight - bottomMargin;
+        const estimatedHeight = item.type === 'group' ? measureGroup(item as GroupItem) : measureItem(item);
+
+        if (y + estimatedHeight > safeZoneEnd) {
+          warnings.push(`Content at y=${y} may overflow (safe zone ends at y=${safeZoneEnd})`);
+        }
+      }
+
       // Render content item with layout engine support
       function renderItem(item: ContentItem) {
         if (item.type === 'group') {
@@ -378,6 +406,9 @@ export default function createTool(toolOptions: ToolOptions) {
             engine.ensureSpace(doc, groupHeight);
           }
 
+          // Check for overflow in fixed mode
+          checkFixedModeOverflow(item);
+
           // Render all children
           for (const child of item.children) {
             renderBaseItem(child);
@@ -388,6 +419,10 @@ export default function createTool(toolOptions: ToolOptions) {
             const height = measureItem(item);
             engine.ensureSpace(doc, height);
           }
+
+          // Check for overflow in fixed mode
+          checkFixedModeOverflow(item);
+
           renderBaseItem(item);
         }
       }

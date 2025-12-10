@@ -324,6 +324,8 @@ Generate professional resumes from JSON Resume format.
 **Parameters:**
 - `filename` (string, optional) - Filename for the PDF (defaults to "resume.pdf")
 - `resume` (object, required) - [JSON Resume schema](https://jsonresume.org/schema)
+- `layout` (object, optional) - Section ordering and field templates
+- `styling` (object, optional) - Typography and spacing options
 
 **Resume Schema Sections:**
 - `basics` - Name, contact, summary, location
@@ -334,6 +336,76 @@ Generate professional resumes from JSON Resume format.
 - `awards`, `certificates`, `languages`, `volunteer`, `publications`, `interests`, `references`
 
 See the resume example above for structure.
+
+#### Field Templates
+
+Field templates use [LiquidJS](https://liquidjs.com/) syntax to customize how individual fields are rendered. This allows complete control over date formats, location display, and other field-level formatting.
+
+**Available Field Templates:**
+
+| Template | Description | Default |
+|----------|-------------|---------|
+| `location` | Location display | `{{ city }}{% if region %}, {{ region }}{% endif %}` |
+| `dateRange` | Date range format | `{{ start \| date: 'MMM YYYY' }} – {{ end \| date: 'MMM YYYY' \| default: 'Present' }}` |
+| `degree` | Education degree | `{{ studyType }}{% if area %}, {{ area }}{% endif %}` |
+| `credential` | Certificates/awards | `{{ title \| default: name }}{% if awarder %}, {{ awarder }}{% endif %}` |
+| `language` | Language proficiency | `{{ language }}{% if fluency %} ({{ fluency }}){% endif %}` |
+| `skill` | Skill keywords | `{{ name }}: {{ keywords \| join: ', ' }}` |
+| `contactLine` | Contact info line | `{{ items \| join: ' \| ' }}` |
+
+**Date Format Tokens:**
+
+The `date` filter supports these tokens (NOT strftime syntax):
+
+| Token | Output | Example |
+|-------|--------|---------|
+| `YYYY` | 4-digit year | 2024 |
+| `YY` | 2-digit year | 24 |
+| `MMMM` | Full month name | January |
+| `MMM` | Short month name | Jan |
+| `MM` | 2-digit month | 01 |
+| `M` | 1-digit month | 1 |
+| `DD` | 2-digit day | 05 |
+| `D` | 1-digit day | 5 |
+
+**Available Filters:**
+
+| Filter | Description | Example |
+|--------|-------------|---------|
+| `date` | Format a date string | `{{ start \| date: 'MMM YYYY' }}` |
+| `default` | Fallback for empty values | `{{ end \| default: 'Present' }}` |
+| `tenure` | Calculate duration | `{{ start \| tenure: end }}` |
+| `join` | Join array elements | `{{ keywords \| join: ', ' }}` |
+
+**Example: French Resume**
+
+```typescript
+pdf-create-resume({
+  filename: "cv-francais.pdf",
+  resume: { /* JSON Resume data */ },
+  layout: {
+    fieldTemplates: {
+      dateRange: "{{ start | date: 'MM/YYYY' }} – {{ end | date: 'MM/YYYY' | default: 'Présent' }}",
+      location: "{{ city }}"
+    }
+  }
+})
+```
+
+**Example: Verbose Date Format**
+
+```typescript
+pdf-create-resume({
+  filename: "resume.pdf",
+  resume: { /* JSON Resume data */ },
+  layout: {
+    fieldTemplates: {
+      dateRange: "{{ start | date: 'MMMM YYYY' }} to {{ end | date: 'MMMM YYYY' | default: 'Present' }}"
+    }
+  }
+})
+// Output: "January 2020 to December 2023"
+```
 
 ---
 
