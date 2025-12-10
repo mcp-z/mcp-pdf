@@ -362,9 +362,9 @@ pdf-create-resume({
 | Property | Type | Description |
 |----------|------|-------------|
 | `source` | string | **Required.** Path to data in resume schema (e.g., `'basics'`, `'work'`, `'meta.customField'`) |
-| `render` | string | Renderer type override. Auto-inferred from data shape if omitted. |
+| `render` | string | Built-in renderer. Auto-inferred if omitted. Only needed for `'header'` (never auto-inferred) or to force a specific renderer. **Not needed if using `template`.** |
 | `title` | string | Section heading (omit for no title) |
-| `template` | string | Custom LiquidJS template for rendering |
+| `template` | string | LiquidJS template for custom rendering. **Use instead of `render`** for full control. Receives source data as context. |
 
 **Available Renderers:**
 
