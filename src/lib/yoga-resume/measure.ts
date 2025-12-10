@@ -8,8 +8,8 @@
 import type PDFKit from 'pdfkit';
 import { measureTextHeight } from '../content-measure.ts';
 import { renderField } from '../formatting.ts';
-import type { TypographyOptions } from '../handlers/types.ts';
 import type { CredentialData, CredentialListElement, DividerElement, EntryData, EntryListElement, FieldTemplates, GroupElement, HeaderElement, KeywordListElement, LanguageListElement, LayoutElement, ReferenceListElement, SectionTitleElement, TextElement } from '../ir/types.ts';
+import type { TypographyOptions } from '../types/typography.ts';
 import type { MeasureContext } from './types.ts';
 
 // =============================================================================

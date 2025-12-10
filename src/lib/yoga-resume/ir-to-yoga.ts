@@ -6,8 +6,8 @@
  */
 
 import type PDFKit from 'pdfkit';
-import type { TypographyOptions } from '../handlers/types.ts';
 import type { FieldTemplates, GroupElement, LayoutElement } from '../ir/types.ts';
+import type { TypographyOptions } from '../types/typography.ts';
 import type { HeightMeasurer, LayoutContent, LayoutNode } from '../yoga-layout.ts';
 import { calculateLayout } from '../yoga-layout.ts';
 import { createMeasureContext, measureElement } from './measure.ts';

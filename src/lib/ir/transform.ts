@@ -560,6 +560,3 @@ export const DEFAULT_SECTIONS: SectionsConfig = {
     { source: 'references', title: 'References' },
   ],
 };
-
-/** @deprecated Use DEFAULT_SECTIONS instead */
-export const DEFAULT_LAYOUT = DEFAULT_SECTIONS;

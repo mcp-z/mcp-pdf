@@ -7,11 +7,11 @@ import PDFDocument from 'pdfkit';
 import type { ResumeSchema } from '../../assets/resume.d.ts';
 import { registerEmojiFont } from './emoji-renderer.ts';
 import { hasEmoji, isPDFStandardFont, needsUnicodeFont, resolveFont } from './fonts.ts';
-import type { TypographyOptions } from './handlers/types.ts';
-import { DEFAULT_TYPOGRAPHY } from './handlers/types.ts';
 import { isTwoColumnLayout, transformToResumeLayout } from './ir/layout-transform.ts';
 import { DEFAULT_SECTIONS, transformToLayout } from './ir/transform.ts';
 import type { FieldTemplates, SectionsConfig } from './ir/types.ts';
+import type { TypographyOptions } from './types/typography.ts';
+import { DEFAULT_TYPOGRAPHY } from './types/typography.ts';
 import { calculateResumeLayout, calculateTwoColumnLayout, createRenderContext, type PageConfig, paginateLayoutWithAtomicGroups, renderPage } from './yoga-resume/index.ts';
 
 // Re-export types for external use
@@ -308,10 +308,7 @@ export async function generateResumePDFBuffer(resume: ResumeSchema, options: Ren
   });
 }
 
-export type { TypographyOptions } from './handlers/types.ts';
-export { DEFAULT_TYPOGRAPHY } from './handlers/types.ts';
-/** @deprecated Use DEFAULT_SECTIONS instead */
-export { DEFAULT_LAYOUT, DEFAULT_SECTIONS } from './ir/transform.ts';
-// Re-export types for external use
-/** @deprecated Use SectionsConfig instead */
-export type { FieldTemplates, LayoutConfig as LegacySectionsConfig, SectionsConfig } from './ir/types.ts';
+export { DEFAULT_SECTIONS } from './ir/transform.ts';
+export type { FieldTemplates, SectionsConfig } from './ir/types.ts';
+export type { TypographyOptions } from './types/typography.ts';
+export { DEFAULT_TYPOGRAPHY } from './types/typography.ts';

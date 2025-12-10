@@ -7,9 +7,9 @@
 
 import type PDFKit from 'pdfkit';
 import { renderField } from '../formatting.ts';
-import type { TypographyOptions } from '../handlers/types.ts';
 import type { CredentialData, CredentialListElement, DividerElement, EntryData, EntryListElement, FieldTemplates, GroupElement, HeaderElement, KeywordListElement, LanguageListElement, ReferenceListElement, SectionTitleElement, SummaryHighlightsElement, TextElement } from '../ir/types.ts';
 import { renderTextWithEmoji } from '../pdf-helpers.ts';
+import type { TypographyOptions } from '../types/typography.ts';
 import type { ComputedPosition, Page, PageNode, RenderContext } from './types.ts';
 
 // =============================================================================
