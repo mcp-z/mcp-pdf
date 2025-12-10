@@ -222,7 +222,7 @@ export interface TemplateElement extends BaseElement {
 }
 
 /** Group element - atomic block for page break control (react-pdf style wrap={false}) */
-export interface GroupElement {
+export interface GroupElement extends BaseElement {
   type: 'group';
   /** When false, entire group moves to next page if it doesn't fit (atomic) */
   wrap?: boolean;

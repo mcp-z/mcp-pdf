@@ -115,7 +115,7 @@ function assignElementsToColumns(elements: LayoutElement[], columns: { left?: Co
  * @param layoutConfig - Layout configuration (single-column or two-column)
  * @returns Layout structure ready for rendering
  */
-export function transformToResumeLayout(elements: LayoutElement[], sections: (SectionConfig | DividerConfig)[], layoutConfig?: LayoutConfig): ResumeLayout {
+export function transformToResumeLayout(elements: LayoutElement[], _sections: (SectionConfig | DividerConfig)[], layoutConfig?: LayoutConfig): ResumeLayout {
   // Default: single-column layout
   if (!layoutConfig || layoutConfig.style === 'single-column' || !layoutConfig.columns) {
     return {
