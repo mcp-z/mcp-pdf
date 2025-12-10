@@ -10,7 +10,7 @@ import { join } from 'path';
 
 // Get package root directory (works in both src and dist)
 // Use keyExists: 'name' to skip stub package.json files (e.g., dist/esm/package.json with only "type")
-const packageRoot = moduleRoot(import.meta.filename, { keyExists: 'name' });
+const packageRoot = moduleRoot(import.meta.filename);
 
 const ajv = new Ajv({
   allErrors: true,

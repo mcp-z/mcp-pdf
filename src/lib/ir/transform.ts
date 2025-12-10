@@ -333,42 +333,162 @@ function transformSection(resume: ResumeSchema, config: SectionConfig): LayoutEl
       }
     : null;
 
-  // If we have both a section title and an entry-list, create atomic groups
-  // to prevent orphaned section titles (react-pdf style wrap={false})
-  if (sectionTitleElement && contentElement && contentElement.type === 'entry-list') {
-    const entryList = contentElement as EntryListElement;
-    const entries = entryList.entries;
+  // Create atomic groups to prevent orphaned section titles (react-pdf style wrap={false})
+  // Section title stays with at least one item/sentence from its content
+  if (sectionTitleElement && contentElement) {
+    const type = contentElement.type;
 
-    if (entries.length > 0) {
-      // Create entry-list with just the first entry for the atomic group
-      const firstEntryList: EntryListElement = {
-        ...entryList,
-        entries: [entries[0] as EntryData],
-      };
+    if (type === 'entry-list') {
+      // Entry list: group title with first entry
+      const entryList = contentElement as EntryListElement;
+      const entries = entryList.entries;
 
-      // Create atomic group: section-title + first entry stay together
+      if (entries.length > 0) {
+        const firstEntryList: EntryListElement = {
+          ...entryList,
+          entries: [entries[0] as EntryData],
+        };
+
+        const atomicGroup: GroupElement = {
+          type: 'group',
+          wrap: false,
+          children: [sectionTitleElement, firstEntryList],
+        };
+        elements.push(atomicGroup);
+
+        if (entries.length > 1) {
+          const remainingEntryList: EntryListElement = {
+            ...entryList,
+            entries: entries.slice(1) as EntryData[],
+          };
+          elements.push(remainingEntryList);
+        }
+      } else {
+        elements.push(sectionTitleElement);
+      }
+    } else if (type === 'keyword-list') {
+      // Keyword list (skills, interests): group title with first category
+      const keywordList = contentElement as KeywordListElement;
+      const items = keywordList.items;
+
+      if (items.length > 0) {
+        const firstKeywordList: KeywordListElement = {
+          ...keywordList,
+          items: items.slice(0, 1),
+        };
+
+        const atomicGroup: GroupElement = {
+          type: 'group',
+          wrap: false,
+          children: [sectionTitleElement, firstKeywordList],
+        };
+        elements.push(atomicGroup);
+
+        if (items.length > 1) {
+          const remainingKeywordList: KeywordListElement = {
+            ...keywordList,
+            items: items.slice(1),
+          };
+          elements.push(remainingKeywordList);
+        }
+      } else {
+        elements.push(sectionTitleElement);
+      }
+    } else if (type === 'language-list') {
+      // Language list: group title with first language
+      const languageList = contentElement as LanguageListElement;
+      const items = languageList.items;
+
+      if (items.length > 0) {
+        const firstLanguageList: LanguageListElement = {
+          ...languageList,
+          items: items.slice(0, 1),
+        };
+
+        const atomicGroup: GroupElement = {
+          type: 'group',
+          wrap: false,
+          children: [sectionTitleElement, firstLanguageList],
+        };
+        elements.push(atomicGroup);
+
+        if (items.length > 1) {
+          const remainingLanguageList: LanguageListElement = {
+            ...languageList,
+            items: items.slice(1),
+          };
+          elements.push(remainingLanguageList);
+        }
+      } else {
+        elements.push(sectionTitleElement);
+      }
+    } else if (type === 'credential-list') {
+      // Credential list (awards, certificates, publications): group title with first item
+      const credentialList = contentElement as CredentialListElement;
+      const items = credentialList.items;
+
+      if (items.length > 0) {
+        const firstCredentialList: CredentialListElement = {
+          ...credentialList,
+          items: items.slice(0, 1),
+        };
+
+        const atomicGroup: GroupElement = {
+          type: 'group',
+          wrap: false,
+          children: [sectionTitleElement, firstCredentialList],
+        };
+        elements.push(atomicGroup);
+
+        if (items.length > 1) {
+          const remainingCredentialList: CredentialListElement = {
+            ...credentialList,
+            items: items.slice(1),
+          };
+          elements.push(remainingCredentialList);
+        }
+      } else {
+        elements.push(sectionTitleElement);
+      }
+    } else if (type === 'reference-list') {
+      // Reference list: group title with first reference
+      const referenceList = contentElement as ReferenceListElement;
+      const items = referenceList.items;
+
+      if (items.length > 0) {
+        const firstReferenceList: ReferenceListElement = {
+          ...referenceList,
+          items: items.slice(0, 1),
+        };
+
+        const atomicGroup: GroupElement = {
+          type: 'group',
+          wrap: false,
+          children: [sectionTitleElement, firstReferenceList],
+        };
+        elements.push(atomicGroup);
+
+        if (items.length > 1) {
+          const remainingReferenceList: ReferenceListElement = {
+            ...referenceList,
+            items: items.slice(1),
+          };
+          elements.push(remainingReferenceList);
+        }
+      } else {
+        elements.push(sectionTitleElement);
+      }
+    } else {
+      // Other types (text, summary-highlights, template): group entire content with title
       const atomicGroup: GroupElement = {
         type: 'group',
         wrap: false,
-        children: [sectionTitleElement, firstEntryList],
+        children: [sectionTitleElement, contentElement],
       };
       elements.push(atomicGroup);
-
-      // Add remaining entries as separate entry-list (flow normally)
-      if (entries.length > 1) {
-        const remainingEntryList: EntryListElement = {
-          ...entryList,
-          entries: entries.slice(1) as EntryData[],
-        };
-        elements.push(remainingEntryList);
-      }
-    } else {
-      // Empty entry list - just add title (shouldn't happen with earlier empty check)
-      elements.push(sectionTitleElement);
     }
   } else {
-    // No entry-list or no title - add elements normally
-    // (Other content types handle their own page breaks)
+    // No title or no content - add elements normally
     if (sectionTitleElement) {
       elements.push(sectionTitleElement);
     }

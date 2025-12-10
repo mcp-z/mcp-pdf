@@ -7,7 +7,7 @@ import * as url from 'url';
 import { parseArgs } from 'util';
 import type { ServerConfig } from './types.ts';
 
-const pkg = JSON.parse(fs.readFileSync(path.join(moduleRoot(url.fileURLToPath(import.meta.url), { keyExists: 'name' }), 'package.json'), 'utf-8'));
+const pkg = JSON.parse(fs.readFileSync(path.join(moduleRoot(url.fileURLToPath(import.meta.url)), 'package.json'), 'utf-8'));
 
 /**
  * Parse PDF server configuration from CLI arguments and environment.

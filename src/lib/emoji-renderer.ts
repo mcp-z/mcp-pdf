@@ -10,7 +10,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Path to the downloaded emoji font (in .fonts/ directory at project root)
 // Use keyExists to ensure we find the actual package root, not a parent module
-const PROJECT_ROOT = moduleRoot(__dirname, { keyExists: 'name' });
+const PROJECT_ROOT = moduleRoot(__dirname);
 const EMOJI_FONT_PATH = join(PROJECT_ROOT, '.fonts', 'NotoColorEmoji.ttf');
 
 let emojiFontRegistered = false;

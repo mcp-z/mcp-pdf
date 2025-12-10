@@ -137,7 +137,7 @@ const config = {
   }),
 } as const;
 
-export type Input = z.infer<typeof inputSchema>;
+export type Input = z.input<typeof inputSchema>;
 export type Output = z.infer<typeof outputSchema>;
 
 export default function createTool(toolOptions: ToolOptions) {

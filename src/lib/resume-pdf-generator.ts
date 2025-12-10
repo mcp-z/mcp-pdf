@@ -15,6 +15,7 @@ import { isTwoColumnLayout, transformToResumeLayout } from './ir/layout-transfor
 import { DEFAULT_SECTIONS, transformToLayout } from './ir/transform.ts';
 import type { FieldTemplates, LayoutElement, SectionsConfig } from './ir/types.ts';
 import { LayoutEngine } from './layout-engine.ts';
+import { calculateLayout, type HeightMeasurer, type LayoutContent } from './yoga-layout.ts';
 
 // Re-export types for external use
 export type { ResumeSchema };
@@ -166,24 +167,15 @@ function mergeTypography(defaults: TypographyOptions, overrides?: Partial<Typogr
 }
 
 /**
- * Parse column width specification to points
+ * Convert column width config to Yoga-compatible format
  * @param width - Width as percentage string ("30%") or points (150)
- * @param totalWidth - Total available width for percentage calculations
+ * @param defaultPercent - Default percentage if not specified
  */
-function parseColumnWidth(width: string | number | undefined, totalWidth: number): number {
+function normalizeColumnWidth(width: string | number | undefined, defaultPercent: string): string | number {
   if (width === undefined) {
-    return totalWidth / 2; // Default to half width
+    return defaultPercent;
   }
-  if (typeof width === 'number') {
-    return width;
-  }
-  // Handle percentage strings like "30%"
-  if (width.endsWith('%')) {
-    const pct = Number.parseFloat(width.slice(0, -1)) / 100;
-    return totalWidth * pct;
-  }
-  // Try parsing as number
-  return Number.parseFloat(width) || totalWidth / 2;
+  return width;
 }
 
 /**
@@ -196,35 +188,60 @@ function renderColumnElements(doc: InstanceType<typeof PDFDocument>, layoutEngin
 }
 
 /**
- * Render a two-column layout
+ * Render a two-column layout using Yoga for precise column positioning
  */
-function renderTwoColumnLayout(doc: InstanceType<typeof PDFDocument>, layoutEngine: LayoutEngine, resumeLayout: ResumeLayout & { style: 'two-column' }, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean): void {
+async function renderTwoColumnLayout(doc: InstanceType<typeof PDFDocument>, layoutEngine: LayoutEngine, resumeLayout: ResumeLayout & { style: 'two-column' }, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean): Promise<void> {
   const contentWidth = layoutEngine.getContentWidth();
   const marginLeft = layoutEngine.getMargin();
   const gap = resumeLayout.gap;
 
-  // Calculate column widths
-  const leftWidth = parseColumnWidth(resumeLayout.left.width, contentWidth - gap);
-  const rightWidth = parseColumnWidth(resumeLayout.right.width, contentWidth - gap);
+  // Normalize column widths
+  const leftWidth = normalizeColumnWidth(resumeLayout.left.width, '30%');
+  const rightWidth = normalizeColumnWidth(resumeLayout.right.width, '70%');
 
-  // Adjust widths to fit within available space
-  const totalColumnWidth = leftWidth + rightWidth + gap;
-  const scale = totalColumnWidth > contentWidth ? contentWidth / totalColumnWidth : 1;
-  const finalLeftWidth = leftWidth * scale;
-  const finalRightWidth = rightWidth * scale;
+  // Create Yoga layout structure for two columns
+  const columnLayout: LayoutContent = {
+    type: 'group',
+    direction: 'row',
+    gap,
+    width: contentWidth,
+    children: [
+      { type: 'group', width: leftWidth, height: 1 }, // Placeholder height for layout calc
+      { type: 'group', width: rightWidth, height: 1 },
+    ],
+  };
+
+  // Simple measurer - columns don't need height measurement for position calculation
+  const measureHeight: HeightMeasurer = () => 1;
+
+  // Calculate layout with Yoga
+  const layoutNodes = await calculateLayout(
+    [columnLayout],
+    contentWidth + marginLeft * 2, // Page width
+    undefined, // No page height constraint
+    measureHeight,
+    { top: 0, right: marginLeft, bottom: 0, left: marginLeft }
+  );
+
+  // Extract computed column positions
+  const rootNode = layoutNodes[0];
+  const leftColumn = rootNode?.children?.[0];
+  const rightColumn = rootNode?.children?.[1];
+  if (!leftColumn || !rightColumn) {
+    throw new Error('Yoga layout failed to compute two-column positions');
+  }
 
   // Track starting Y position
   const startY = layoutEngine.getCurrentY();
 
-  // Render left column
-  layoutEngine.setColumnContext(marginLeft, finalLeftWidth);
+  // Render left column using computed Yoga position and width
+  layoutEngine.setColumnContext(leftColumn.x, leftColumn.width);
   renderColumnElements(doc, layoutEngine, resumeLayout.left.elements, typography, fieldTemplates, emojiAvailable);
   const leftEndY = layoutEngine.getCurrentY();
 
-  // Reset Y and render right column
+  // Reset Y and render right column using computed Yoga position and width
   layoutEngine.setY(startY);
-  const rightColumnX = marginLeft + finalLeftWidth + gap;
-  layoutEngine.setColumnContext(rightColumnX, finalRightWidth);
+  layoutEngine.setColumnContext(rightColumn.x, rightColumn.width);
   renderColumnElements(doc, layoutEngine, resumeLayout.right.elements, typography, fieldTemplates, emojiAvailable);
   const rightEndY = layoutEngine.getCurrentY();
 
@@ -308,15 +325,17 @@ export async function generateResumePDFBuffer(resume: ResumeSchema, options: Ren
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
-    // Render based on layout type
-    if (isTwoColumnLayout(resumeLayout)) {
-      // Two-column layout: render columns side by side
-      renderTwoColumnLayout(doc, layout, resumeLayout, typography, layoutDoc.fieldTemplates, emojiAvailable);
-    } else {
-      // Single-column layout: render as before
-      renderLayoutDocument(doc, layout, layoutDoc, typography, emojiAvailable);
-    }
-    doc.end();
+    // Render based on layout type (async for Yoga-based two-column layout)
+    (async () => {
+      if (isTwoColumnLayout(resumeLayout)) {
+        // Two-column layout: render columns side by side using Yoga
+        await renderTwoColumnLayout(doc, layout, resumeLayout, typography, layoutDoc.fieldTemplates, emojiAvailable);
+      } else {
+        // Single-column layout: render as before
+        renderLayoutDocument(doc, layout, layoutDoc, typography, emojiAvailable);
+      }
+      doc.end();
+    })().catch(reject);
   });
 }
 

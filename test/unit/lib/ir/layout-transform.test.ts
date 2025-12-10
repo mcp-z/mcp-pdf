@@ -49,7 +49,7 @@ describe('layout-transform', () => {
 
   describe('transformToResumeLayout', () => {
     it('returns single-column layout when no layout config provided', () => {
-      const elements: LayoutElement[] = [{ type: 'text', text: 'Hello' }];
+      const elements: LayoutElement[] = [{ type: 'text', content: 'Hello' }];
       const sections: SectionConfig[] = [];
 
       const result = transformToResumeLayout(elements, sections);
@@ -60,7 +60,7 @@ describe('layout-transform', () => {
     });
 
     it('returns single-column layout when style is single-column', () => {
-      const elements: LayoutElement[] = [{ type: 'text', text: 'Hello' }];
+      const elements: LayoutElement[] = [{ type: 'text', content: 'Hello' }];
       const sections: SectionConfig[] = [];
 
       const result = transformToResumeLayout(elements, sections, { style: 'single-column' });

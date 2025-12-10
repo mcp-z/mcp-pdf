@@ -72,7 +72,7 @@
     "express": "^5.2.1",
     "fontkit": "^2.0.4",
     "liquidjs": "^10.24.0",
-    "module-root-sync": "^1.2.8",
+    "module-root-sync": "^2.0.0",
     "pdfkit": "^0.17.2",
     "pino": "^10.1.0",
     "yoga-layout": "^3.2.1",
@@ -86,7 +86,7 @@
     "@types/node": "^24.10.2",
     "@types/pdfkit": "^0.17.4",
     "json-schema-to-typescript": "^15.0.4",
-    "node-version-use": "^1.9.9",
+    "node-version-use": "^2.0.0",
     "ts-dev-stack": "^1.21.2",
     "tsds-config": "^0.2.0",
     "typescript": "^5.9.3"
