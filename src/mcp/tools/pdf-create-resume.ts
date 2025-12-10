@@ -11,9 +11,12 @@ const resumeInputSchema = z.record(z.string(), z.any()).describe('Resume data in
 // Section configuration schema
 const sectionConfigSchema = z.object({
   source: z.string().describe('Path to data in resume schema using dot notation. Examples: "basics" (for header), "basics.summary", "work", "volunteer", "education", "awards", "certificates", "publications", "skills", "languages", "interests", "projects", "references", "meta.customField".'),
-  render: z.enum(['header', 'entry-list', 'keyword-list', 'language-list', 'credential-list', 'reference-list', 'summary-highlights', 'text']).optional().describe('Renderer type. Auto-inferred from data shape if omitted. Use "header" with source "basics" to render name/contact line.'),
+  render: z
+    .enum(['header', 'entry-list', 'keyword-list', 'language-list', 'credential-list', 'reference-list', 'summary-highlights', 'text'])
+    .optional()
+    .describe('Built-in renderer type. Auto-inferred from data shape if omitted. Only needed when: (1) you want "header" rendering (never auto-inferred), or (2) you want to force a specific renderer. Not needed if using template.'),
   title: z.string().optional().describe('Section title (omit for no title)'),
-  template: z.string().optional().describe('LiquidJS template for custom rendering'),
+  template: z.string().optional().describe('LiquidJS template for custom rendering. Use instead of render for full control. Receives source data as template context (e.g., {{ name }}, {{ keywords | join: ", " }}).'),
   showTenure: z.boolean().optional().describe('Show tenure duration for work/volunteer sections'),
 });
 
