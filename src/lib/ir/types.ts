@@ -49,9 +49,25 @@ export interface FieldTemplates {
 
 // ===== Sections Config (input) =====
 
+/**
+ * Available renderer types for section content.
+ * Auto-inferred from data shape if not specified.
+ */
+export type RenderType =
+  | 'header' // Name + contact line (must be explicit, never auto-inferred)
+  | 'entry-list' // Work, education, volunteer, projects
+  | 'keyword-list' // Skills, interests
+  | 'language-list' // Languages
+  | 'credential-list' // Awards, certificates, publications
+  | 'reference-list' // References
+  | 'summary-highlights' // Summary with bullet highlights
+  | 'text'; // Plain text or paragraphs
+
 export interface SectionConfig {
-  /** Data source path (e.g., "work", "meta.valueProp", "header") */
+  /** Data source path in resume schema using dot notation (e.g., "basics", "work", "education", "meta.customField") */
   source: string;
+  /** Renderer type override. Auto-inferred from data shape if omitted. Use "header" for basics → name/contact rendering. */
+  render?: RenderType;
   /** Section title (omit for no title) */
   title?: string;
   /** Style overrides for this section */

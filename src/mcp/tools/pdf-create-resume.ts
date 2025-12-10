@@ -10,9 +10,11 @@ const resumeInputSchema = z.record(z.string(), z.any()).describe('Resume data in
 
 // Section configuration schema
 const sectionConfigSchema = z.object({
-  source: z.string().describe('Data source path (e.g., "work", "education", "meta.valueProp")'),
+  source: z.string().describe('Path to data in resume schema using dot notation. Examples: "basics" (for header), "basics.summary", "work", "volunteer", "education", "awards", "certificates", "publications", "skills", "languages", "interests", "projects", "references", "meta.customField".'),
+  render: z.enum(['header', 'entry-list', 'keyword-list', 'language-list', 'credential-list', 'reference-list', 'summary-highlights', 'text']).optional().describe('Renderer type. Auto-inferred from data shape if omitted. Use "header" with source "basics" to render name/contact line.'),
   title: z.string().optional().describe('Section title (omit for no title)'),
   template: z.string().optional().describe('LiquidJS template for custom rendering'),
+  showTenure: z.boolean().optional().describe('Show tenure duration for work/volunteer sections'),
 });
 
 // Divider configuration schema
@@ -51,7 +53,11 @@ const sectionsConfigSchema = z
 // Column configuration schema for two-column layouts
 const columnConfigSchema = z.object({
   width: z.union([z.string(), z.number()]).optional().describe('Column width as percentage ("30%") or points (150)'),
-  sections: z.array(z.string()).describe('Source paths of sections for this column (e.g., ["skills", "languages"])'),
+  sections: z
+    .array(z.string())
+    .describe(
+      'Section sources to place in this column. Use source paths from section config: "basics", "basics.summary", "work", "volunteer", "education", "awards", "certificates", "publications", "skills", "languages", "interests", "projects", "references", "meta.customField". Sections not assigned to a column go to the right column by default.'
+    ),
 });
 
 // Layout schema for spatial arrangement
@@ -179,7 +185,7 @@ export default function createTool(toolOptions: ToolOptions) {
         // If no custom sections defined, use default sources
         if (definedSources.size === 0) {
           // Default sources from DEFAULT_SECTIONS
-          const defaultSources = ['header', 'basics.summary', 'work', 'volunteer', 'education', 'awards', 'certificates', 'publications', 'skills', 'languages', 'interests', 'projects', 'references'];
+          const defaultSources = ['basics', 'basics.summary', 'work', 'volunteer', 'education', 'awards', 'certificates', 'publications', 'skills', 'languages', 'interests', 'projects', 'references'];
           for (const s of defaultSources) {
             definedSources.add(s);
           }
@@ -217,9 +223,10 @@ export default function createTool(toolOptions: ToolOptions) {
                 };
               }
               // TypeScript needs explicit narrowing for discriminated unions
-              const sectionConfig = section as { source: string; title?: string; template?: string };
+              const sectionConfig = section as { source: string; render?: string; title?: string; template?: string };
               return {
                 source: sectionConfig.source,
+                render: sectionConfig.render as 'header' | 'entry-list' | 'keyword-list' | 'language-list' | 'credential-list' | 'reference-list' | 'summary-highlights' | 'text' | undefined,
                 title: sectionConfig.title,
                 template: sectionConfig.template,
               };
