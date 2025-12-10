@@ -1,5 +1,5 @@
 /**
- * Resume PDF generator using IR transformation pipeline with emoji support
+ * Resume PDF generator using Yoga layout engine with emoji support
  */
 
 import PDFDocument from 'pdfkit';
@@ -7,15 +7,12 @@ import PDFDocument from 'pdfkit';
 import type { ResumeSchema } from '../../assets/resume.d.ts';
 import { registerEmojiFont } from './emoji-renderer.ts';
 import { hasEmoji, isPDFStandardFont, needsUnicodeFont, resolveFont } from './fonts.ts';
-import { renderElement, renderLayoutDocument } from './handlers/index.ts';
 import type { TypographyOptions } from './handlers/types.ts';
 import { DEFAULT_TYPOGRAPHY } from './handlers/types.ts';
-import type { ResumeLayout } from './ir/layout-transform.ts';
 import { isTwoColumnLayout, transformToResumeLayout } from './ir/layout-transform.ts';
 import { DEFAULT_SECTIONS, transformToLayout } from './ir/transform.ts';
-import type { FieldTemplates, LayoutElement, SectionsConfig } from './ir/types.ts';
-import { LayoutEngine } from './layout-engine.ts';
-import { calculateLayout, type HeightMeasurer, type LayoutContent } from './yoga-layout.ts';
+import type { FieldTemplates, SectionsConfig } from './ir/types.ts';
+import { calculateResumeLayout, calculateTwoColumnLayout, createRenderContext, type PageConfig, paginateLayoutWithAtomicGroups, renderPage } from './yoga-resume/index.ts';
 
 // Re-export types for external use
 export type { ResumeSchema };
@@ -167,90 +164,6 @@ function mergeTypography(defaults: TypographyOptions, overrides?: Partial<Typogr
 }
 
 /**
- * Convert column width config to Yoga-compatible format
- * @param width - Width as percentage string ("30%") or points (150)
- * @param defaultPercent - Default percentage if not specified
- */
-function normalizeColumnWidth(width: string | number | undefined, defaultPercent: string): string | number {
-  if (width === undefined) {
-    return defaultPercent;
-  }
-  return width;
-}
-
-/**
- * Render elements within a column context
- */
-function renderColumnElements(doc: InstanceType<typeof PDFDocument>, layoutEngine: LayoutEngine, elements: LayoutElement[], typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean): void {
-  for (const element of elements) {
-    renderElement(doc, layoutEngine, element, typography, fieldTemplates, emojiAvailable);
-  }
-}
-
-/**
- * Render a two-column layout using Yoga for precise column positioning
- */
-async function renderTwoColumnLayout(doc: InstanceType<typeof PDFDocument>, layoutEngine: LayoutEngine, resumeLayout: ResumeLayout & { style: 'two-column' }, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean): Promise<void> {
-  const contentWidth = layoutEngine.getContentWidth();
-  const marginLeft = layoutEngine.getMargin();
-  const gap = resumeLayout.gap;
-
-  // Normalize column widths
-  const leftWidth = normalizeColumnWidth(resumeLayout.left.width, '30%');
-  const rightWidth = normalizeColumnWidth(resumeLayout.right.width, '70%');
-
-  // Create Yoga layout structure for two columns
-  const columnLayout: LayoutContent = {
-    type: 'group',
-    direction: 'row',
-    gap,
-    width: contentWidth,
-    children: [
-      { type: 'group', width: leftWidth, height: 1 }, // Placeholder height for layout calc
-      { type: 'group', width: rightWidth, height: 1 },
-    ],
-  };
-
-  // Simple measurer - columns don't need height measurement for position calculation
-  const measureHeight: HeightMeasurer = () => 1;
-
-  // Calculate layout with Yoga
-  const layoutNodes = await calculateLayout(
-    [columnLayout],
-    contentWidth + marginLeft * 2, // Page width
-    undefined, // No page height constraint
-    measureHeight,
-    { top: 0, right: marginLeft, bottom: 0, left: marginLeft }
-  );
-
-  // Extract computed column positions
-  const rootNode = layoutNodes[0];
-  const leftColumn = rootNode?.children?.[0];
-  const rightColumn = rootNode?.children?.[1];
-  if (!leftColumn || !rightColumn) {
-    throw new Error('Yoga layout failed to compute two-column positions');
-  }
-
-  // Track starting Y position
-  const startY = layoutEngine.getCurrentY();
-
-  // Render left column using computed Yoga position and width
-  layoutEngine.setColumnContext(leftColumn.x, leftColumn.width);
-  renderColumnElements(doc, layoutEngine, resumeLayout.left.elements, typography, fieldTemplates, emojiAvailable);
-  const leftEndY = layoutEngine.getCurrentY();
-
-  // Reset Y and render right column using computed Yoga position and width
-  layoutEngine.setY(startY);
-  layoutEngine.setColumnContext(rightColumn.x, rightColumn.width);
-  renderColumnElements(doc, layoutEngine, resumeLayout.right.elements, typography, fieldTemplates, emojiAvailable);
-  const rightEndY = layoutEngine.getCurrentY();
-
-  // Clear column context and set Y to the max of both columns
-  layoutEngine.clearColumnContext();
-  layoutEngine.setY(Math.max(leftEndY, rightEndY));
-}
-
-/**
  * Renders a resume to PDF buffer using the transform → render pipeline
  */
 export async function generateResumePDFBuffer(resume: ResumeSchema, options: RenderOptions = {}): Promise<Buffer> {
@@ -314,9 +227,15 @@ export async function generateResumePDFBuffer(resume: ResumeSchema, options: Ren
   // Merge typography with defaults and font overrides
   const typography = mergeTypography(DEFAULT_TYPOGRAPHY, options.typography, fonts);
 
-  // Initialize layout engine
-  const layout = new LayoutEngine();
-  layout.init(doc);
+  // Page configuration
+  const pageConfig: PageConfig = {
+    width: 612, // LETTER width
+    height: 792, // LETTER height
+    margins: { top: 50, right: 54, bottom: 50, left: 54 },
+  };
+
+  // Create render context
+  const renderCtx = createRenderContext(doc, typography, layoutDoc.fieldTemplates, emojiAvailable);
 
   // Return a promise that resolves when the PDF is complete
   return new Promise<Buffer>((resolve, reject) => {
@@ -325,14 +244,64 @@ export async function generateResumePDFBuffer(resume: ResumeSchema, options: Ren
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
-    // Render based on layout type (async for Yoga-based two-column layout)
+    // Render based on layout type using Yoga layout engine
     (async () => {
       if (isTwoColumnLayout(resumeLayout)) {
-        // Two-column layout: render columns side by side using Yoga
-        await renderTwoColumnLayout(doc, layout, resumeLayout, typography, layoutDoc.fieldTemplates, emojiAvailable);
+        // Two-column layout: calculate and render columns
+        const twoColumnResult = await calculateTwoColumnLayout(
+          doc,
+          {
+            gap: resumeLayout.gap,
+            left: {
+              width: resumeLayout.left.width,
+              elements: resumeLayout.left.elements,
+            },
+            right: {
+              width: resumeLayout.right.width,
+              elements: resumeLayout.right.elements,
+            },
+          },
+          typography,
+          layoutDoc.fieldTemplates,
+          emojiAvailable,
+          pageConfig
+        );
+
+        // Paginate both columns
+        const leftPages = paginateLayoutWithAtomicGroups(twoColumnResult.left, pageConfig);
+        const rightPages = paginateLayoutWithAtomicGroups(twoColumnResult.right, pageConfig);
+        const maxPages = Math.max(leftPages.length, rightPages.length);
+
+        // Render pages
+        for (let pageNum = 0; pageNum < maxPages; pageNum++) {
+          if (pageNum > 0) {
+            doc.addPage();
+          }
+          // Render left column nodes for this page
+          const leftPage = leftPages[pageNum];
+          if (leftPage) {
+            renderPage(renderCtx, leftPage);
+          }
+          // Render right column nodes for this page
+          const rightPage = rightPages[pageNum];
+          if (rightPage) {
+            renderPage(renderCtx, rightPage);
+          }
+        }
       } else {
-        // Single-column layout: render as before
-        renderLayoutDocument(doc, layout, layoutDoc, typography, emojiAvailable);
+        // Single-column layout
+        const layoutNodes = await calculateResumeLayout(doc, resumeLayout.elements, typography, layoutDoc.fieldTemplates, emojiAvailable, pageConfig);
+
+        // Paginate the layout
+        const pages = paginateLayoutWithAtomicGroups(layoutNodes, pageConfig);
+
+        // Render all pages
+        for (const page of pages) {
+          if (page.number > 0) {
+            doc.addPage();
+          }
+          renderPage(renderCtx, page);
+        }
       }
       doc.end();
     })().catch(reject);
