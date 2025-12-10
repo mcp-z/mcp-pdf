@@ -3,8 +3,8 @@
  */
 
 import type PDFKit from 'pdfkit';
-import { formatDate, formatTenure } from '../formatting.ts';
-import type { EntryData, EntryListElement, FormattingOptions } from '../ir/types.ts';
+import { renderField } from '../formatting.ts';
+import type { EntryData, EntryListElement, FieldTemplates } from '../ir/types.ts';
 import type { LayoutEngine } from '../layout-engine.ts';
 import { renderTextWithEmoji } from '../pdf-helpers.ts';
 import { ensureString, paragraphsFromContent, renderBullets, renderParagraphs, resolveStyles } from './renderer-helpers.ts';
@@ -60,7 +60,7 @@ function groupByCompany(entries: EntryData[]): EntryData[][] {
   return groups;
 }
 
-function renderPosition(doc: PDFKit.PDFDocument, layout: LayoutEngine, job: ResumeWork, typography: TypographyOptions, formatting: FormattingOptions, emojiAvailable: boolean, showTenure: boolean, showLocation: boolean): void {
+function renderPosition(doc: PDFKit.PDFDocument, layout: LayoutEngine, job: ResumeWork, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean, showLocation: boolean): void {
   const style = resolveStyles(typography);
   const { entry: entryStyle, bullet } = typography;
   const rightWidth = entryStyle.date.width;
@@ -69,15 +69,12 @@ function renderPosition(doc: PDFKit.PDFDocument, layout: LayoutEngine, job: Resu
   const entryData = job as Record<string, unknown>;
   const position = ensureString(entryData.position ?? (entryData.roles as string[])?.[0]);
   const location = showLocation ? ensureString(entryData.location) : '';
-  const start = formatDate(job.startDate, formatting.dateFormat || 'MMM YYYY');
-  const end = job.endDate ? formatDate(job.endDate, formatting.dateFormat || 'MMM YYYY') : formatting.presentText || 'Present';
-  let dateText = [start, end].filter(Boolean).join(formatting.dateSeparator || ' – ');
-  if (showTenure && job.startDate) {
-    const tenure = formatTenure(job.startDate, job.endDate);
-    if (tenure) {
-      dateText += ` · ${tenure}`;
-    }
-  }
+
+  // Use dateRange field template
+  const dateText = renderField(fieldTemplates.dateRange, {
+    start: job.startDate,
+    end: job.endDate,
+  });
 
   const summaryText = entryData.summary ?? entryData.description;
   const summaryParagraphs = paragraphsFromContent(summaryText as string | string[] | undefined);
@@ -194,7 +191,7 @@ function renderCompanyHeader(doc: PDFKit.PDFDocument, layout: LayoutEngine, comp
   layout.advanceY(line1Height + entryTitleMarginBottom);
 }
 
-function renderSingleWorkEntry(doc: PDFKit.PDFDocument, layout: LayoutEngine, job: ResumeWork, typography: TypographyOptions, formatting: FormattingOptions, emojiAvailable: boolean, showTenure: boolean): void {
+function renderSingleWorkEntry(doc: PDFKit.PDFDocument, layout: LayoutEngine, job: ResumeWork, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean): void {
   const style = resolveStyles(typography);
   const { entry: entryStyle, bullet } = typography;
   const rightWidth = entryStyle.date.width;
@@ -204,15 +201,12 @@ function renderSingleWorkEntry(doc: PDFKit.PDFDocument, layout: LayoutEngine, jo
   const company = ensureString(entryData.name ?? entryData.organization ?? entryData.entity);
   const position = ensureString(entryData.position ?? (entryData.roles as string[])?.[0]);
   const location = ensureString(entryData.location);
-  const start = formatDate(job.startDate, formatting.dateFormat || 'MMM YYYY');
-  const end = job.endDate ? formatDate(job.endDate, formatting.dateFormat || 'MMM YYYY') : formatting.presentText || 'Present';
-  let dateText = [start, end].filter(Boolean).join(formatting.dateSeparator || ' – ');
-  if (showTenure && job.startDate) {
-    const tenure = formatTenure(job.startDate, job.endDate);
-    if (tenure) {
-      dateText += ` · ${tenure}`;
-    }
-  }
+
+  // Use dateRange field template
+  const dateText = renderField(fieldTemplates.dateRange, {
+    start: job.startDate,
+    end: job.endDate,
+  });
 
   const summaryText = entryData.summary ?? entryData.description;
   const summaryParagraphs = paragraphsFromContent(summaryText as string | string[] | undefined);
@@ -304,7 +298,7 @@ function renderSingleWorkEntry(doc: PDFKit.PDFDocument, layout: LayoutEngine, jo
   layout.advanceY(style.blockMarginBottom);
 }
 
-function renderGroupedWorkEntry(doc: PDFKit.PDFDocument, layout: LayoutEngine, jobs: ResumeWork[], typography: TypographyOptions, formatting: FormattingOptions, emojiAvailable: boolean, showTenure: boolean): void {
+function renderGroupedWorkEntry(doc: PDFKit.PDFDocument, layout: LayoutEngine, jobs: ResumeWork[], typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean): void {
   const firstJob = jobs[0] as Record<string, unknown>;
   const company = ensureString(firstJob.name ?? firstJob.organization ?? firstJob.entity);
 
@@ -316,11 +310,11 @@ function renderGroupedWorkEntry(doc: PDFKit.PDFDocument, layout: LayoutEngine, j
   renderCompanyHeader(doc, layout, company, sharedLocation, typography, emojiAvailable);
 
   for (const job of jobs) {
-    renderPosition(doc, layout, job, typography, formatting, emojiAvailable, showTenure, !sameLocation);
+    renderPosition(doc, layout, job, typography, fieldTemplates, emojiAvailable, !sameLocation);
   }
 }
 
-function renderEducationEntry(doc: PDFKit.PDFDocument, layout: LayoutEngine, ed: ResumeEducation, typography: TypographyOptions, formatting: FormattingOptions, emojiAvailable: boolean): void {
+function renderEducationEntry(doc: PDFKit.PDFDocument, layout: LayoutEngine, ed: ResumeEducation, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean): void {
   const style = resolveStyles(typography);
   const { entry: entryStyle } = typography;
 
@@ -330,12 +324,18 @@ function renderEducationEntry(doc: PDFKit.PDFDocument, layout: LayoutEngine, ed:
   const itemMargin = style.itemMarginBottom;
 
   const institution = ensureString(ed.institution);
-  const area = ensureString(ed.area);
-  const studyType = ensureString(ed.studyType);
-  const startStr = formatDate(ed.startDate, formatting.dateFormat || 'MMM YYYY');
-  const endStr = formatDate(ed.endDate, formatting.dateFormat || 'MMM YYYY');
-  const dates = [startStr, endStr].filter(Boolean).join(formatting.dateSeparator || ' – ');
-  const degreeParts = [studyType, area].filter(Boolean).join(', ');
+
+  // Use dateRange field template
+  const dates = renderField(fieldTemplates.dateRange, {
+    start: ed.startDate,
+    end: ed.endDate,
+  });
+
+  // Use degree field template
+  const degreeParts = renderField(fieldTemplates.degree, {
+    studyType: ed.studyType,
+    area: ed.area,
+  });
 
   doc.font(typography.fonts.bold).fontSize(style.fontSize);
   const institutionHeight = doc.heightOfString(institution, { width: leftWidth });
@@ -392,22 +392,22 @@ function renderEducationEntry(doc: PDFKit.PDFDocument, layout: LayoutEngine, ed:
   layout.advanceY(style.blockMarginBottom);
 }
 
-export function renderEntryListHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: EntryListElement, typography: TypographyOptions, formatting: FormattingOptions, emojiAvailable: boolean): void {
-  const { entries, variant, showTenure } = element;
+export function renderEntryListHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: EntryListElement, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean): void {
+  const { entries, variant } = element;
   if (!entries.length) return;
 
   if (variant === 'education') {
     for (const entry of entries) {
-      renderEducationEntry(doc, layout, entry as ResumeEducation, typography, formatting, emojiAvailable);
+      renderEducationEntry(doc, layout, entry as ResumeEducation, typography, fieldTemplates, emojiAvailable);
     }
   } else {
     const groups = groupByCompany(entries);
 
     for (const group of groups) {
       if (group.length === 1) {
-        renderSingleWorkEntry(doc, layout, group[0] as ResumeWork, typography, formatting, emojiAvailable, showTenure || false);
+        renderSingleWorkEntry(doc, layout, group[0] as ResumeWork, typography, fieldTemplates, emojiAvailable);
       } else {
-        renderGroupedWorkEntry(doc, layout, group as ResumeWork[], typography, formatting, emojiAvailable, showTenure || false);
+        renderGroupedWorkEntry(doc, layout, group as ResumeWork[], typography, fieldTemplates, emojiAvailable);
       }
     }
   }

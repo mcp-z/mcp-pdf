@@ -3,12 +3,12 @@
  */
 
 import type PDFKit from 'pdfkit';
-import type { FormattingOptions, SummaryHighlightsElement } from '../ir/types.ts';
+import type { FieldTemplates, SummaryHighlightsElement } from '../ir/types.ts';
 import type { LayoutEngine } from '../layout-engine.ts';
 import { paragraphsFromContent, renderBullets, renderParagraphs, resolveStyles } from './renderer-helpers.ts';
 import type { TypographyOptions } from './types.ts';
 
-export function renderSummaryHighlightsHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: SummaryHighlightsElement, typography: TypographyOptions, _formatting: FormattingOptions, emojiAvailable: boolean): void {
+export function renderSummaryHighlightsHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: SummaryHighlightsElement, typography: TypographyOptions, _fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean): void {
   const style = resolveStyles(typography);
   const { bullet } = typography;
 

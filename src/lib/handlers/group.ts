@@ -17,19 +17,19 @@
  */
 
 import type PDFKit from 'pdfkit';
-import type { FormattingOptions, GroupElement } from '../ir/types.ts';
+import type { FieldTemplates, GroupElement } from '../ir/types.ts';
 import type { LayoutEngine } from '../layout-engine.ts';
 import { measureElement } from './measure.ts';
 import type { TypographyOptions } from './types.ts';
 
 // Forward declaration - will be set by index.ts to avoid circular dependency
-let renderElementFn: ((doc: PDFKit.PDFDocument, layout: LayoutEngine, element: unknown, typography: TypographyOptions, formatting: FormattingOptions, emojiAvailable: boolean) => void) | null = null;
+let renderElementFn: ((doc: PDFKit.PDFDocument, layout: LayoutEngine, element: unknown, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean) => void) | null = null;
 
 export function setRenderElementFn(fn: typeof renderElementFn): void {
   renderElementFn = fn;
 }
 
-export function renderGroupHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: GroupElement, typography: TypographyOptions, formatting: FormattingOptions, emojiAvailable: boolean): void {
+export function renderGroupHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: GroupElement, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean): void {
   const { children, wrap } = element;
 
   if (!children || children.length === 0) return;
@@ -42,7 +42,7 @@ export function renderGroupHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine
   if (wrap === false || wrap === undefined) {
     // Measure total height of all children
     const totalHeight = children.reduce((sum, child) => {
-      return sum + measureElement(doc, layout, child, typography, formatting);
+      return sum + measureElement(doc, layout, child, typography, fieldTemplates);
     }, 0);
 
     // Ensure space for entire group atomically
@@ -54,6 +54,6 @@ export function renderGroupHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine
 
   // Render children sequentially
   for (const child of children) {
-    renderElementFn(doc, layout, child, typography, formatting, emojiAvailable);
+    renderElementFn(doc, layout, child, typography, fieldTemplates, emojiAvailable);
   }
 }
