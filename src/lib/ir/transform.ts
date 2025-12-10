@@ -266,7 +266,7 @@ function transformData(data: unknown, source: string, config: SectionConfig): La
  */
 function transformSection(resume: ResumeSchema, config: SectionConfig): LayoutElement[] {
   const elements: LayoutElement[] = [];
-  const { source, title, template, style } = config;
+  const { source, render, title, template, style } = config;
 
   // Helper to tag all elements with their source
   const tagElements = () => {
@@ -282,28 +282,25 @@ function transformSection(resume: ResumeSchema, config: SectionConfig): LayoutEl
     return elements;
   };
 
-  // Special case: header
-  if (source === 'header') {
+  // Get data from source path
+  const data = getNestedValue(resume as unknown as Record<string, unknown>, source);
+
+  // Handle explicit header render type (for basics → name/contact rendering)
+  if (render === 'header') {
     if (template) {
       // Use custom template for header
-      const headerData = {
-        ...resume.basics,
-        profiles: resume.basics?.profiles,
-      };
       elements.push({
         type: 'template',
         template,
-        data: headerData as Record<string, unknown>,
+        data: (typeof data === 'object' ? data : { value: data }) as Record<string, unknown>,
         style,
       } as TemplateElement);
     } else {
+      // Pass resume for backwards compatibility with transformHeader
       elements.push(transformHeader(resume));
     }
     return tagElements();
   }
-
-  // Get data from source path
-  const data = getNestedValue(resume as unknown as Record<string, unknown>, source);
 
   // Skip empty data
   if (data === undefined || data === null) return elements;
@@ -395,30 +392,16 @@ function transformSection(resume: ResumeSchema, config: SectionConfig): LayoutEl
         elements.push(sectionTitleElement);
       }
     } else if (type === 'language-list') {
-      // Language list: group title with first language
+      // Language list: group title with ALL languages (they render as a single comma-separated line)
       const languageList = contentElement as LanguageListElement;
-      const items = languageList.items;
 
-      if (items.length > 0) {
-        const firstLanguageList: LanguageListElement = {
-          ...languageList,
-          items: items.slice(0, 1),
-        };
-
+      if (languageList.items.length > 0) {
         const atomicGroup: GroupElement = {
           type: 'group',
           wrap: false,
-          children: [sectionTitleElement, firstLanguageList],
+          children: [sectionTitleElement, languageList],
         };
         elements.push(atomicGroup);
-
-        if (items.length > 1) {
-          const remainingLanguageList: LanguageListElement = {
-            ...languageList,
-            items: items.slice(1),
-          };
-          elements.push(remainingLanguageList);
-        }
       } else {
         elements.push(sectionTitleElement);
       }
@@ -562,7 +545,7 @@ export function transformToLayout(resume: ResumeSchema, config: SectionsConfig):
  */
 export const DEFAULT_SECTIONS: SectionsConfig = {
   sections: [
-    { source: 'header' },
+    { source: 'basics', render: 'header' },
     { source: 'basics.summary', title: 'Summary' },
     { source: 'work', title: 'Experience' },
     { source: 'volunteer', title: 'Volunteer Experience' },

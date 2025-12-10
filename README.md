@@ -338,6 +338,67 @@ Generate professional resumes from JSON Resume format.
 
 See the resume example above for structure.
 
+#### Section Configuration
+
+Control which sections appear and in what order using `sections.sections`:
+
+```typescript
+pdf-create-resume({
+  resume: { /* JSON Resume data */ },
+  sections: {
+    sections: [
+      { source: 'basics', render: 'header' },      // Name + contact line
+      { source: 'basics.summary', title: 'Summary' },
+      { source: 'work', title: 'Experience' },
+      { source: 'skills', title: 'Skills' },
+      { source: 'education', title: 'Education' },
+    ]
+  }
+})
+```
+
+**Section Config Properties:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `source` | string | **Required.** Path to data in resume schema (e.g., `'basics'`, `'work'`, `'meta.customField'`) |
+| `render` | string | Renderer type override. Auto-inferred from data shape if omitted. |
+| `title` | string | Section heading (omit for no title) |
+| `template` | string | Custom LiquidJS template for rendering |
+
+**Available Renderers:**
+
+| Renderer | Auto-inferred when | Use for |
+|----------|-------------------|---------|
+| `header` | Never (must be explicit) | Name + contact line from `basics` |
+| `entry-list` | Array with position/institution/organization | Work, education, volunteer, projects |
+| `keyword-list` | Array with `keywords` field | Skills, interests |
+| `language-list` | Array with `language` field | Languages |
+| `credential-list` | Array with awarder/issuer/publisher | Awards, certificates, publications |
+| `reference-list` | Array with `reference` field | References |
+| `text` | String or string array | Summary, custom text |
+
+**Example: Custom Section Order with Meta Fields**
+
+```typescript
+pdf-create-resume({
+  resume: {
+    basics: { name: 'Jane Doe', email: 'jane@example.com' },
+    work: [{ /* ... */ }],
+    meta: {
+      valueProp: 'Full-stack engineer with 10+ years experience...'
+    }
+  },
+  sections: {
+    sections: [
+      { source: 'basics', render: 'header' },
+      { source: 'meta.valueProp', title: 'Value Proposition' },  // Custom meta field
+      { source: 'work', title: 'Experience' },
+    ]
+  }
+})
+```
+
 #### Field Templates
 
 Field templates use [LiquidJS](https://liquidjs.com/) syntax to customize how individual fields are rendered. This allows complete control over date formats, location display, and other field-level formatting.
