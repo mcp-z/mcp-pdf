@@ -36,8 +36,8 @@ const fieldTemplatesSchema = z
   .optional()
   .describe('LiquidJS templates for field-level rendering. Filters: date (format dates), default (fallback value), tenure (calculate duration), join (join arrays)');
 
-// Layout configuration schema
-const layoutConfigSchema = z
+// Sections configuration schema
+const sectionsConfigSchema = z
   .object({
     sections: z
       .array(z.union([sectionConfigSchema, dividerConfigSchema]))
@@ -46,7 +46,29 @@ const layoutConfigSchema = z
     fieldTemplates: fieldTemplatesSchema,
   })
   .optional()
-  .describe('Layout configuration for section ordering and field templates');
+  .describe('Sections configuration for section ordering and field templates');
+
+// Column configuration schema for two-column layouts
+const columnConfigSchema = z.object({
+  width: z.union([z.string(), z.number()]).optional().describe('Column width as percentage ("30%") or points (150)'),
+  sections: z.array(z.string()).describe('Source paths of sections for this column (e.g., ["skills", "languages"])'),
+});
+
+// Layout schema for spatial arrangement
+const layoutSchema = z
+  .object({
+    style: z.enum(['single-column', 'two-column']).default('single-column').describe('Layout style (default: single-column)'),
+    columns: z
+      .object({
+        left: columnConfigSchema.optional().describe('Left/sidebar column configuration'),
+        right: columnConfigSchema.optional().describe('Right/main column configuration'),
+      })
+      .optional()
+      .describe('Column configuration for two-column layout'),
+    gap: z.number().optional().default(30).describe('Gap between columns in points (default: 30)'),
+  })
+  .optional()
+  .describe('Spatial arrangement of sections. Omit for single-column (default). Use style: "two-column" with columns config for sidebar layouts.');
 
 // Typography/styling schema (points-based, not moveDown)
 const stylingSchema = z
@@ -90,7 +112,8 @@ const inputSchema = z.object({
   filename: z.string().optional().describe('Optional logical filename (metadata only). Storage uses UUID. Defaults to "resume.pdf".'),
   resume: resumeInputSchema,
   font: z.string().optional().describe('Font for the PDF. Defaults to "auto" (system font detection). Built-ins are limited to ASCII; provide a path or URL for full Unicode.'),
-  layout: layoutConfigSchema,
+  sections: sectionsConfigSchema,
+  layout: layoutSchema,
   styling: stylingSchema,
 });
 
@@ -129,7 +152,7 @@ export default function createTool(toolOptions: ToolOptions) {
   }
 
   async function handler(args: Input): Promise<CallToolResult> {
-    const { filename = 'resume.pdf', resume, font, layout, styling } = args;
+    const { filename = 'resume.pdf', resume, font, sections, layout, styling } = args;
 
     try {
       // Validate resume against JSON Schema
@@ -138,16 +161,54 @@ export default function createTool(toolOptions: ToolOptions) {
         throw new McpError(ErrorCode.InvalidParams, `Resume validation failed: ${validation.errors?.join('; ') || 'Unknown error'}`);
       }
 
+      // Validate layout configuration
+      if (layout?.style === 'two-column' && layout.columns) {
+        const leftSections = layout.columns.left?.sections || [];
+        const rightSections = layout.columns.right?.sections || [];
+
+        // Get all defined section sources
+        const definedSources = new Set<string>();
+        if (sections?.sections) {
+          for (const section of sections.sections) {
+            if ('source' in section) {
+              definedSources.add(section.source);
+            }
+          }
+        }
+
+        // If no custom sections defined, use default sources
+        if (definedSources.size === 0) {
+          // Default sources from DEFAULT_SECTIONS
+          const defaultSources = ['header', 'basics.summary', 'work', 'volunteer', 'education', 'awards', 'certificates', 'publications', 'skills', 'languages', 'interests', 'projects', 'references'];
+          for (const s of defaultSources) {
+            definedSources.add(s);
+          }
+        }
+
+        // Check for sections in columns that don't exist
+        const allColumnSections = [...leftSections, ...rightSections];
+        const invalidSections = allColumnSections.filter((s) => !definedSources.has(s));
+        if (invalidSections.length > 0) {
+          throw new McpError(ErrorCode.InvalidParams, `Layout references unknown sections: ${invalidSections.join(', ')}. Available sections: ${[...definedSources].join(', ')}`);
+        }
+
+        // Check for duplicate sections across columns
+        const duplicates = leftSections.filter((s) => rightSections.includes(s));
+        if (duplicates.length > 0) {
+          throw new McpError(ErrorCode.InvalidParams, `Sections cannot appear in both columns: ${duplicates.join(', ')}`);
+        }
+      }
+
       // Build render options
       const renderOptions: RenderOptions = {
         font,
       };
 
-      // Map layout config
-      if (layout) {
-        renderOptions.layout = {
+      // Map sections config
+      if (sections) {
+        renderOptions.sections = {
           sections:
-            layout.sections?.map((section) => {
+            sections.sections?.map((section) => {
               if ('type' in section && section.type === 'divider') {
                 return {
                   type: 'divider' as const,
@@ -163,7 +224,7 @@ export default function createTool(toolOptions: ToolOptions) {
                 template: sectionConfig.template,
               };
             }) || [],
-          fieldTemplates: layout.fieldTemplates,
+          fieldTemplates: sections.fieldTemplates,
         };
       }
 
@@ -232,6 +293,20 @@ export default function createTool(toolOptions: ToolOptions) {
             color: '#cccccc',
           },
         } as Partial<TypographyOptions>;
+      }
+
+      // Map layout config
+      if (layout) {
+        renderOptions.layout = {
+          style: layout.style,
+          gap: layout.gap,
+          columns: layout.columns
+            ? {
+                left: layout.columns.left ? { width: layout.columns.left.width, sections: layout.columns.left.sections } : undefined,
+                right: layout.columns.right ? { width: layout.columns.right.width, sections: layout.columns.right.sections } : undefined,
+              }
+            : undefined,
+        };
       }
 
       // Generate PDF

@@ -324,7 +324,8 @@ Generate professional resumes from JSON Resume format.
 **Parameters:**
 - `filename` (string, optional) - Filename for the PDF (defaults to "resume.pdf")
 - `resume` (object, required) - [JSON Resume schema](https://jsonresume.org/schema)
-- `layout` (object, optional) - Section ordering and field templates
+- `sections` (object, optional) - Section ordering and field templates
+- `layout` (object, optional) - Spatial arrangement (single-column or two-column)
 - `styling` (object, optional) - Typography and spacing options
 
 **Resume Schema Sections:**
@@ -383,7 +384,7 @@ The `date` filter supports these tokens (NOT strftime syntax):
 pdf-create-resume({
   filename: "cv-francais.pdf",
   resume: { /* JSON Resume data */ },
-  layout: {
+  sections: {
     fieldTemplates: {
       dateRange: "{{ start | date: 'MM/YYYY' }} – {{ end | date: 'MM/YYYY' | default: 'Présent' }}",
       location: "{{ city }}"
@@ -398,7 +399,7 @@ pdf-create-resume({
 pdf-create-resume({
   filename: "resume.pdf",
   resume: { /* JSON Resume data */ },
-  layout: {
+  sections: {
     fieldTemplates: {
       dateRange: "{{ start | date: 'MMMM YYYY' }} to {{ end | date: 'MMMM YYYY' | default: 'Present' }}"
     }
@@ -406,6 +407,61 @@ pdf-create-resume({
 })
 // Output: "January 2020 to December 2023"
 ```
+
+### Two-Column Resume Layout
+
+Create professional two-column resumes with a sidebar:
+
+```typescript
+pdf-create-resume({
+  filename: "two-column-resume.pdf",
+  resume: {
+    basics: {
+      name: "Jane Doe",
+      label: "Product Designer",
+      email: "jane@example.com"
+    },
+    work: [{
+      name: "Design Studio",
+      position: "Lead Designer",
+      startDate: "2019-03",
+      highlights: ["Redesigned product UI", "Increased conversion by 25%"]
+    }],
+    skills: [
+      { name: "Design", keywords: ["Figma", "Sketch", "Adobe XD"] },
+      { name: "Frontend", keywords: ["HTML", "CSS", "React"] }
+    ],
+    languages: [
+      { language: "English", fluency: "Native" },
+      { language: "Spanish", fluency: "Intermediate" }
+    ]
+  },
+  layout: {
+    style: "two-column",
+    gap: 30,
+    columns: {
+      left: {
+        width: "30%",
+        sections: ["skills", "languages"]
+      },
+      right: {
+        width: "70%",
+        sections: ["work"]
+      }
+    }
+  }
+})
+```
+
+**Layout Options:**
+- `style` - "single-column" (default) or "two-column"
+- `gap` - Space between columns in points (default: 30)
+- `columns.left.width` - Left column width as percentage ("30%") or points (150)
+- `columns.left.sections` - Section source paths for left column
+- `columns.right.width` - Right column width
+- `columns.right.sections` - Section source paths for right column
+
+Sections not assigned to a column default to the right column. The header always spans the full width at the top.
 
 ---
 

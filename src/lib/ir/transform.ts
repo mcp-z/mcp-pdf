@@ -1,5 +1,5 @@
 /**
- * Transform phase: Resume JSON + LayoutConfig → LayoutDocument (IR)
+ * Transform phase: Resume JSON + SectionsConfig → LayoutDocument (IR)
  *
  * This is the first phase of the resume PDF pipeline. It transforms
  * the resume JSON data into an intermediate representation (IR) that
@@ -22,12 +22,12 @@ import type {
   HeaderElement,
   KeywordListElement,
   LanguageListElement,
-  LayoutConfig,
   LayoutDocument,
   LayoutElement,
   LocationData,
   ReferenceListElement,
   SectionConfig,
+  SectionsConfig,
   SectionTitleElement,
   SummaryHighlightsElement,
   TemplateElement,
@@ -268,6 +268,20 @@ function transformSection(resume: ResumeSchema, config: SectionConfig): LayoutEl
   const elements: LayoutElement[] = [];
   const { source, title, template, style } = config;
 
+  // Helper to tag all elements with their source
+  const tagElements = () => {
+    for (const el of elements) {
+      el.source = source;
+      // Also tag children in groups
+      if (el.type === 'group' && 'children' in el) {
+        for (const child of (el as GroupElement).children) {
+          child.source = source;
+        }
+      }
+    }
+    return elements;
+  };
+
   // Special case: header
   if (source === 'header') {
     if (template) {
@@ -285,7 +299,7 @@ function transformSection(resume: ResumeSchema, config: SectionConfig): LayoutEl
     } else {
       elements.push(transformHeader(resume));
     }
-    return elements;
+    return tagElements();
   }
 
   // Get data from source path
@@ -363,7 +377,7 @@ function transformSection(resume: ResumeSchema, config: SectionConfig): LayoutEl
     }
   }
 
-  return elements;
+  return tagElements();
 }
 
 /**
@@ -397,9 +411,9 @@ function extractMetadata(resume: ResumeSchema): DocumentMetadata {
 }
 
 /**
- * Main transform function: Resume + LayoutConfig → LayoutDocument
+ * Main transform function: Resume + SectionsConfig → LayoutDocument
  */
-export function transformToLayout(resume: ResumeSchema, config: LayoutConfig): LayoutDocument {
+export function transformToLayout(resume: ResumeSchema, config: SectionsConfig): LayoutDocument {
   const fieldTemplates: Required<FieldTemplates> = mergeFieldTemplates(config.fieldTemplates);
 
   // Register LiquidJS filters for field templates
@@ -424,9 +438,9 @@ export function transformToLayout(resume: ResumeSchema, config: LayoutConfig): L
 }
 
 /**
- * Default layout matching the original section order
+ * Default sections config matching the original section order
  */
-export const DEFAULT_LAYOUT: LayoutConfig = {
+export const DEFAULT_SECTIONS: SectionsConfig = {
   sections: [
     { source: 'header' },
     { source: 'basics.summary', title: 'Summary' },
@@ -443,3 +457,6 @@ export const DEFAULT_LAYOUT: LayoutConfig = {
     { source: 'references', title: 'References' },
   ],
 };
+
+/** @deprecated Use DEFAULT_SECTIONS instead */
+export const DEFAULT_LAYOUT = DEFAULT_SECTIONS;

@@ -7,15 +7,42 @@ import PDFDocument from 'pdfkit';
 import type { ResumeSchema } from '../../assets/resume.d.ts';
 import { registerEmojiFont } from './emoji-renderer.ts';
 import { hasEmoji, isPDFStandardFont, needsUnicodeFont, resolveFont } from './fonts.ts';
-import { renderLayoutDocument } from './handlers/index.ts';
+import { renderElement, renderLayoutDocument } from './handlers/index.ts';
 import type { TypographyOptions } from './handlers/types.ts';
 import { DEFAULT_TYPOGRAPHY } from './handlers/types.ts';
-import { DEFAULT_LAYOUT, transformToLayout } from './ir/transform.ts';
-import type { FieldTemplates, LayoutConfig } from './ir/types.ts';
+import type { ResumeLayout } from './ir/layout-transform.ts';
+import { isTwoColumnLayout, transformToResumeLayout } from './ir/layout-transform.ts';
+import { DEFAULT_SECTIONS, transformToLayout } from './ir/transform.ts';
+import type { FieldTemplates, LayoutElement, SectionsConfig } from './ir/types.ts';
 import { LayoutEngine } from './layout-engine.ts';
 
 // Re-export types for external use
 export type { ResumeSchema };
+
+/**
+ * Column configuration for two-column layouts
+ */
+export interface ColumnConfig {
+  /** Column width as percentage ("30%") or points (150) */
+  width?: string | number;
+  /** Source paths of sections for this column */
+  sections: string[];
+}
+
+/**
+ * Layout configuration for spatial arrangement
+ */
+export interface LayoutConfig {
+  /** Layout style: single-column (default) or two-column */
+  style?: 'single-column' | 'two-column';
+  /** Column configuration for two-column layout */
+  columns?: {
+    left?: ColumnConfig;
+    right?: ColumnConfig;
+  };
+  /** Gap between columns in points (default: 30) */
+  gap?: number;
+}
 
 /**
  * Render options for resume PDF generation
@@ -23,12 +50,14 @@ export type { ResumeSchema };
 export interface RenderOptions {
   /** Custom typography settings */
   typography?: Partial<TypographyOptions>;
-  /** Layout configuration (section order, titles, etc.) */
-  layout?: LayoutConfig;
+  /** Sections configuration (section order, titles, etc.) */
+  sections?: SectionsConfig;
   /** Field templates for customizing field-level rendering (dates, locations, etc.) */
   fieldTemplates?: FieldTemplates;
   /** Font specification (path, URL, 'auto', or standard font name) */
   font?: string;
+  /** Layout configuration for spatial arrangement (single-column or two-column) */
+  layout?: LayoutConfig;
 }
 
 /**
@@ -137,6 +166,74 @@ function mergeTypography(defaults: TypographyOptions, overrides?: Partial<Typogr
 }
 
 /**
+ * Parse column width specification to points
+ * @param width - Width as percentage string ("30%") or points (150)
+ * @param totalWidth - Total available width for percentage calculations
+ */
+function parseColumnWidth(width: string | number | undefined, totalWidth: number): number {
+  if (width === undefined) {
+    return totalWidth / 2; // Default to half width
+  }
+  if (typeof width === 'number') {
+    return width;
+  }
+  // Handle percentage strings like "30%"
+  if (width.endsWith('%')) {
+    const pct = Number.parseFloat(width.slice(0, -1)) / 100;
+    return totalWidth * pct;
+  }
+  // Try parsing as number
+  return Number.parseFloat(width) || totalWidth / 2;
+}
+
+/**
+ * Render elements within a column context
+ */
+function renderColumnElements(doc: InstanceType<typeof PDFDocument>, layoutEngine: LayoutEngine, elements: LayoutElement[], typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean): void {
+  for (const element of elements) {
+    renderElement(doc, layoutEngine, element, typography, fieldTemplates, emojiAvailable);
+  }
+}
+
+/**
+ * Render a two-column layout
+ */
+function renderTwoColumnLayout(doc: InstanceType<typeof PDFDocument>, layoutEngine: LayoutEngine, resumeLayout: ResumeLayout & { style: 'two-column' }, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean): void {
+  const contentWidth = layoutEngine.getContentWidth();
+  const marginLeft = layoutEngine.getMargin();
+  const gap = resumeLayout.gap;
+
+  // Calculate column widths
+  const leftWidth = parseColumnWidth(resumeLayout.left.width, contentWidth - gap);
+  const rightWidth = parseColumnWidth(resumeLayout.right.width, contentWidth - gap);
+
+  // Adjust widths to fit within available space
+  const totalColumnWidth = leftWidth + rightWidth + gap;
+  const scale = totalColumnWidth > contentWidth ? contentWidth / totalColumnWidth : 1;
+  const finalLeftWidth = leftWidth * scale;
+  const finalRightWidth = rightWidth * scale;
+
+  // Track starting Y position
+  const startY = layoutEngine.getCurrentY();
+
+  // Render left column
+  layoutEngine.setColumnContext(marginLeft, finalLeftWidth);
+  renderColumnElements(doc, layoutEngine, resumeLayout.left.elements, typography, fieldTemplates, emojiAvailable);
+  const leftEndY = layoutEngine.getCurrentY();
+
+  // Reset Y and render right column
+  layoutEngine.setY(startY);
+  const rightColumnX = marginLeft + finalLeftWidth + gap;
+  layoutEngine.setColumnContext(rightColumnX, finalRightWidth);
+  renderColumnElements(doc, layoutEngine, resumeLayout.right.elements, typography, fieldTemplates, emojiAvailable);
+  const rightEndY = layoutEngine.getCurrentY();
+
+  // Clear column context and set Y to the max of both columns
+  layoutEngine.clearColumnContext();
+  layoutEngine.setY(Math.max(leftEndY, rightEndY));
+}
+
+/**
  * Renders a resume to PDF buffer using the transform → render pipeline
  */
 export async function generateResumePDFBuffer(resume: ResumeSchema, options: RenderOptions = {}): Promise<Buffer> {
@@ -161,15 +258,18 @@ export async function generateResumePDFBuffer(resume: ResumeSchema, options: Ren
     console.warn("⚠️  Unicode characters detected. If they don't render properly, " + 'provide a Unicode font URL. Find fonts at https://fontsource.org');
   }
 
-  // Build layout config with field templates
-  const baseLayout = options.layout ?? DEFAULT_LAYOUT;
-  const layoutConfig: LayoutConfig = {
-    ...baseLayout,
-    fieldTemplates: options.fieldTemplates ? { ...baseLayout.fieldTemplates, ...options.fieldTemplates } : baseLayout.fieldTemplates,
+  // Build sections config with field templates
+  const baseSections = options.sections ?? DEFAULT_SECTIONS;
+  const sectionsConfig: SectionsConfig = {
+    ...baseSections,
+    fieldTemplates: options.fieldTemplates ? { ...baseSections.fieldTemplates, ...options.fieldTemplates } : baseSections.fieldTemplates,
   };
 
   // Transform resume to IR
-  const layoutDoc = transformToLayout(resume, layoutConfig);
+  const layoutDoc = transformToLayout(resume, sectionsConfig);
+
+  // Apply layout transform for two-column support
+  const resumeLayout = transformToResumeLayout(layoutDoc.elements, sectionsConfig.sections ?? [], options.layout);
 
   // Build ATS-friendly metadata from IR
   const { name, label, keywords } = layoutDoc.metadata;
@@ -208,14 +308,22 @@ export async function generateResumePDFBuffer(resume: ResumeSchema, options: Ren
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
-    // Render the layout document with emoji support
-    renderLayoutDocument(doc, layout, layoutDoc, typography, emojiAvailable);
+    // Render based on layout type
+    if (isTwoColumnLayout(resumeLayout)) {
+      // Two-column layout: render columns side by side
+      renderTwoColumnLayout(doc, layout, resumeLayout, typography, layoutDoc.fieldTemplates, emojiAvailable);
+    } else {
+      // Single-column layout: render as before
+      renderLayoutDocument(doc, layout, layoutDoc, typography, emojiAvailable);
+    }
     doc.end();
   });
 }
 
 export type { TypographyOptions } from './handlers/types.ts';
 export { DEFAULT_TYPOGRAPHY } from './handlers/types.ts';
-export { DEFAULT_LAYOUT } from './ir/transform.ts';
+/** @deprecated Use DEFAULT_SECTIONS instead */
+export { DEFAULT_LAYOUT, DEFAULT_SECTIONS } from './ir/transform.ts';
 // Re-export types for external use
-export type { FieldTemplates, LayoutConfig } from './ir/types.ts';
+/** @deprecated Use SectionsConfig instead */
+export type { FieldTemplates, LayoutConfig as LegacySectionsConfig, SectionsConfig } from './ir/types.ts';

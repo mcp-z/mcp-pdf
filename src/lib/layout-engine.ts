@@ -24,6 +24,10 @@ export class LayoutEngine {
   private marginBottom = 0;
   private mode: LayoutMode = 'document';
 
+  // Column context support for two-column layouts
+  private columnX: number | null = null;
+  private columnWidth: number | null = null;
+
   /**
    * Initialize the engine with document dimensions from PDFKit.
    */
@@ -96,18 +100,20 @@ export class LayoutEngine {
   /**
    * Get the content width (page width minus margins).
    * This is the usable width for text and content.
+   * If a column context is active, returns the column width.
    */
   getContentWidth(): number {
-    return this.contentWidth;
+    return this.columnWidth ?? this.contentWidth;
   }
 
   /**
    * Get the content width (page width minus margins).
    * Named getPageWidth for API compatibility with handlers that expect
    * "page width" to mean the usable content area.
+   * If a column context is active, returns the column width.
    */
   getPageWidth(): number {
-    return this.contentWidth;
+    return this.columnWidth ?? this.contentWidth;
   }
 
   /**
@@ -118,10 +124,10 @@ export class LayoutEngine {
   }
 
   /**
-   * Get the left margin.
+   * Get the left margin (or column X position if in column context).
    */
   getMargin(): number {
-    return this.marginLeft;
+    return this.columnX ?? this.marginLeft;
   }
 
   /**
@@ -129,6 +135,32 @@ export class LayoutEngine {
    */
   getMarginTop(): number {
     return this.marginTop;
+  }
+
+  /**
+   * Set column context for two-column layout rendering.
+   * When set, getMargin() returns columnX and getPageWidth()/getContentWidth() returns columnWidth.
+   * @param x - Left edge of the column in points
+   * @param width - Width of the column in points
+   */
+  setColumnContext(x: number, width: number): void {
+    this.columnX = x;
+    this.columnWidth = width;
+  }
+
+  /**
+   * Clear column context, returning to full-page layout.
+   */
+  clearColumnContext(): void {
+    this.columnX = null;
+    this.columnWidth = null;
+  }
+
+  /**
+   * Check if currently in a column context.
+   */
+  isInColumnContext(): boolean {
+    return this.columnX !== null;
   }
 
   /**

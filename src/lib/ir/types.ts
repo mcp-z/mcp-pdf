@@ -47,7 +47,7 @@ export interface FieldTemplates {
   skill?: string;
 }
 
-// ===== Layout Config (input) =====
+// ===== Sections Config (input) =====
 
 export interface SectionConfig {
   /** Data source path (e.g., "work", "meta.valueProp", "header") */
@@ -67,17 +67,22 @@ export interface DividerConfig {
   margin?: { top?: number; bottom?: number };
 }
 
-export interface LayoutConfig {
+export interface SectionsConfig {
   /** Field templates for customizing field-level rendering */
   fieldTemplates?: FieldTemplates;
   sections: (SectionConfig | DividerConfig)[];
 }
+
+/** @deprecated Use SectionsConfig instead */
+export type LayoutConfig = SectionsConfig;
 
 // ===== IR Element Types (output of transform) =====
 
 interface BaseElement {
   type: string;
   style?: StyleOverrides;
+  /** Source path this element was generated from (for layout assignment) */
+  source?: string;
 }
 
 /** Text element - plain text or paragraphs */
