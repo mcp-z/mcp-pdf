@@ -12,7 +12,6 @@ const resumeInputSchema = z.record(z.string(), z.any()).describe('Resume data in
 const sectionConfigSchema = z.object({
   source: z.string().describe('Data source path (e.g., "work", "education", "meta.valueProp")'),
   title: z.string().optional().describe('Section title (omit for no title)'),
-  showTenure: z.boolean().optional().describe('Show tenure duration for work/volunteer sections'),
   template: z.string().optional().describe('LiquidJS template for custom rendering'),
 });
 
@@ -23,6 +22,20 @@ const dividerConfigSchema = z.object({
   color: z.string().optional().describe('Line color (hex or named)'),
 });
 
+// Field templates schema - LiquidJS templates for field-level formatting
+const fieldTemplatesSchema = z
+  .object({
+    location: z.string().optional().describe('Location display template (default: "{{ city }}{% if region %}, {{ region }}{% endif %}")'),
+    dateRange: z.string().optional().describe('Date range template (default: "{{ start | date }} – {{ end | date | default: \'Present\' }}")'),
+    degree: z.string().optional().describe('Education degree template (default: "{{ studyType }}{% if area %}, {{ area }}{% endif %}")'),
+    credential: z.string().optional().describe('Credential metadata template'),
+    language: z.string().optional().describe('Language display template'),
+    skill: z.string().optional().describe('Skill display template'),
+    contactLine: z.string().optional().describe('Contact line template'),
+  })
+  .optional()
+  .describe('LiquidJS templates for field-level rendering (dates, locations, etc.)');
+
 // Layout configuration schema
 const layoutConfigSchema = z
   .object({
@@ -30,18 +43,10 @@ const layoutConfigSchema = z
       .array(z.union([sectionConfigSchema, dividerConfigSchema]))
       .optional()
       .describe('Section order and configuration'),
-    formatting: z
-      .object({
-        dateFormat: z.string().optional().describe('Date format string (e.g., "MMM YYYY", "DD/MM/YYYY")'),
-        dateSeparator: z.string().optional().describe('Separator between start and end dates (e.g., " - ", " to ")'),
-        presentText: z.string().optional().describe('Text for current/ongoing dates (e.g., "Present", "Current")'),
-        contactSeparator: z.string().optional().describe('Separator between contact items (e.g., " | ")'),
-      })
-      .optional()
-      .describe('Date and text formatting options'),
+    fieldTemplates: fieldTemplatesSchema,
   })
   .optional()
-  .describe('Layout configuration for section ordering and formatting');
+  .describe('Layout configuration for section ordering and field templates');
 
 // Typography/styling schema (points-based, not moveDown)
 const stylingSchema = z
@@ -87,7 +92,6 @@ const inputSchema = z.object({
   font: z.string().optional().describe('Font for the PDF. Defaults to "auto" (system font detection). Built-ins are limited to ASCII; provide a path or URL for full Unicode.'),
   layout: layoutConfigSchema,
   styling: stylingSchema,
-  showTenure: z.boolean().optional().describe('Show tenure duration after date ranges (e.g., "May 2024 – Jul 2025 · 1 yr 3 mos")'),
 });
 
 const outputSchema = z.object({
@@ -125,7 +129,7 @@ export default function createTool(toolOptions: ToolOptions) {
   }
 
   async function handler(args: Input): Promise<CallToolResult> {
-    const { filename = 'resume.pdf', resume, font, layout, styling, showTenure } = args;
+    const { filename = 'resume.pdf', resume, font, layout, styling } = args;
 
     try {
       // Validate resume against JSON Schema
@@ -137,7 +141,6 @@ export default function createTool(toolOptions: ToolOptions) {
       // Build render options
       const renderOptions: RenderOptions = {
         font,
-        showTenure,
       };
 
       // Map layout config
@@ -153,15 +156,14 @@ export default function createTool(toolOptions: ToolOptions) {
                 };
               }
               // TypeScript needs explicit narrowing for discriminated unions
-              const sectionConfig = section as { source: string; title?: string; showTenure?: boolean; template?: string };
+              const sectionConfig = section as { source: string; title?: string; template?: string };
               return {
                 source: sectionConfig.source,
                 title: sectionConfig.title,
-                showTenure: sectionConfig.showTenure,
                 template: sectionConfig.template,
               };
             }) || [],
-          formatting: layout.formatting,
+          fieldTemplates: layout.fieldTemplates,
         };
       }
 

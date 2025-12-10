@@ -3,11 +3,11 @@
  */
 
 import type PDFKit from 'pdfkit';
-import type { DividerElement, FormattingOptions } from '../ir/types.ts';
+import type { DividerElement, FieldTemplates } from '../ir/types.ts';
 import type { LayoutEngine } from '../layout-engine.ts';
 import type { TypographyOptions } from './types.ts';
 
-export function renderDividerHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: DividerElement, typography: TypographyOptions, _formatting: FormattingOptions, _emojiAvailable: boolean): void {
+export function renderDividerHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: DividerElement, typography: TypographyOptions, _fieldTemplates: Required<FieldTemplates>, _emojiAvailable: boolean): void {
   const { divider } = typography;
   const thickness = element.thickness ?? divider.thickness ?? 0.5;
   const color = element.color ?? divider.color ?? '#cccccc';

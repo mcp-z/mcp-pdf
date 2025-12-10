@@ -23,17 +23,28 @@ export interface StyleOverrides {
   blockMargin?: number;
 }
 
-// ===== Formatting Options =====
+// ===== Field Templates =====
 
-export interface FormattingOptions {
-  /** Date format pattern (e.g., "MMM YYYY", "DD/MM/YYYY") */
-  dateFormat?: string;
-  /** Separator between start and end dates (e.g., " - ", " to ") */
-  dateSeparator?: string;
-  /** Text for ongoing positions (e.g., "Present", "Current", "Aujourd'hui") */
-  presentText?: string;
-  /** Separator between contact items (e.g., " | ", " • ") */
-  contactSeparator?: string;
+/**
+ * Field templates for rendering field combinations.
+ * Each template is a LiquidJS template string.
+ * Handlers use these for field-level rendering while maintaining structural layout.
+ */
+export interface FieldTemplates {
+  /** Location display (default: "{{ city }}{% if region %}, {{ region }}{% endif %}") */
+  location?: string;
+  /** Date range display (default: "{{ start | date }} – {{ end | date | default: 'Present' }}") */
+  dateRange?: string;
+  /** Education degree line (default: "{{ studyType }}{% if area %}, {{ area }}{% endif %}") */
+  degree?: string;
+  /** Contact items separator (default: "{{ items | join: ' | ' }}") */
+  contactLine?: string;
+  /** Credential display (default: "{{ title | default: name }}{% if awarder %}, {{ awarder }}{% endif %}{% if issuer %}, {{ issuer }}{% endif %}{% if publisher %}, {{ publisher }}{% endif %}") */
+  credential?: string;
+  /** Language display (default: "{{ language }}{% if fluency %} ({{ fluency }}){% endif %}") */
+  language?: string;
+  /** Skill category display (default: "{{ name }}: {{ keywords | join: ', ' }}") */
+  skill?: string;
 }
 
 // ===== Layout Config (input) =====
@@ -47,8 +58,6 @@ export interface SectionConfig {
   style?: StyleOverrides;
   /** LiquidJS template for custom rendering */
   template?: string;
-  /** Show tenure duration for entries */
-  showTenure?: boolean;
 }
 
 export interface DividerConfig {
@@ -59,7 +68,8 @@ export interface DividerConfig {
 }
 
 export interface LayoutConfig {
-  formatting?: FormattingOptions;
+  /** Field templates for customizing field-level rendering */
+  fieldTemplates?: FieldTemplates;
   sections: (SectionConfig | DividerConfig)[];
 }
 
@@ -120,7 +130,6 @@ export interface EntryListElement extends BaseElement {
   type: 'entry-list';
   variant: 'work' | 'education';
   entries: EntryData[];
-  showTenure?: boolean;
 }
 
 /** Keyword list element - skills, interests */
@@ -171,10 +180,23 @@ export interface SummaryHighlightsElement extends BaseElement {
   highlights: string[];
 }
 
+/** Location data for contact items - matches JSON Resume schema */
+export interface LocationData {
+  address?: string;
+  postalCode?: string;
+  city?: string;
+  region?: string;
+  countryCode?: string;
+  /** Additional custom fields */
+  [key: string]: unknown;
+}
+
 /** Contact item for header */
 export interface ContactItem {
   text: string;
   url?: string;
+  /** Structured location data - renderer builds display text based on options */
+  location?: LocationData;
 }
 
 /** Header element - name, label, contact info */
@@ -183,6 +205,8 @@ export interface HeaderElement extends BaseElement {
   name: string;
   label?: string;
   contactItems: ContactItem[];
+  /** Full basics data for template access */
+  data?: Record<string, unknown>;
 }
 
 /** Custom template element - for user-defined LiquidJS templates */
@@ -214,7 +238,7 @@ export interface DocumentMetadata {
 
 export interface LayoutDocument {
   metadata: DocumentMetadata;
-  formatting: FormattingOptions;
+  fieldTemplates: Required<FieldTemplates>;
   elements: LayoutElement[];
 }
 

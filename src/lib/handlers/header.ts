@@ -3,14 +3,14 @@
  */
 
 import type PDFKit from 'pdfkit';
-import type { FormattingOptions, HeaderElement } from '../ir/types.ts';
+import { renderField } from '../formatting.ts';
+import type { FieldTemplates, HeaderElement } from '../ir/types.ts';
 import type { LayoutEngine } from '../layout-engine.ts';
 import { renderTextWithEmoji } from '../pdf-helpers.ts';
 import type { TypographyOptions } from './types.ts';
 
-export function renderHeaderHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: HeaderElement, typography: TypographyOptions, formatting: FormattingOptions, emojiAvailable: boolean): void {
+export function renderHeaderHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: HeaderElement, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean): void {
   const { name, contactItems } = element;
-  const contactSeparator = formatting.contactSeparator ?? ' | ';
   const { header } = typography;
 
   // Name
@@ -34,7 +34,20 @@ export function renderHeaderHandler(doc: PDFKit.PDFDocument, layout: LayoutEngin
     layout.advanceY(header.name.marginBottom ?? 0);
     doc.fontSize(header.contact.fontSize).font(typography.fonts.regular).fillColor('#000000');
 
-    const contactText = contactItems.map((item) => item.text).join(contactSeparator);
+    // Build display text for each contact item
+    // Location items use the location field template
+    const contactTexts = contactItems
+      .map((item) => {
+        if (item.location) {
+          return renderField(fieldTemplates.location, item.location);
+        }
+        return item.text;
+      })
+      .filter((text) => text.length > 0);
+
+    // Render contact line using the contactLine template
+    const contactText = renderField(fieldTemplates.contactLine, { items: contactTexts });
+
     const contactHeight = doc.heightOfString(contactText, {
       width: layout.getPageWidth(),
       align: 'center',
@@ -58,15 +71,19 @@ export function renderHeaderHandler(doc: PDFKit.PDFDocument, layout: LayoutEngin
     let searchPos = 0;
     for (const item of contactItems) {
       if (item.url) {
-        const idx = contactText.indexOf(item.text, searchPos);
+        // Get the display text for this item (same logic as contact line)
+        const itemText = item.location ? renderField(fieldTemplates.location, item.location) : item.text;
+        if (!itemText) continue;
+
+        const idx = contactText.indexOf(itemText, searchPos);
         if (idx >= 0) {
           const beforeText = contactText.substring(0, idx);
           const beforeWidth = doc.widthOfString(beforeText);
-          const linkWidth = doc.widthOfString(item.text);
+          const linkWidth = doc.widthOfString(itemText);
           const linkX = textX + beforeWidth;
           const linkHeight = header.contact.fontSize;
           doc.link(linkX, textY, linkWidth, linkHeight, item.url);
-          searchPos = idx + item.text.length;
+          searchPos = idx + itemText.length;
         }
       }
     }

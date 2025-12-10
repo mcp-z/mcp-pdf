@@ -3,12 +3,12 @@
  */
 
 import type PDFKit from 'pdfkit';
-import type { FormattingOptions, TextElement } from '../ir/types.ts';
+import type { FieldTemplates, TextElement } from '../ir/types.ts';
 import type { LayoutEngine } from '../layout-engine.ts';
 import { paragraphsFromContent, renderParagraphs, resolveStyles } from './renderer-helpers.ts';
 import type { TypographyOptions } from './types.ts';
 
-export function renderTextHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: TextElement, typography: TypographyOptions, _formatting: FormattingOptions, emojiAvailable: boolean): void {
+export function renderTextHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: TextElement, typography: TypographyOptions, _fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean): void {
   const paragraphs = paragraphsFromContent(element.content);
   if (!paragraphs.length) return;
 

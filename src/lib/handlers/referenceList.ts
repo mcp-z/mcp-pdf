@@ -3,13 +3,13 @@
  */
 
 import type PDFKit from 'pdfkit';
-import type { FormattingOptions, ReferenceListElement } from '../ir/types.ts';
+import type { FieldTemplates, ReferenceListElement } from '../ir/types.ts';
 import type { LayoutEngine } from '../layout-engine.ts';
 import { renderTextWithEmoji } from '../pdf-helpers.ts';
 import { ensureString, paragraphsFromContent, resolveStyles } from './renderer-helpers.ts';
 import type { TypographyOptions } from './types.ts';
 
-export function renderReferenceListHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: ReferenceListElement, typography: TypographyOptions, _formatting: FormattingOptions, emojiAvailable: boolean): void {
+export function renderReferenceListHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: ReferenceListElement, typography: TypographyOptions, _fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean): void {
   const { items } = element;
   if (!items.length) return;
 

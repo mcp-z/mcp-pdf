@@ -4,8 +4,8 @@
  */
 
 import type PDFKit from 'pdfkit';
-import { formatDate, formatTenure } from '../formatting.ts';
-import type { EntryData, EntryListElement, FormattingOptions, LayoutElement, SectionTitleElement } from '../ir/types.ts';
+import { renderField } from '../formatting.ts';
+import type { EntryData, EntryListElement, FieldTemplates, LayoutElement, SectionTitleElement } from '../ir/types.ts';
 import type { LayoutEngine } from '../layout-engine.ts';
 import { ensureString, paragraphsFromContent, resolveStyles } from './renderer-helpers.ts';
 import type { TypographyOptions } from './types.ts';
@@ -33,7 +33,7 @@ export function measureSectionTitle(doc: PDFKit.PDFDocument, layout: LayoutEngin
  * Measure the height of the first entry in an entry-list (for atomic grouping).
  * This measures just enough to keep section title + first entry header together.
  */
-export function measureFirstEntry(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: EntryListElement, typography: TypographyOptions, formatting: FormattingOptions): number {
+export function measureFirstEntry(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: EntryListElement, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>): number {
   const { entries, variant } = element;
   if (!entries.length) return 0;
 
@@ -42,7 +42,7 @@ export function measureFirstEntry(doc: PDFKit.PDFDocument, layout: LayoutEngine,
   const { entry: entryStyle, bullet } = typography;
 
   if (variant === 'education') {
-    return measureEducationEntry(doc, layout, firstEntry, typography, formatting);
+    return measureEducationEntry(doc, layout, firstEntry, typography, fieldTemplates);
   }
 
   // For work entries, measure header + first content item
@@ -60,19 +60,14 @@ export function measureFirstEntry(doc: PDFKit.PDFDocument, layout: LayoutEngine,
   const locationHeight = location ? doc.heightOfString(location, { width: rightWidth }) : 0;
   const line1Height = Math.max(companyHeight, locationHeight);
 
-  // Line 2: Position + Dates
+  // Line 2: Position + Dates (using dateRange field template)
   doc.font(typography.fonts.italic).fontSize(entryStyle.position.fontSize);
   const positionHeight = doc.heightOfString(position || 'Position', { width: leftWidth });
 
-  const start = formatDate(firstEntry.startDate, formatting.dateFormat || 'MMM YYYY');
-  const end = firstEntry.endDate ? formatDate(firstEntry.endDate, formatting.dateFormat || 'MMM YYYY') : formatting.presentText || 'Present';
-  let dateText = [start, end].filter(Boolean).join(formatting.dateSeparator || ' – ');
-  if (element.showTenure && firstEntry.startDate) {
-    const tenure = formatTenure(firstEntry.startDate, firstEntry.endDate);
-    if (tenure) {
-      dateText += ` · ${tenure}`;
-    }
-  }
+  const dateText = renderField(fieldTemplates.dateRange, {
+    start: firstEntry.startDate,
+    end: firstEntry.endDate,
+  });
 
   doc.font(typography.fonts.italic).fontSize(entryStyle.company.fontSize);
   const dateHeight = dateText ? doc.heightOfString(dateText, { width: rightWidth }) : 0;
@@ -112,7 +107,7 @@ export function measureFirstEntry(doc: PDFKit.PDFDocument, layout: LayoutEngine,
 /**
  * Measure education entry height
  */
-function measureEducationEntry(doc: PDFKit.PDFDocument, layout: LayoutEngine, entry: EntryData, typography: TypographyOptions, formatting: FormattingOptions): number {
+function measureEducationEntry(doc: PDFKit.PDFDocument, layout: LayoutEngine, entry: EntryData, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>): number {
   const style = resolveStyles(typography);
   const { entry: entryStyle } = typography;
 
@@ -122,12 +117,16 @@ function measureEducationEntry(doc: PDFKit.PDFDocument, layout: LayoutEngine, en
   const itemMargin = style.itemMarginBottom;
 
   const institution = ensureString(entry.institution);
-  const area = ensureString(entry.area);
-  const studyType = ensureString(entry.studyType);
-  const startStr = formatDate(entry.startDate, formatting.dateFormat || 'MMM YYYY');
-  const endStr = formatDate(entry.endDate, formatting.dateFormat || 'MMM YYYY');
-  const dates = [startStr, endStr].filter(Boolean).join(formatting.dateSeparator || ' – ');
-  const degreeParts = [studyType, area].filter(Boolean).join(', ');
+
+  // Use dateRange and degree field templates
+  const dates = renderField(fieldTemplates.dateRange, {
+    start: entry.startDate,
+    end: entry.endDate,
+  });
+  const degreeParts = renderField(fieldTemplates.degree, {
+    studyType: entry.studyType,
+    area: entry.area,
+  });
 
   doc.font(typography.fonts.bold).fontSize(style.fontSize);
   const institutionHeight = doc.heightOfString(institution || 'Institution', { width: leftWidth });
@@ -146,18 +145,18 @@ function measureEducationEntry(doc: PDFKit.PDFDocument, layout: LayoutEngine, en
  * Measure any layout element's height.
  * Returns 0 for elements that can't be measured or are unknown.
  */
-export function measureElement(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: LayoutElement, typography: TypographyOptions, formatting: FormattingOptions): number {
+export function measureElement(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: LayoutElement, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>): number {
   switch (element.type) {
     case 'section-title':
       return measureSectionTitle(doc, layout, element, typography);
 
     case 'entry-list':
       // For grouping purposes, we measure first entry only
-      return measureFirstEntry(doc, layout, element, typography, formatting);
+      return measureFirstEntry(doc, layout, element, typography, fieldTemplates);
 
     case 'group':
       // Recursively measure children
-      return element.children.reduce((sum, child) => sum + measureElement(doc, layout, child, typography, formatting), 0);
+      return element.children.reduce((sum, child) => sum + measureElement(doc, layout, child, typography, fieldTemplates), 0);
 
     // For other types, we could add specific measurements
     // For now, return 0 (they'll handle their own ensureSpace)

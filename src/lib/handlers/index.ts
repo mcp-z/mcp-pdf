@@ -6,7 +6,7 @@ import type PDFDocument from 'pdfkit';
 
 type PDFKitDocument = InstanceType<typeof PDFDocument>;
 
-import type { FormattingOptions, LayoutDocument, LayoutElement } from '../ir/types.ts';
+import type { FieldTemplates, LayoutDocument, LayoutElement } from '../ir/types.ts';
 import type { LayoutEngine } from '../layout-engine.ts';
 import { renderCredentialListHandler } from './credentialList.ts';
 import { renderDividerHandler } from './divider.ts';
@@ -25,7 +25,7 @@ import type { TypographyOptions } from './types.ts';
 /**
  * Handler function type with emoji support
  */
-export type ElementHandler<T extends LayoutElement = LayoutElement> = (doc: PDFKitDocument, layout: LayoutEngine, element: T, typography: TypographyOptions, formatting: FormattingOptions, emojiAvailable: boolean) => void;
+export type ElementHandler<T extends LayoutElement = LayoutElement> = (doc: PDFKitDocument, layout: LayoutEngine, element: T, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean) => void;
 
 /**
  * Handler registry
@@ -55,10 +55,10 @@ export function registerHandler(type: string, handler: ElementHandler): void {
 /**
  * Render a single element with emoji support
  */
-export function renderElement(doc: PDFKitDocument, layout: LayoutEngine, element: LayoutElement, typography: TypographyOptions, formatting: FormattingOptions, emojiAvailable: boolean): void {
+export function renderElement(doc: PDFKitDocument, layout: LayoutEngine, element: LayoutElement, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean): void {
   const handler = handlers[element.type];
   if (handler) {
-    handler(doc, layout, element, typography, formatting, emojiAvailable);
+    handler(doc, layout, element, typography, fieldTemplates, emojiAvailable);
   } else {
     console.warn(`No handler for element type: ${element.type}`);
   }
@@ -66,14 +66,14 @@ export function renderElement(doc: PDFKitDocument, layout: LayoutEngine, element
 
 // Set up circular dependency for group handler
 // Group handler needs to call renderElement for its children
-setRenderElementFn(renderElement as (doc: PDFKitDocument, layout: LayoutEngine, element: unknown, typography: TypographyOptions, formatting: FormattingOptions, emojiAvailable: boolean) => void);
+setRenderElementFn(renderElement as (doc: PDFKitDocument, layout: LayoutEngine, element: unknown, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean) => void);
 
 /**
  * Render the complete layout document with emoji support
  */
 export function renderLayoutDocument(doc: PDFKitDocument, layout: LayoutEngine, document: LayoutDocument, typography: TypographyOptions, emojiAvailable: boolean): void {
   for (const element of document.elements) {
-    renderElement(doc, layout, element, typography, document.formatting, emojiAvailable);
+    renderElement(doc, layout, element, typography, document.fieldTemplates, emojiAvailable);
   }
 }
 

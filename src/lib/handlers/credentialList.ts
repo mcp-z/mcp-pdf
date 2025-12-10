@@ -3,57 +3,44 @@
  */
 
 import type PDFKit from 'pdfkit';
-import { formatDate } from '../formatting.ts';
-import type { CredentialData, CredentialListElement, FormattingOptions } from '../ir/types.ts';
+import { renderField } from '../formatting.ts';
+import type { CredentialData, CredentialListElement, FieldTemplates } from '../ir/types.ts';
 import type { LayoutEngine } from '../layout-engine.ts';
 import { renderTextWithEmoji } from '../pdf-helpers.ts';
 import { ensureString, paragraphsFromContent, renderParagraphs, resolveStyles } from './renderer-helpers.ts';
 import type { TypographyOptions } from './types.ts';
 
-function getCredentialFields(item: CredentialData, formatting: FormattingOptions): { title: string; source: string; date: string; summary?: string } {
-  const dateFormat = formatting.dateFormat || 'MMM YYYY';
+function getCredentialFields(item: CredentialData, fieldTemplates: Required<FieldTemplates>): { title: string; metaLine: string; summary?: string } {
+  // Use credential field template for the metadata line
+  const metaLine = renderField(fieldTemplates.credential, {
+    title: item.title,
+    name: item.name,
+    awarder: item.awarder,
+    issuer: item.issuer,
+    publisher: item.publisher,
+    date: item.date,
+    releaseDate: item.releaseDate,
+  });
 
-  // Award: { title, awarder, date, summary }
-  if ('title' in item && 'awarder' in item) {
-    return {
-      title: ensureString(item.title),
-      source: ensureString(item.awarder),
-      date: formatDate(item.date, dateFormat),
-      summary: ensureString(item.summary),
-    };
-  }
+  // Determine the title (credential name)
+  const title = ensureString(item.title || item.name);
 
-  // Publication: { name, publisher, releaseDate, summary }
-  if ('publisher' in item || 'releaseDate' in item) {
-    return {
-      title: ensureString(item.name),
-      source: ensureString(item.publisher),
-      date: formatDate(item.releaseDate, dateFormat),
-      summary: ensureString(item.summary),
-    };
-  }
-
-  // Certificate: { name, issuer, date }
   return {
-    title: ensureString(item.name),
-    source: ensureString(item.issuer),
-    date: formatDate(item.date, dateFormat),
+    title,
+    metaLine,
+    summary: ensureString(item.summary),
   };
 }
 
-export function renderCredentialListHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: CredentialListElement, typography: TypographyOptions, formatting: FormattingOptions, emojiAvailable: boolean): void {
+export function renderCredentialListHandler(doc: PDFKit.PDFDocument, layout: LayoutEngine, element: CredentialListElement, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean): void {
   const { items } = element;
   if (!items.length) return;
 
   const style = resolveStyles(typography);
 
   for (const item of items) {
-    const { title, source, date, summary } = getCredentialFields(item, formatting);
+    const { title, metaLine, summary } = getCredentialFields(item, fieldTemplates);
     if (!title) continue;
-
-    // Build metadata line
-    const metaParts = [source, date].filter(Boolean);
-    const metaLine = metaParts.join(', ');
 
     // Measure heights
     doc.font(typography.fonts.bold).fontSize(style.fontSize);

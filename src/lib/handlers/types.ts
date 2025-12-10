@@ -164,7 +164,7 @@ export const DEFAULT_TYPOGRAPHY: TypographyOptions = {
       color: '#444444',
     },
     date: {
-      width: 100,
+      width: 130,
     },
   },
   text: {

@@ -7,7 +7,7 @@
  */
 
 import type { ResumeSchema } from '../../../assets/resume.d.ts';
-import { DEFAULT_FORMATTING, registerFormattingHelpers } from '../formatting.ts';
+import { mergeFieldTemplates, registerFieldFilters } from '../formatting.ts';
 import type {
   ContactItem,
   CredentialData,
@@ -17,7 +17,7 @@ import type {
   DocumentMetadata,
   EntryData,
   EntryListElement,
-  FormattingOptions,
+  FieldTemplates,
   GroupElement,
   HeaderElement,
   KeywordListElement,
@@ -25,6 +25,7 @@ import type {
   LayoutConfig,
   LayoutDocument,
   LayoutElement,
+  LocationData,
   ReferenceListElement,
   SectionConfig,
   SectionTitleElement,
@@ -145,13 +146,12 @@ function transformHeader(resume: ResumeSchema): HeaderElement {
     contactItems.push({ text: basics.email });
   }
 
-  // Location
-  const locParts: string[] = [];
-  if (basics.location?.city) locParts.push(basics.location.city);
-  if (basics.location?.region) locParts.push(basics.location.region);
-  if (basics.location?.countryCode) locParts.push(basics.location.countryCode);
-  if (locParts.length) {
-    contactItems.push({ text: locParts.join(', ') });
+  // Location - preserve full object for template access
+  if (basics.location) {
+    contactItems.push({
+      text: '', // Placeholder - renderer builds display text
+      location: basics.location as LocationData,
+    });
   }
 
   if (basics.url) {
@@ -172,6 +172,8 @@ function transformHeader(resume: ResumeSchema): HeaderElement {
     name: basics.name || '',
     label: basics.label,
     contactItems,
+    // Full basics data for template access
+    data: basics as Record<string, unknown>,
   };
 }
 
@@ -214,7 +216,6 @@ function transformData(data: unknown, source: string, config: SectionConfig): La
         type: 'entry-list',
         variant: inferEntryVariant(source),
         entries: data as EntryData[],
-        showTenure: config.showTenure,
         style: config.style,
       } as EntryListElement;
     }
@@ -399,10 +400,10 @@ function extractMetadata(resume: ResumeSchema): DocumentMetadata {
  * Main transform function: Resume + LayoutConfig → LayoutDocument
  */
 export function transformToLayout(resume: ResumeSchema, config: LayoutConfig): LayoutDocument {
-  const formatting: FormattingOptions = { ...DEFAULT_FORMATTING, ...config.formatting };
+  const fieldTemplates: Required<FieldTemplates> = mergeFieldTemplates(config.fieldTemplates);
 
-  // Register formatting helpers with merged options
-  registerFormattingHelpers(formatting);
+  // Register LiquidJS filters for field templates
+  registerFieldFilters();
 
   const elements: LayoutElement[] = [];
 
@@ -417,7 +418,7 @@ export function transformToLayout(resume: ResumeSchema, config: LayoutConfig): L
 
   return {
     metadata: extractMetadata(resume),
-    formatting,
+    fieldTemplates,
     elements,
   };
 }

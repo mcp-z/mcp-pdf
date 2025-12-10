@@ -1,22 +1,28 @@
 /**
- * Date formatting and template helpers for resume generation
+ * Field templates and rendering for resume generation.
+ *
+ * Field templates use LiquidJS to render field combinations.
+ * Handlers use these for field-level rendering while maintaining structural layout.
  */
 
-import type { FormattingOptions } from './ir/types.ts';
-import { registerHelper } from './template.ts';
+import type { FieldTemplates } from './ir/types.ts';
+import { registerFilter, render } from './template.ts';
+
+/**
+ * Default field templates
+ */
+export const DEFAULT_FIELD_TEMPLATES: Required<FieldTemplates> = {
+  location: '{{ city }}{% if region %}, {{ region }}{% endif %}',
+  dateRange: "{{ start | date: 'MMM YYYY' }}{% if start %} – {% endif %}{{ end | date: 'MMM YYYY' | default: 'Present' }}",
+  degree: '{{ studyType }}{% if area %}, {{ area }}{% endif %}',
+  contactLine: "{{ items | join: ' | ' }}",
+  credential: '{{ title | default: name }}{% if awarder %}, {{ awarder }}{% endif %}{% if issuer %}, {{ issuer }}{% endif %}{% if publisher %}, {{ publisher }}{% endif %}',
+  language: '{{ language }}{% if fluency %} ({{ fluency }}){% endif %}',
+  skill: "{{ name }}: {{ keywords | join: ', ' }}",
+};
 
 const MONTH_NAMES_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MONTH_NAMES_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-/**
- * Default formatting options (all values required)
- */
-export const DEFAULT_FORMATTING: Required<FormattingOptions> = {
-  dateFormat: 'MMM YYYY',
-  dateSeparator: ' - ',
-  presentText: 'Present',
-  contactSeparator: ' | ',
-};
 
 /**
  * Parse a date string (YYYY-MM-DD or YYYY-MM) into components
@@ -111,24 +117,6 @@ export function formatDate(dateStr: string | undefined | null, format: string): 
 }
 
 /**
- * Format a date range (startDate - endDate)
- */
-export function formatDateRange(startDate: string | undefined | null, endDate: string | undefined | null, options: FormattingOptions = {}): string {
-  const format = options.dateFormat || DEFAULT_FORMATTING.dateFormat;
-  const separator = options.dateSeparator || DEFAULT_FORMATTING.dateSeparator;
-  const presentText = options.presentText || DEFAULT_FORMATTING.presentText;
-
-  const start = formatDate(startDate, format);
-  const end = endDate ? formatDate(endDate, format) : presentText;
-
-  if (!start && !end) return '';
-  if (!start) return end;
-  if (!end) return start;
-
-  return `${start}${separator}${end}`;
-}
-
-/**
  * Calculate tenure in years and months between two dates
  */
 export function calculateTenure(startDate: string | undefined | null, endDate: string | undefined | null): { years: number; months: number; totalMonths: number } | null {
@@ -175,29 +163,49 @@ export function formatTenure(startDate: string | undefined | null, endDate: stri
 }
 
 /**
- * Register template helpers for formatting
- *
- * LiquidJS filter usage:
- * - {{ startDate | formatDate: "MMM YYYY" }}
- * - {{ startDate | formatDateRange: endDate }}
- * - {{ startDate | tenure: endDate }}
+ * Merge user templates with defaults
  */
-export function registerFormattingHelpers(options: FormattingOptions = {}): void {
-  const mergedOptions = { ...DEFAULT_FORMATTING, ...options };
+export function mergeFieldTemplates(userTemplates?: FieldTemplates): Required<FieldTemplates> {
+  return { ...DEFAULT_FIELD_TEMPLATES, ...userTemplates };
+}
 
-  // {{ date | formatDate }} or {{ date | formatDate: "MMMM YYYY" }}
-  registerHelper('formatDate', (_context, dateValue, format) => {
-    const dateFormat = format || mergedOptions.dateFormat;
-    return formatDate(dateValue, dateFormat);
+/**
+ * Render a field template with the given context
+ */
+export function renderField(template: string, context: Record<string, unknown>): string {
+  return render(template, context).trim();
+}
+
+// Flag to track if filters are registered
+let filtersRegistered = false;
+
+/**
+ * Register LiquidJS filters for field templates.
+ * Call once at startup.
+ */
+export function registerFieldFilters(): void {
+  if (filtersRegistered) return;
+  filtersRegistered = true;
+
+  // {{ value | date: 'MMM YYYY' }} - format a date
+  registerFilter('date', (value: unknown, format?: unknown) => {
+    if (!value) return '';
+    const formatStr = typeof format === 'string' ? format : 'MMM YYYY';
+    return formatDate(String(value), formatStr);
   });
 
-  // {{ startDate | formatDateRange: endDate }}
-  registerHelper('formatDateRange', (_context, startValue, endValue) => {
-    return formatDateRange(startValue, endValue, mergedOptions);
+  // {{ value | default: 'fallback' }} - provide default if empty
+  registerFilter('default', (value: unknown, fallback?: unknown) => {
+    if (value === null || value === undefined || value === '') {
+      return fallback ?? '';
+    }
+    return value;
   });
 
-  // {{ startDate | tenure: endDate }}
-  registerHelper('tenure', (_context, startValue, endValue) => {
-    return formatTenure(startValue, endValue);
+  // {{ startDate | tenure: endDate }} - calculate tenure
+  registerFilter('tenure', (startValue: unknown, endValue?: unknown) => {
+    const start = startValue ? String(startValue) : undefined;
+    const end = endValue ? String(endValue) : undefined;
+    return formatTenure(start, end);
   });
 }
