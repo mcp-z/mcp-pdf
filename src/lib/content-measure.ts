@@ -7,7 +7,7 @@ import type { PDFTextOptions } from './pdf-helpers.ts';
  * Content measurement utilities for determining heights before rendering.
  *
  * These functions measure content without modifying the document,
- * enabling the LayoutEngine to make informed page break decisions.
+ * enabling Yoga layout to make informed page break decisions.
  */
 
 /**
