@@ -5,7 +5,6 @@ import { z } from 'zod';
 import { measureTextHeight } from '../../lib/content-measure.ts';
 import { registerEmojiFont } from '../../lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts, validateTextForFont } from '../../lib/fonts.ts';
-import { LayoutEngine } from '../../lib/layout-engine.ts';
 import { type PDFTextOptions, renderTextWithEmoji } from '../../lib/pdf-helpers.ts';
 import { calculateLayout, type LayoutContent, type LayoutNode } from '../../lib/yoga-layout.ts';
 import type { ToolOptions } from '../../types.ts';
@@ -249,7 +248,7 @@ export default function createTool(toolOptions: ToolOptions) {
 
   async function handler(args: Input): Promise<CallToolResult> {
     const { filename = 'document.pdf', title, author, font, layout, pageSetup, content } = args;
-    const layoutMode = layout?.mode ?? 'document';
+    const _layoutMode = layout?.mode ?? 'document';
 
     try {
       interface PDFDocOptions {
@@ -294,10 +293,6 @@ export default function createTool(toolOptions: ToolOptions) {
         const pageSize: [number, number] = pageSetup?.size && pageSetup.size.length >= 2 ? [pageSetup.size[0] ?? 612, pageSetup.size[1] ?? 792] : [612, 792];
         doc.rect(0, 0, pageSize[0], pageSize[1]).fill(pageSetup.backgroundColor);
       }
-
-      // Initialize LayoutEngine for document mode
-      const engine = new LayoutEngine();
-      engine.init(doc, { mode: layoutMode });
 
       const contentText = JSON.stringify(content);
       const containsEmoji = hasEmoji(contentText);
@@ -473,7 +468,6 @@ export default function createTool(toolOptions: ToolOptions) {
           }
           case 'pageBreak': {
             doc.addPage();
-            engine.init(doc, { mode: layoutMode });
             break;
           }
         }

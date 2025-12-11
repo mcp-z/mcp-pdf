@@ -5,8 +5,8 @@ import { z } from 'zod';
 import { measureTextHeight } from '../../lib/content-measure.ts';
 import { registerEmojiFont } from '../../lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts } from '../../lib/fonts.ts';
-import { LayoutEngine } from '../../lib/layout-engine.ts';
 import { renderTextWithEmoji } from '../../lib/pdf-helpers.ts';
+import { calculateLayout, type LayoutContent, type LayoutNode } from '../../lib/yoga-layout.ts';
 import type { ToolOptions } from '../../types.ts';
 
 const inputSchema = z.object({
@@ -72,29 +72,83 @@ export default function createTool(toolOptions: ToolOptions) {
       const fonts = await setupFonts(doc);
       const { regular: regularFont } = fonts;
 
-      // Initialize LayoutEngine for auto page breaks
-      const engine = new LayoutEngine();
-      engine.init(doc, { mode: 'document' });
-
       const fontSize = 12;
+      const paragraphGap = fontSize * 0.5; // 0.5 line spacing between paragraphs
 
-      // Split text into paragraphs and render with auto page breaks
-      const paragraphs = text.split(/\n\n+/);
+      // Page configuration (US Letter)
+      const pageWidth = 612;
+      const pageHeight = 792;
+      const margins = { top: 72, right: 72, bottom: 72, left: 72 };
+      const _contentWidth = pageWidth - margins.left - margins.right;
+      const contentHeight = pageHeight - margins.top - margins.bottom;
 
-      for (const paragraph of paragraphs) {
-        if (!paragraph.trim()) continue;
+      // Split text into paragraphs and build layout content
+      const paragraphs = text.split(/\n\n+/).filter((p) => p.trim());
+      const layoutContent: LayoutContent[] = paragraphs.map((paragraph, index) => ({
+        type: 'text',
+        text: paragraph,
+        // Add gap after each paragraph except the last
+        marginBottom: index < paragraphs.length - 1 ? paragraphGap : 0,
+      }));
 
-        // Measure paragraph height
-        const height = measureTextHeight(doc, paragraph, fontSize, regularFont, emojiAvailable);
+      // Height measurer function
+      const measureHeight = (content: LayoutContent, availableWidth: number): number => {
+        if (content.type === 'text' && typeof content.text === 'string') {
+          const textHeight = measureTextHeight(doc, content.text, fontSize, regularFont, emojiAvailable, { width: availableWidth });
+          const marginBottom = typeof content.marginBottom === 'number' ? content.marginBottom : 0;
+          return textHeight + marginBottom;
+        }
+        return 0;
+      };
 
-        // Ensure space for this paragraph (auto page break if needed)
-        engine.ensureSpace(doc, height);
+      // Calculate layout with Yoga
+      const layoutNodes = await calculateLayout(layoutContent, pageWidth, pageHeight, measureHeight, margins);
 
-        // Render the paragraph
-        renderTextWithEmoji(doc, paragraph, fontSize, regularFont, emojiAvailable);
+      // Paginate layout nodes
+      interface SimplePage {
+        nodes: Array<{ node: LayoutNode; adjustedY: number }>;
+      }
+      const pages: SimplePage[] = [{ nodes: [] }];
+      let currentPage = 0;
+      let pageStartY = margins.top;
 
-        // Add paragraph spacing
-        doc.moveDown(0.5);
+      for (const node of layoutNodes) {
+        const nodeY = node.y;
+        const nodeHeight = node.height;
+        const nodeBottomOnPage = nodeY - pageStartY + nodeHeight;
+
+        // Check if node fits on current page
+        if (nodeBottomOnPage > contentHeight && pages[currentPage].nodes.length > 0) {
+          // Start new page
+          currentPage++;
+          pages.push({ nodes: [] });
+          pageStartY = nodeY;
+        }
+
+        // Add node with adjusted Y position for this page
+        pages[currentPage].nodes.push({
+          node,
+          adjustedY: margins.top + (nodeY - pageStartY),
+        });
+      }
+
+      // Render each page
+      for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+        if (pageIndex > 0) {
+          doc.addPage();
+        }
+
+        const page = pages[pageIndex];
+        for (const { node, adjustedY } of page.nodes) {
+          const content = node.content as LayoutContent;
+          if (content.type === 'text' && typeof content.text === 'string') {
+            renderTextWithEmoji(doc, content.text, fontSize, regularFont, emojiAvailable, {
+              x: node.x,
+              y: adjustedY,
+              width: node.width,
+            });
+          }
+        }
       }
 
       // Get page count before ending document

@@ -10,7 +10,7 @@ import { renderField } from '../formatting.ts';
 import type { CredentialData, CredentialListElement, DividerElement, EntryData, EntryListElement, FieldTemplates, GroupElement, HeaderElement, KeywordListElement, LanguageListElement, ReferenceListElement, SectionTitleElement, SummaryHighlightsElement, TextElement } from '../ir/types.ts';
 import { renderTextWithEmoji } from '../pdf-helpers.ts';
 import type { TypographyOptions } from '../types/typography.ts';
-import type { ComputedPosition, Page, PageNode, RenderContext } from './types.ts';
+import { type ComputedPosition, calculateEntryColumnWidths, type Page, type PageNode, type RenderContext } from './types.ts';
 
 // =============================================================================
 // Helper Functions
@@ -462,8 +462,7 @@ function renderSingleWorkEntry(ctx: RenderContext, entry: EntryData, x: number, 
   const style = getResolvedStyle(typography);
   const { entry: entryStyle, bullet } = typography;
 
-  const rightWidth = entryStyle.date.width;
-  const leftWidth = width - rightWidth - 10;
+  const { leftWidth, rightWidth } = calculateEntryColumnWidths(width, entryStyle.date.width);
 
   const entryData = entry as Record<string, unknown>;
   const company = ensureString(entryData.name ?? entryData.organization ?? entryData.entity);
@@ -583,8 +582,7 @@ function renderGroupedWorkEntry(ctx: RenderContext, entries: EntryData[], x: num
   let currentY = y;
 
   // Company header
-  const rightWidth = entryStyle.date.width;
-  const leftWidth = width - rightWidth - 10;
+  const { leftWidth, rightWidth } = calculateEntryColumnWidths(width, entryStyle.date.width);
 
   doc.font(fonts.bold).fontSize(entryStyle.position.fontSize).fillColor('#000000');
   const companyHeight = doc.heightOfString(company, { width: leftWidth });
@@ -618,8 +616,7 @@ function renderPositionEntry(ctx: RenderContext, entry: EntryData, x: number, y:
   const style = getResolvedStyle(typography);
   const { entry: entryStyle, bullet } = typography;
 
-  const rightWidth = entryStyle.date.width;
-  const leftWidth = width - rightWidth - 10;
+  const { leftWidth, rightWidth } = calculateEntryColumnWidths(width, entryStyle.date.width);
 
   const entryData = entry as Record<string, unknown>;
   const position = ensureString(entryData.position ?? (entryData.roles as string[])?.[0]);
@@ -723,8 +720,7 @@ function renderEducationEntry(ctx: RenderContext, entry: EntryData, x: number, y
   const style = getResolvedStyle(typography);
   const { entry: entryStyle } = typography;
 
-  const rightWidth = entryStyle.date.width;
-  const leftWidth = width - rightWidth - 10;
+  const { leftWidth, rightWidth } = calculateEntryColumnWidths(width, entryStyle.date.width);
 
   const institution = ensureString(entry.institution);
 
@@ -836,7 +832,7 @@ export function renderSummaryHighlights(ctx: RenderContext, element: SummaryHigh
 /**
  * Render a group element at computed position.
  */
-export function renderGroup(ctx: RenderContext, _element: GroupElement, _position: ComputedPosition, children?: PageNode[]): void {
+export function renderGroup(ctx: RenderContext, _element: GroupElement, children?: PageNode[]): void {
   // Groups just render their children - the children have their own computed positions
   if (children) {
     for (const child of children) {
@@ -887,7 +883,7 @@ export function renderPageNode(ctx: RenderContext, node: PageNode): void {
       renderSummaryHighlights(ctx, element, position);
       break;
     case 'group':
-      renderGroup(ctx, element, position, children);
+      renderGroup(ctx, element, children);
       break;
     case 'template':
       // Template elements should be pre-processed

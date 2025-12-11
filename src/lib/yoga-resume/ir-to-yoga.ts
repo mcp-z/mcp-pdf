@@ -150,8 +150,8 @@ export interface TwoColumnLayoutConfig {
 /**
  * Calculate layout for two-column resume layout.
  *
- * Creates a row container with left and right column children,
- * each containing their respective IR elements.
+ * Creates a single unified Yoga tree with left and right columns,
+ * computing all positions in one pass.
  */
 export async function calculateTwoColumnLayout(
   doc: PDFKit.PDFDocument,
@@ -168,52 +168,43 @@ export async function calculateTwoColumnLayout(
   const leftWidth = layout.left.width ?? '30%';
   const rightWidth = layout.right.width ?? '70%';
 
-  // Create Yoga structure for column positions
-  const columnStructure: LayoutContent = {
+  // Build unified Yoga tree with actual content in both columns
+  const unifiedTree: LayoutContent = {
     type: 'group',
     direction: 'row',
     gap: layout.gap,
     width: contentWidth,
+    alignItems: 'start', // Columns grow independently from top
     children: [
-      { type: 'group', width: leftWidth, height: 1 },
-      { type: 'group', width: rightWidth, height: 1 },
+      {
+        type: 'group',
+        direction: 'column',
+        width: leftWidth,
+        children: transformToYogaNodes(layout.left.elements),
+      },
+      {
+        type: 'group',
+        direction: 'column',
+        width: rightWidth,
+        children: transformToYogaNodes(layout.right.elements),
+      },
     ],
   };
 
-  // Calculate column positions
-  const [columnLayout] = await calculateLayout(
-    [columnStructure],
-    config.width,
-    undefined,
-    () => 1, // Dummy measurer for position calculation
-    config.margins
-  );
+  // Single Yoga calculation for entire two-column layout
+  const [layoutResult] = await calculateLayout([unifiedTree], config.width, undefined, measureHeight, config.margins);
 
-  const leftColumn = columnLayout.children?.[0];
-  const rightColumn = columnLayout.children?.[1];
+  const leftColumn = layoutResult.children?.[0];
+  const rightColumn = layoutResult.children?.[1];
 
   if (!leftColumn || !rightColumn) {
-    throw new Error('Yoga failed to compute column positions');
+    throw new Error('Yoga failed to compute column layout');
   }
 
-  // Calculate layout for left column elements
-  const leftLayoutNodes = await calculateLayout(transformToYogaNodes(layout.left.elements), leftColumn.width, undefined, measureHeight, { top: config.margins.top, right: 0, bottom: config.margins.bottom, left: 0 });
+  // Extract children from each column, converting to ResumeLayoutNode
+  const leftNodes = (leftColumn.children ?? []).map((node, index) => toResumeLayoutNode(node, layout.left.elements[index]));
 
-  // Calculate layout for right column elements
-  const rightLayoutNodes = await calculateLayout(transformToYogaNodes(layout.right.elements), rightColumn.width, undefined, measureHeight, { top: config.margins.top, right: 0, bottom: config.margins.bottom, left: 0 });
-
-  // Convert to ResumeLayoutNode[] with adjusted X positions
-  const leftNodes = leftLayoutNodes.map((node, index) => {
-    const resumeNode = toResumeLayoutNode(node, layout.left.elements[index]);
-    resumeNode.x = leftColumn.x + node.x;
-    return resumeNode;
-  });
-
-  const rightNodes = rightLayoutNodes.map((node, index) => {
-    const resumeNode = toResumeLayoutNode(node, layout.right.elements[index]);
-    resumeNode.x = rightColumn.x + node.x;
-    return resumeNode;
-  });
+  const rightNodes = (rightColumn.children ?? []).map((node, index) => toResumeLayoutNode(node, layout.right.elements[index]));
 
   return {
     left: leftNodes,

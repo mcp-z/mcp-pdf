@@ -10,7 +10,7 @@ import { measureTextHeight } from '../content-measure.ts';
 import { renderField } from '../formatting.ts';
 import type { CredentialData, CredentialListElement, DividerElement, EntryData, EntryListElement, FieldTemplates, GroupElement, HeaderElement, KeywordListElement, LanguageListElement, LayoutElement, ReferenceListElement, SectionTitleElement, TextElement } from '../ir/types.ts';
 import type { TypographyOptions } from '../types/typography.ts';
-import type { MeasureContext } from './types.ts';
+import { calculateEntryColumnWidths, type MeasureContext } from './types.ts';
 
 // =============================================================================
 // Helper Functions
@@ -153,8 +153,7 @@ function measureWorkEntry(ctx: MeasureContext, entry: EntryData, isGrouped: bool
   const style = getResolvedStyle(typography);
   const { entry: entryStyle, bullet } = typography;
 
-  const rightWidth = entryStyle.date.width;
-  const leftWidth = width - rightWidth - 10;
+  const { leftWidth, rightWidth } = calculateEntryColumnWidths(width, entryStyle.date.width);
 
   const entryData = entry as Record<string, unknown>;
   const company = ensureString(entryData.name ?? entryData.organization ?? entryData.entity);
@@ -235,8 +234,7 @@ function measureCompanyHeader(ctx: MeasureContext, company: string, location: st
   const { entry: entryStyle } = typography;
   const style = getResolvedStyle(typography);
 
-  const rightWidth = entryStyle.date.width;
-  const leftWidth = width - rightWidth - 10;
+  const { leftWidth, rightWidth } = calculateEntryColumnWidths(width, entryStyle.date.width);
 
   doc.font(typography.fonts.bold).fontSize(entryStyle.position.fontSize);
   const companyHeight = doc.heightOfString(company, { width: leftWidth });
@@ -254,8 +252,7 @@ function measureEducationEntry(ctx: MeasureContext, entry: EntryData): number {
   const style = getResolvedStyle(typography);
   const { entry: entryStyle } = typography;
 
-  const rightWidth = entryStyle.date.width;
-  const leftWidth = width - rightWidth - 10;
+  const { leftWidth, rightWidth } = calculateEntryColumnWidths(width, entryStyle.date.width);
 
   const institution = ensureString(entry.institution);
 
