@@ -91,8 +91,9 @@ export function paginateLayout(nodes: ResumeLayoutNode[], config: PageConfig = D
     const nodeHeight = node.height;
 
     // Check if node fits on current page
+    // Note: nodeTop already includes margins.top from Yoga layout
     const currentPageY = nodeTop - pageStartY;
-    const nodeBottomOnPage = currentPageY + nodeHeight + config.margins.top;
+    const nodeBottomOnPage = currentPageY + nodeHeight;
     const fitsOnPage = nodeBottomOnPage <= pageBottom;
 
     // Check if this is an atomic group that should stay together
@@ -118,11 +119,12 @@ export function paginateLayout(nodes: ResumeLayoutNode[], config: PageConfig = D
 
 /**
  * Check if a node would cause a page break at the given Y position.
+ * Note: nodeY should already include margins.top from Yoga layout.
  */
 export function wouldCausePageBreak(nodeY: number, nodeHeight: number, currentPageStartY: number, config: PageConfig): boolean {
   const contentHeight = getContentHeight(config);
   const pageBottom = config.margins.top + contentHeight;
-  const nodeBottomOnPage = nodeY - currentPageStartY + nodeHeight + config.margins.top;
+  const nodeBottomOnPage = nodeY - currentPageStartY + nodeHeight;
 
   return nodeBottomOnPage > pageBottom;
 }
@@ -159,7 +161,8 @@ export function paginateLayoutWithAtomicGroups(nodes: ResumeLayoutNode[], config
     const isAtomic = isAtomicGroup(node.element);
 
     // Calculate position on current page
-    const currentPageY = nodeTop - pageStartY + config.margins.top;
+    // Note: nodeTop already includes margins.top from Yoga layout
+    const currentPageY = nodeTop - pageStartY;
     const nodeBottomOnPage = currentPageY + nodeHeight;
     const fitsOnPage = nodeBottomOnPage <= pageBottom;
 
