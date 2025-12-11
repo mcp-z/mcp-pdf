@@ -33,24 +33,24 @@ const borderSchema = z.object({
 // NOTE: Text items flow within parent groups - no x/y positioning.
 // Use groups for absolute positioning.
 const textBaseSchema = z.object({
-  text: z.string().optional(),
-  fontSize: z.number().optional(),
-  bold: z.boolean().optional(),
-  color: z.string().optional(),
-  textAlign: z.enum(['left', 'center', 'right', 'justify']).optional(),
-  indent: z.number().optional(),
-  lineGap: z.number().optional(),
-  paragraphGap: z.number().optional(),
-  width: z.number().optional(),
-  moveDown: z.number().optional(),
-  underline: z.boolean().optional(),
-  strike: z.boolean().optional(),
-  oblique: z.union([z.boolean(), z.number()]).optional(),
-  link: z.string().optional(),
-  characterSpacing: z.number().optional(),
-  wordSpacing: z.number().optional(),
-  continued: z.boolean().optional(),
-  lineBreak: z.boolean().optional(),
+  text: z.string().optional().describe('Text content to render'),
+  fontSize: z.number().optional().describe('Font size in points (default: 12 for text, 24 for heading)'),
+  bold: z.boolean().optional().describe('Use bold font weight (default: false for text, true for heading)'),
+  color: z.string().optional().describe('Text color as hex (e.g., "#333333") or named color (default: black)'),
+  textAlign: z.enum(['left', 'center', 'right', 'justify']).optional().describe('Text alignment (default: left)'),
+  indent: z.number().optional().describe('First line indent in points (default: 0)'),
+  lineGap: z.number().optional().describe('Extra spacing between lines in points (default: 0)'),
+  paragraphGap: z.number().optional().describe('Extra spacing after paragraph in points (default: 0)'),
+  width: z.number().optional().describe('Text width constraint in points (default: available width)'),
+  moveDown: z.number().optional().describe('Move cursor down by N lines after rendering (default: 0)'),
+  underline: z.boolean().optional().describe('Underline text (default: false)'),
+  strike: z.boolean().optional().describe('Strikethrough text (default: false)'),
+  oblique: z.union([z.boolean(), z.number()]).optional().describe('Italic/oblique text - true or angle in degrees (default: false)'),
+  link: z.string().optional().describe('URL to link text to'),
+  characterSpacing: z.number().optional().describe('Extra spacing between characters in points (default: 0)'),
+  wordSpacing: z.number().optional().describe('Extra spacing between words in points (default: 0)'),
+  continued: z.boolean().optional().describe('Continue text on same line (default: false)'),
+  lineBreak: z.boolean().optional().describe('Allow line breaks (default: true)'),
 });
 
 // Base content items (without group to avoid circular reference)
@@ -59,41 +59,41 @@ const baseContentItemSchema = z.union([
   textBaseSchema.extend({ type: z.literal('heading') }),
   z.object({
     type: z.literal('image'),
-    imagePath: z.string(),
-    x: z.number().optional(),
-    y: z.number().optional(),
-    width: z.number().optional(),
-    height: z.number().optional(),
+    imagePath: z.string().describe('Path to image file'),
+    x: z.number().optional().describe('X position in points'),
+    y: z.number().optional().describe('Y position in points'),
+    width: z.number().optional().describe('Image width in points (default: natural width)'),
+    height: z.number().optional().describe('Image height in points (default: natural height or aspect-ratio scaled)'),
   }),
   z.object({
     type: z.literal('rect'),
-    x: z.number(),
-    y: z.number(),
-    width: z.number(),
-    height: z.number(),
-    fillColor: z.string().optional(),
-    strokeColor: z.string().optional(),
-    lineWidth: z.number().optional(),
+    x: z.number().describe('X position in points'),
+    y: z.number().describe('Y position in points'),
+    width: z.number().describe('Width in points'),
+    height: z.number().describe('Height in points'),
+    fillColor: z.string().optional().describe('Fill color (default: no fill)'),
+    strokeColor: z.string().optional().describe('Stroke color (default: no stroke)'),
+    lineWidth: z.number().optional().describe('Stroke width in points (default: 1)'),
   }),
   z.object({
     type: z.literal('circle'),
-    x: z.number(),
-    y: z.number(),
-    radius: z.number(),
-    fillColor: z.string().optional(),
-    strokeColor: z.string().optional(),
-    lineWidth: z.number().optional(),
+    x: z.number().describe('Center X position in points'),
+    y: z.number().describe('Center Y position in points'),
+    radius: z.number().describe('Radius in points'),
+    fillColor: z.string().optional().describe('Fill color (default: no fill)'),
+    strokeColor: z.string().optional().describe('Stroke color (default: no stroke)'),
+    lineWidth: z.number().optional().describe('Stroke width in points (default: 1)'),
   }),
   z.object({
     type: z.literal('line'),
-    x1: z.number(),
-    y1: z.number(),
-    x2: z.number(),
-    y2: z.number(),
-    strokeColor: z.string().optional(),
-    lineWidth: z.number().optional(),
+    x1: z.number().describe('Start X position in points'),
+    y1: z.number().describe('Start Y position in points'),
+    x2: z.number().describe('End X position in points'),
+    y2: z.number().describe('End Y position in points'),
+    strokeColor: z.string().optional().describe('Line color (default: black)'),
+    lineWidth: z.number().optional().describe('Line width in points (default: 1)'),
   }),
-  z.object({ type: z.literal('pageBreak') }),
+  z.object({ type: z.literal('pageBreak') }).describe('Force page break'),
 ]);
 
 // Type for base content item
@@ -516,6 +516,27 @@ export default function createTool(toolOptions: ToolOptions) {
 
       // Calculate layout using Yoga
       const layoutNodes = await calculateLayout(layoutContent, pageWidth, pageHeight, measureHeight, margins);
+
+      // Check for content overflow in fixed layout mode
+      if (_layoutMode === 'fixed') {
+        const getMaxBottom = (node: LayoutNode): number => {
+          let maxBottom = node.y + node.height;
+          if (node.children) {
+            for (const child of node.children) {
+              maxBottom = Math.max(maxBottom, getMaxBottom(child));
+            }
+          }
+          return maxBottom;
+        };
+
+        for (const node of layoutNodes) {
+          const bottom = getMaxBottom(node);
+          if (bottom > pageHeight) {
+            warnings.push(`Content exceeds page height by ${Math.ceil(bottom - pageHeight)}px. Consider reducing font sizes or removing content.`);
+            break;
+          }
+        }
+      }
 
       // Render all content using computed layout
       for (const layoutNode of layoutNodes) {

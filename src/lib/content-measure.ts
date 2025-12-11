@@ -1,5 +1,5 @@
 import type PDFKit from 'pdfkit';
-import { splitTextAndEmoji } from './emoji-renderer.ts';
+import { measureEmoji, splitTextAndEmoji } from './emoji-renderer.ts';
 import { hasEmoji } from './fonts.ts';
 import type { PDFTextOptions } from './pdf-helpers.ts';
 
@@ -38,21 +38,23 @@ export function measureTextHeight(doc: PDFKit.PDFDocument, text: string, fontSiz
   const availableWidth = options.width || doc.page.width - doc.page.margins.left - doc.page.margins.right;
   const effectiveWidth = availableWidth - (options.indent || 0);
 
-  // Calculate line height
-  const lineHeight = fontSize * (options.lineGap !== undefined ? 1 + options.lineGap / fontSize : 1.15);
+  // Get actual line height from PDFKit (matches PDFKit's internal calculation)
+  // currentLineHeight(true) = font's natural height with built-in gap
+  // + lineGap = any extra spacing user requested
+  const lineHeight = doc.currentLineHeight(true) + (options.lineGap ?? 0);
 
-  let lineCount: number;
+  let height: number;
 
   if (!emojiAvailable || !hasEmoji(text)) {
-    // Simple case: use PDFKit's heightOfString
-    const textHeight = doc.heightOfString(text, {
+    // Simple case: use PDFKit's heightOfString directly - it's the source of truth
+    height = doc.heightOfString(text, {
       width: effectiveWidth,
       lineGap: options.lineGap,
     });
-    lineCount = Math.ceil(textHeight / lineHeight);
   } else {
     // Complex case: manually calculate with emoji segments
-    lineCount = measureLinesWithEmoji(doc, text, fontSize, effectiveWidth);
+    const lineCount = measureLinesWithEmoji(doc, text, fontSize, effectiveWidth);
+    height = lineCount * lineHeight;
   }
 
   // Restore font state
@@ -63,7 +65,7 @@ export function measureTextHeight(doc: PDFKit.PDFDocument, text: string, fontSiz
     doc.fontSize(savedFontSize);
   }
 
-  return lineCount * lineHeight;
+  return height;
 }
 
 /**
@@ -77,7 +79,8 @@ function measureLinesWithEmoji(doc: PDFKit.PDFDocument, text: string, fontSize: 
 
   for (const segment of segments) {
     if (segment.type === 'emoji') {
-      words.push({ width: fontSize * 1.1 }); // Emoji width with spacing
+      const emojiMetrics = measureEmoji(segment.content, fontSize);
+      words.push({ width: emojiMetrics.width });
     } else {
       const textWords = segment.content.split(/(\s+)/);
       for (const word of textWords) {
@@ -164,14 +167,13 @@ export function measureLineHeight(y1: number, y2: number): number {
 /**
  * Spacing measurement helper - convert moveDown lines to points.
  *
+ * @param doc - PDFKit document (for line height calculation)
  * @param moveDown - Number of lines to move down
- * @param fontSize - Current font size
  * @returns Height in points
  */
-export function measureMoveDown(moveDown: number, fontSize: number): number {
-  // PDFKit's moveDown uses line height based on current font size
-  const lineHeight = fontSize * 1.15;
-  return moveDown * lineHeight;
+export function measureMoveDown(doc: PDFKit.PDFDocument, moveDown: number): number {
+  // PDFKit's moveDown uses current line height
+  return moveDown * doc.currentLineHeight();
 }
 
 /**

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- **`pdf-create-simple` tool**: Removed redundant simple text tool. Use `pdf-create` with text content items instead - just as simple but more consistent.
+
+### Fixed
+- **Text height measurement**: Fixed line height calculation using PDFKit's `currentLineHeight()` instead of magic number. This fixes content overflow in fixed-layout PDFs.
+- **Emoji measurement**: Use canvas `measureText()` for actual emoji dimensions instead of hardcoded multipliers.
+- **Overflow detection**: Added warning when fixed-layout content exceeds page height.
+
+### Changed
+- **Schema documentation**: All `pdf-create` schema properties now include default values in their descriptions so agents know what to expect.
+
 ## [1.1.1] - 2025-10-05
 
 ### Fixed
