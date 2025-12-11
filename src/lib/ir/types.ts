@@ -243,8 +243,55 @@ export interface GroupElement extends BaseElement {
   children: LayoutElement[];
 }
 
+/** Entry header element - company/position/dates without content (for fine-grained pagination) */
+export interface EntryHeaderElement extends BaseElement {
+  type: 'entry-header';
+  variant: 'work' | 'education';
+  /** Full entry data for rendering header portion */
+  entry: EntryData;
+  /** Whether this is part of a grouped company (multiple positions at same company) */
+  isGroupedPosition?: boolean;
+  /** Whether to show location (for grouped entries where location varies) */
+  showLocation?: boolean;
+}
+
+/** Single content line element - paragraph or bullet (for fine-grained pagination) */
+export interface EntryContentLineElement extends BaseElement {
+  type: 'entry-content-line';
+  contentType: 'summary' | 'bullet';
+  text: string;
+  /** Position in sequence (for spacing decisions) */
+  position: 'first' | 'middle' | 'last' | 'only';
+  /** Whether this follows a different content type (summary→bullet transition needs extra space) */
+  afterTypeChange: boolean;
+  /** Margin top in points (can be stripped if first on page) */
+  marginTop: number;
+}
+
+/** Company header element - for grouped entries with multiple positions at same company */
+export interface CompanyHeaderElement extends BaseElement {
+  type: 'company-header';
+  company: string;
+  location: string | null;
+}
+
 /** Discriminated union of all layout elements */
-export type LayoutElement = TextElement | DividerElement | SectionTitleElement | EntryListElement | KeywordListElement | LanguageListElement | CredentialListElement | ReferenceListElement | SummaryHighlightsElement | HeaderElement | TemplateElement | GroupElement;
+export type LayoutElement =
+  | TextElement
+  | DividerElement
+  | SectionTitleElement
+  | EntryListElement
+  | KeywordListElement
+  | LanguageListElement
+  | CredentialListElement
+  | ReferenceListElement
+  | SummaryHighlightsElement
+  | HeaderElement
+  | TemplateElement
+  | GroupElement
+  | EntryHeaderElement
+  | EntryContentLineElement
+  | CompanyHeaderElement;
 
 // ===== Layout Document (complete IR) =====
 
