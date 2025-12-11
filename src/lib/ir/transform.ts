@@ -255,14 +255,7 @@ function createContentLines(entry: EntryData): EntryContentLineElement[] {
  * @param isGroupedPosition - Whether this entry is part of a grouped company
  * @param showLocation - Whether to show location on this entry
  */
-function decomposeEntry(
-  entry: EntryData,
-  variant: 'work' | 'education',
-  isFirstEntry: boolean,
-  sectionTitleElement: SectionTitleElement | null,
-  isGroupedPosition: boolean = false,
-  showLocation: boolean = true
-): LayoutElement[] {
+function decomposeEntry(entry: EntryData, variant: 'work' | 'education', isFirstEntry: boolean, sectionTitleElement: SectionTitleElement | null, isGroupedPosition = false, showLocation = true): LayoutElement[] {
   const elements: LayoutElement[] = [];
   const contentLines = createContentLines(entry);
 
@@ -310,12 +303,7 @@ function decomposeEntry(
 /**
  * Decompose grouped entries (multiple positions at same company).
  */
-function decomposeGroupedEntries(
-  entries: EntryData[],
-  variant: 'work' | 'education',
-  isFirstGroup: boolean,
-  sectionTitleElement: SectionTitleElement | null
-): LayoutElement[] {
+function decomposeGroupedEntries(entries: EntryData[], variant: 'work' | 'education', isFirstGroup: boolean, sectionTitleElement: SectionTitleElement | null): LayoutElement[] {
   const elements: LayoutElement[] = [];
 
   // Get company info from first entry
@@ -372,11 +360,7 @@ function decomposeGroupedEntries(
 /**
  * Transform entry-list into fine-grained elements for better pagination.
  */
-function transformEntryListFineGrained(
-  entryList: EntryListElement,
-  sectionTitleElement: SectionTitleElement | null,
-  source: string
-): LayoutElement[] {
+function transformEntryListFineGrained(entryList: EntryListElement, sectionTitleElement: SectionTitleElement | null, source: string): LayoutElement[] {
   const elements: LayoutElement[] = [];
   const { entries, variant } = entryList;
 
@@ -637,7 +621,8 @@ function transformSection(resume: ResumeSchema, config: SectionConfig): LayoutEl
       const fineGrainedElements = transformEntryListFineGrained(entryList, sectionTitleElement, source);
       elements.push(...fineGrainedElements);
       return tagElements(); // Early return since elements are already tagged
-    } else if (type === 'keyword-list') {
+    }
+    if (type === 'keyword-list') {
       // Keyword list (skills, interests): group title with first category, then each remaining as separate node
       const keywordList = contentElement as KeywordListElement;
       const items = keywordList.items;
