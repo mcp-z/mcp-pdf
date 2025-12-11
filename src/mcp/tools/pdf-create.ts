@@ -291,6 +291,7 @@ export default function createTool(toolOptions: ToolOptions) {
       if (pageSetup?.backgroundColor) {
         const pageSize: [number, number] = pageSetup?.size && pageSetup.size.length >= 2 ? [pageSetup.size[0] ?? 612, pageSetup.size[1] ?? 792] : [612, 792];
         doc.rect(0, 0, pageSize[0], pageSize[1]).fill(pageSetup.backgroundColor);
+        doc.fillColor('black'); // Reset fill color after background
       }
 
       const contentText = JSON.stringify(content);
@@ -325,6 +326,7 @@ export default function createTool(toolOptions: ToolOptions) {
           const x = doc.x;
           const y = doc.y;
           doc.rect(0, 0, pageSize[0], pageSize[1]).fill(pageSetup.backgroundColor);
+          doc.fillColor('black'); // Reset fill color after background
           doc.x = x;
           doc.y = y;
         }
