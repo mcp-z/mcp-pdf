@@ -70,9 +70,11 @@ export interface LayoutNode {
  */
 export interface LayoutContent {
   type: string;
-  /** Absolute x position (optional - omit for flow) */
+  /** Position mode: 'relative' (default) stays in flow, 'absolute' removes from flow */
+  position?: 'relative' | 'absolute';
+  /** X position - absolute coord if position='absolute', offset from flow position otherwise */
   x?: number;
-  /** Absolute y position (optional - omit for flow) */
+  /** Y position - absolute coord if position='absolute', offset from flow position otherwise */
   y?: number;
   /** Flexbox properties */
   direction?: 'column' | 'row';
@@ -327,8 +329,8 @@ function buildYogaTree(
     for (const childContent of content.children) {
       const childTree = buildYogaTree(Yoga, FlexDirection, Justify, Align, Edge, childContent, childParentWidth, measureHeight);
 
-      // Children with both x and y are absolute-positioned - don't add to flex layout
-      if (childContent.x !== undefined && childContent.y !== undefined) {
+      // Children with position='absolute' are removed from flex layout
+      if (childContent.position === 'absolute') {
         // Calculate layout independently for absolute children
         childTree.node.calculateLayout(typeof childContent.width === 'number' ? childContent.width : childParentWidth, undefined, Yoga.DIRECTION_LTR);
         absoluteChildren.push(childTree);
@@ -372,9 +374,15 @@ function buildYogaTree(
 function extractLayout(tree: YogaTreeNode, offsetX: number, offsetY: number): LayoutNode {
   const layout = tree.node.getComputedLayout();
 
+  // Apply relative x/y offsets (CSS-like behavior for relative positioning)
+  // Items in flow with x/y get those as offsets from computed position
+  const content = tree.content;
+  const relativeOffsetX = content.position !== 'absolute' && typeof content.x === 'number' ? content.x : 0;
+  const relativeOffsetY = content.position !== 'absolute' && typeof content.y === 'number' ? content.y : 0;
+
   const result: LayoutNode = {
-    x: offsetX + layout.left,
-    y: offsetY + layout.top,
+    x: offsetX + layout.left + relativeOffsetX,
+    y: offsetY + layout.top + relativeOffsetY,
     width: layout.width,
     height: layout.height,
     content: tree.content,
@@ -462,8 +470,8 @@ export async function calculateLayout(content: LayoutContent[], pageWidth: numbe
 
   // Build Yoga tree for each content item
   for (const item of content) {
-    // If item has absolute positioning, don't add to flex layout
-    if (item.x !== undefined && item.y !== undefined) {
+    // If item has position='absolute', don't add to flex layout
+    if (item.position === 'absolute') {
       // Create a detached node just for measurement if needed
       const tree = buildYogaTree(Yoga, FlexDirection, Justify, Align, Edge, item, availableWidth, measureHeight);
       tree.node.calculateLayout(typeof item.width === 'number' ? item.width : availableWidth, undefined, Direction.LTR);
