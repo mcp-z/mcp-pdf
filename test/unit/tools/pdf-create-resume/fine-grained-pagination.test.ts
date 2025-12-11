@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
+import { mkdirSync } from 'fs';
 import { join } from 'path';
 import createPdfCreateResume, { type Input, type Output } from '../../../../src/mcp/tools/pdf-create-resume.ts';
 import type { ServerConfig } from '../../../../src/types.ts';
@@ -54,18 +54,14 @@ describe('Fine-grained pagination', () => {
           label: 'Senior Software Engineer',
           email: 'test@example.com',
           phone: '555-123-4567',
-          summary:
-            'Experienced software engineer with over 15 years of experience building scalable distributed systems. ' +
-            'Passionate about clean code, test-driven development, and mentoring junior developers. ' +
-            'Led multiple successful product launches and contributed to open source projects.',
+          summary: 'Experienced software engineer with over 15 years of experience building scalable distributed systems. ' + 'Passionate about clean code, test-driven development, and mentoring junior developers. ' + 'Led multiple successful product launches and contributed to open source projects.',
         },
         work: [
           {
             name: 'Tech Giant Corp',
             position: 'Principal Engineer',
             startDate: '2020-01',
-            summary:
-              'Leading the platform engineering team responsible for core infrastructure serving millions of users worldwide.',
+            summary: 'Leading the platform engineering team responsible for core infrastructure serving millions of users worldwide.',
             highlights: [
               'Architected and implemented a new microservices platform that reduced deployment time by 80%',
               'Led migration from monolithic architecture to microservices, improving system reliability to 99.99% uptime',
@@ -105,11 +101,7 @@ describe('Fine-grained pagination', () => {
             position: 'Junior Developer',
             startDate: '2012-01',
             endDate: '2014-05',
-            highlights: [
-              'Developed responsive web applications for Fortune 500 clients',
-              'Implemented e-commerce solutions processing $10M+ in annual transactions',
-              'Created mobile-first designs improving user engagement by 45%',
-            ],
+            highlights: ['Developed responsive web applications for Fortune 500 clients', 'Implemented e-commerce solutions processing $10M+ in annual transactions', 'Created mobile-first designs improving user engagement by 45%'],
           },
         ],
         education: [
@@ -151,14 +143,12 @@ describe('Fine-grained pagination', () => {
         projects: [
           {
             name: 'Open Source Monitoring Tool',
-            description:
-              'Created a lightweight monitoring solution for Kubernetes clusters that provides real-time metrics and alerting.',
+            description: 'Created a lightweight monitoring solution for Kubernetes clusters that provides real-time metrics and alerting.',
             highlights: ['5000+ GitHub stars', 'Used by 200+ companies', 'Featured in KubeCon 2023'],
           },
           {
             name: 'Developer Productivity CLI',
-            description:
-              'Built a command-line tool that automates common development tasks and integrates with popular CI/CD platforms.',
+            description: 'Built a command-line tool that automates common development tasks and integrates with popular CI/CD platforms.',
             highlights: ['10,000+ monthly downloads', 'Active community of contributors'],
           },
         ],
@@ -191,7 +181,7 @@ describe('Fine-grained pagination', () => {
 
     console.log(`    📄 Multi-page resume created: ${output.sizeBytes} bytes`);
     console.log(`    📂 Output: ${testStorageDir}/${output.documentId}.pdf`);
-    console.log(`    ℹ️  Open the PDF to verify fine-grained pagination visually`);
+    console.log('    ℹ️  Open the PDF to verify fine-grained pagination visually');
   });
 
   it('handles resume with only summaries (no bullets)', async () => {
@@ -211,18 +201,14 @@ describe('Fine-grained pagination', () => {
             name: 'Product Company',
             position: 'Senior Product Manager',
             startDate: '2020-01',
-            summary:
-              'Led product strategy for the core platform, driving 40% year-over-year revenue growth. ' +
-              'Collaborated with engineering, design, and sales teams to deliver features that exceeded customer expectations.',
+            summary: 'Led product strategy for the core platform, driving 40% year-over-year revenue growth. ' + 'Collaborated with engineering, design, and sales teams to deliver features that exceeded customer expectations.',
           },
           {
             name: 'Startup Inc',
             position: 'Product Manager',
             startDate: '2017-01',
             endDate: '2019-12',
-            summary:
-              'Owned the product roadmap for the B2B SaaS offering. ' +
-              'Conducted extensive customer research and competitive analysis to prioritize features.',
+            summary: 'Owned the product roadmap for the B2B SaaS offering. ' + 'Conducted extensive customer research and competitive analysis to prioritize features.',
           },
         ],
       },
@@ -253,24 +239,14 @@ describe('Fine-grained pagination', () => {
             name: 'Tech Company',
             position: 'Senior Engineer',
             startDate: '2020-01',
-            highlights: [
-              'Built scalable microservices architecture',
-              'Implemented CI/CD pipelines',
-              'Mentored junior developers',
-              'Contributed to open source projects',
-              'Reduced system latency by 50%',
-            ],
+            highlights: ['Built scalable microservices architecture', 'Implemented CI/CD pipelines', 'Mentored junior developers', 'Contributed to open source projects', 'Reduced system latency by 50%'],
           },
           {
             name: 'Another Company',
             position: 'Engineer',
             startDate: '2017-01',
             endDate: '2019-12',
-            highlights: [
-              'Developed RESTful APIs',
-              'Optimized database performance',
-              'Created automated tests',
-            ],
+            highlights: ['Developed RESTful APIs', 'Optimized database performance', 'Created automated tests'],
           },
         ],
       },
@@ -303,13 +279,7 @@ describe('Fine-grained pagination', () => {
             studyType: 'Ph.D.',
             startDate: '2018',
             endDate: '2023',
-            courses: [
-              'Advanced Machine Learning',
-              'Distributed Systems',
-              'Natural Language Processing',
-              'Computer Vision',
-              'Reinforcement Learning',
-            ],
+            courses: ['Advanced Machine Learning', 'Distributed Systems', 'Natural Language Processing', 'Computer Vision', 'Reinforcement Learning'],
           },
           {
             institution: 'State University',

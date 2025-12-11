@@ -7,7 +7,25 @@
 
 import type PDFKit from 'pdfkit';
 import { renderField } from '../formatting.ts';
-import type { CompanyHeaderElement, CredentialData, CredentialListElement, DividerElement, EntryContentLineElement, EntryData, EntryHeaderElement, EntryListElement, FieldTemplates, GroupElement, HeaderElement, KeywordListElement, LanguageListElement, ReferenceListElement, SectionTitleElement, SummaryHighlightsElement, TextElement } from '../ir/types.ts';
+import type {
+  CompanyHeaderElement,
+  CredentialData,
+  CredentialListElement,
+  DividerElement,
+  EntryContentLineElement,
+  EntryData,
+  EntryHeaderElement,
+  EntryListElement,
+  FieldTemplates,
+  GroupElement,
+  HeaderElement,
+  KeywordListElement,
+  LanguageListElement,
+  ReferenceListElement,
+  SectionTitleElement,
+  SummaryHighlightsElement,
+  TextElement,
+} from '../ir/types.ts';
 import { renderTextWithEmoji } from '../pdf-helpers.ts';
 import type { TypographyOptions } from '../types/typography.ts';
 import { type ComputedPosition, calculateEntryColumnWidths, type Page, type PageNode, type RenderContext } from './types.ts';
@@ -879,7 +897,10 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
     });
 
     if (dateText) {
-      doc.font(fonts.italic).fontSize(style.fontSize).fillColor(entryStyle.company.color ?? '#444444');
+      doc
+        .font(fonts.italic)
+        .fontSize(style.fontSize)
+        .fillColor(entryStyle.company.color ?? '#444444');
       doc.text(dateText, position.x + position.width - rightWidth, currentY, { width: rightWidth, align: 'right' });
       doc.fillColor('#000000');
     }
@@ -905,7 +926,10 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
 
     // GPA line
     if (entry.score) {
-      doc.font(fonts.regular).fontSize(style.fontSize).fillColor(entryStyle.location.color ?? '#444444');
+      doc
+        .font(fonts.regular)
+        .fontSize(style.fontSize)
+        .fillColor(entryStyle.location.color ?? '#444444');
       const gpaText = `GPA: ${entry.score}`;
       doc.text(gpaText, position.x, currentY, { width: position.width, lineGap: style.lineGap });
       doc.fillColor('#000000');
@@ -921,7 +945,10 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
     });
 
     if (dateText) {
-      doc.font(fonts.italic).fontSize(entryStyle.company.fontSize).fillColor(entryStyle.company.color ?? '#444444');
+      doc
+        .font(fonts.italic)
+        .fontSize(entryStyle.company.fontSize)
+        .fillColor(entryStyle.company.color ?? '#444444');
       doc.text(dateText, position.x + position.width - rightWidth, currentY, { width: rightWidth, align: 'right' });
       doc.fillColor('#000000');
     }
@@ -930,7 +957,10 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
 
     // Location line (if shown for grouped entries with different locations)
     if (location) {
-      doc.font(fonts.regular).fontSize(entryStyle.location.fontSize).fillColor(entryStyle.location.color ?? '#444444');
+      doc
+        .font(fonts.regular)
+        .fontSize(entryStyle.location.fontSize)
+        .fillColor(entryStyle.location.color ?? '#444444');
       doc.text(location, position.x, currentY, { width: position.width });
       doc.fillColor('#000000');
     }
@@ -962,7 +992,10 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
     });
 
     if (dateText) {
-      doc.font(fonts.italic).fontSize(entryStyle.company.fontSize).fillColor(entryStyle.company.color ?? '#444444');
+      doc
+        .font(fonts.italic)
+        .fontSize(entryStyle.company.fontSize)
+        .fillColor(entryStyle.company.color ?? '#444444');
       doc.text(dateText, position.x + position.width - rightWidth, currentY, { width: rightWidth, align: 'right' });
       doc.fillColor('#000000');
     }
