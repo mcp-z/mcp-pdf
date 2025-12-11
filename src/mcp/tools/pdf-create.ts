@@ -30,14 +30,14 @@ const borderSchema = z.object({
 });
 
 // Text base properties (shared between text and heading)
+// NOTE: Text items flow within parent groups - no x/y positioning.
+// Use groups for absolute positioning.
 const textBaseSchema = z.object({
   text: z.string().optional(),
   fontSize: z.number().optional(),
   bold: z.boolean().optional(),
   color: z.string().optional(),
-  x: z.number().optional(),
-  y: z.number().optional(),
-  align: z.enum(['left', 'center', 'right', 'justify']).optional(),
+  textAlign: z.enum(['left', 'center', 'right', 'justify']).optional(),
   indent: z.number().optional(),
   lineGap: z.number().optional(),
   paragraphGap: z.number().optional(),
@@ -228,9 +228,8 @@ export default function createTool(toolOptions: ToolOptions) {
   // Helper function to extract PDF text options from content items
   function extractTextOptions(item: Extract<BaseContentItem, { type: 'text' | 'heading' }>): PDFTextOptions {
     const options: PDFTextOptions = {};
-    if (item.x !== undefined) options.x = item.x;
-    if (item.y !== undefined) options.y = item.y;
-    if (item.align !== undefined) options.align = item.align;
+    // NOTE: Text items no longer have x/y - they flow within parent groups
+    if (item.textAlign !== undefined) options.align = item.textAlign;
     if (item.indent !== undefined) options.indent = item.indent;
     if (item.lineGap !== undefined) options.lineGap = item.lineGap;
     if (item.paragraphGap !== undefined) options.paragraphGap = item.paragraphGap;

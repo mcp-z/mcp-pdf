@@ -269,6 +269,15 @@ function createYogaNode(
 }
 
 /**
+ * Yoga tree node with children
+ */
+interface YogaTreeNode {
+  node: YogaNode;
+  content: LayoutContent;
+  children?: YogaTreeNode[];
+}
+
+/**
  * Build a Yoga node tree from content items
  */
 function buildYogaTree(
@@ -280,10 +289,10 @@ function buildYogaTree(
   content: LayoutContent,
   parentWidth: number,
   measureHeight: HeightMeasurer
-): { node: YogaNode; content: LayoutContent } {
+): YogaTreeNode {
   const node = createYogaNode(Yoga, FlexDirection, Justify, Align, Edge, content, parentWidth, measureHeight);
 
-  const children: { node: YogaNode; content: LayoutContent }[] = [];
+  const children: YogaTreeNode[] = [];
 
   if (content.children) {
     // Calculate available width for children
@@ -315,13 +324,13 @@ function buildYogaTree(
     }
   }
 
-  return { node, content, children } as { node: YogaNode; content: LayoutContent };
+  return { node, content, children: children.length > 0 ? children : undefined };
 }
 
 /**
  * Extract computed layout from Yoga node tree
  */
-function extractLayout(tree: { node: YogaNode; content: LayoutContent; children?: { node: YogaNode; content: LayoutContent }[] }, offsetX: number, offsetY: number): LayoutNode {
+function extractLayout(tree: YogaTreeNode, offsetX: number, offsetY: number): LayoutNode {
   const layout = tree.node.getComputedLayout();
 
   const result: LayoutNode = {
@@ -342,7 +351,7 @@ function extractLayout(tree: { node: YogaNode; content: LayoutContent; children?
 /**
  * Free all Yoga nodes in a tree
  */
-function freeYogaTree(tree: { node: YogaNode; children?: { node: YogaNode }[] }) {
+function freeYogaTree(tree: YogaTreeNode) {
   if (tree.children) {
     for (const child of tree.children) {
       freeYogaTree(child);
@@ -376,7 +385,7 @@ export async function calculateLayout(content: LayoutContent[], pageWidth: numbe
   }
   root.setFlexDirection(FlexDirection.Column);
 
-  const trees: { node: YogaNode; content: LayoutContent; children?: { node: YogaNode; content: LayoutContent }[] }[] = [];
+  const trees: (YogaTreeNode & { _absolute?: boolean })[] = [];
 
   // Build Yoga tree for each content item
   for (const item of content) {
@@ -385,7 +394,7 @@ export async function calculateLayout(content: LayoutContent[], pageWidth: numbe
       // Create a detached node just for measurement if needed
       const tree = buildYogaTree(Yoga, FlexDirection, Justify, Align, Edge, item, availableWidth, measureHeight);
       tree.node.calculateLayout(typeof item.width === 'number' ? item.width : availableWidth, undefined, Direction.LTR);
-      trees.push({ ...tree, _absolute: true } as (typeof trees)[0] & { _absolute?: boolean });
+      trees.push({ ...tree, _absolute: true });
       continue;
     }
 
@@ -399,10 +408,8 @@ export async function calculateLayout(content: LayoutContent[], pageWidth: numbe
 
   // Extract layouts
   const results: LayoutNode[] = [];
-  let _treeIndex = 0;
   for (const tree of trees) {
-    const treeWithAbsolute = tree as typeof tree & { _absolute?: boolean };
-    if (treeWithAbsolute._absolute) {
+    if (tree._absolute) {
       // Absolute positioned item - use its explicit position
       const item = tree.content;
       const layout = tree.node.getComputedLayout();
@@ -421,15 +428,10 @@ export async function calculateLayout(content: LayoutContent[], pageWidth: numbe
       // Flow item - use computed position offset by margins
       results.push(extractLayout(tree, margins.left, margins.top));
     }
-    _treeIndex++;
   }
 
   // Cleanup
   for (const tree of trees) {
-    const treeWithAbsolute = tree as typeof tree & { _absolute?: boolean };
-    if (!treeWithAbsolute._absolute) {
-      // Node was added to root, root will handle cleanup
-    }
     freeYogaTree(tree);
   }
   root.free();
