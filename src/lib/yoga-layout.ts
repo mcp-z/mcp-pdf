@@ -189,7 +189,8 @@ function createYogaNode(
   Edge: typeof import('yoga-layout').Edge,
   content: LayoutContent,
   parentWidth: number,
-  measureHeight: HeightMeasurer
+  measureHeight: HeightMeasurer,
+  parentDirection: 'column' | 'row' = 'column'
 ): YogaNode {
   const node = Yoga.Node.create();
 
@@ -261,11 +262,11 @@ function createYogaNode(
     }
   }
 
-  // Nodes without explicit width or flex should default to 100% width (like CSS block elements)
-  // This ensures content fills container properly
-  // Without this, nodes inside groups with alignItems="center" shrink to content width
+  // In column layouts, nodes without explicit width should fill available width (like CSS block elements)
+  // In row layouts, nodes should shrink-wrap to content (flexbox behavior)
+  // Without this for columns, nodes inside groups with alignItems="center" shrink to content width
   // However, flex children should use flex for sizing, not 100% width
-  if (content.width === undefined && content.flex === undefined) {
+  if (content.width === undefined && content.flex === undefined && parentDirection === 'column') {
     node.setWidthPercent(100);
   }
 
@@ -294,9 +295,10 @@ function buildYogaTree(
   Edge: typeof import('yoga-layout').Edge,
   content: LayoutContent,
   parentWidth: number,
-  measureHeight: HeightMeasurer
+  measureHeight: HeightMeasurer,
+  parentDirection: 'column' | 'row' = 'column'
 ): YogaTreeNode {
-  const node = createYogaNode(Yoga, FlexDirection, Justify, Align, Edge, content, parentWidth, measureHeight);
+  const node = createYogaNode(Yoga, FlexDirection, Justify, Align, Edge, content, parentWidth, measureHeight, parentDirection);
 
   const children: YogaTreeNode[] = [];
 
@@ -326,8 +328,11 @@ function buildYogaTree(
     const absoluteChildren: YogaTreeNode[] = [];
     let flexIndex = 0;
 
+    // Pass this node's direction to children so they know if they're in a row or column
+    const thisDirection = content.direction || 'column';
+
     for (const childContent of content.children) {
-      const childTree = buildYogaTree(Yoga, FlexDirection, Justify, Align, Edge, childContent, childParentWidth, measureHeight);
+      const childTree = buildYogaTree(Yoga, FlexDirection, Justify, Align, Edge, childContent, childParentWidth, measureHeight, thisDirection);
 
       // Children with position='absolute' are removed from flex layout
       if (childContent.position === 'absolute') {
