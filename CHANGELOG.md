@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **Text height measurement**: Fixed line height calculation using PDFKit's `currentLineHeight()` instead of magic number. This fixes content overflow in fixed-layout PDFs.
 - **Emoji measurement**: Use canvas `measureText()` for actual emoji dimensions instead of hardcoded multipliers.
+- **Emoji vertical positioning**: Fixed baseline offset calculation so emojis align centered with text instead of appearing too high. Changed formula from `(descent - ascent) / 2` to `(fontSize - height) / 2`.
 - **Overflow detection**: Added warning when fixed-layout content exceeds page height.
 
 ### Changed
