@@ -349,11 +349,18 @@ export default function createTool(toolOptions: ToolOptions) {
           if (!item.text) return 0;
           const fontSize = item.type === 'heading' ? ((item.fontSize as number) ?? 24) : ((item.fontSize as number) ?? 12);
           const fontName = item.type === 'heading' ? (item.bold !== false ? boldFont : regularFont) : item.bold ? boldFont : regularFont;
-          return measureTextHeight(doc, item.text as string, fontSize, fontName, emojiAvailable, {
+          let height = measureTextHeight(doc, item.text as string, fontSize, fontName, emojiAvailable, {
             width: availableWidth,
             indent: item.indent as number | undefined,
             lineGap: item.lineGap as number | undefined,
           });
+          // Add moveDown spacing to measured height (PDFKit's moveDown uses current line height)
+          const moveDown = item.moveDown as number | undefined;
+          if (moveDown !== undefined && moveDown > 0) {
+            doc.fontSize(fontSize).font(fontName);
+            height += moveDown * doc.currentLineHeight();
+          }
+          return height;
         }
         if (item.type === 'image') {
           return (item.height as number) ?? 100;
