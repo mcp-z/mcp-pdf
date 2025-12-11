@@ -8,7 +8,25 @@
 import type PDFKit from 'pdfkit';
 import { measureTextHeight } from '../content-measure.ts';
 import { renderField } from '../formatting.ts';
-import type { CompanyHeaderElement, CredentialData, CredentialListElement, DividerElement, EntryContentLineElement, EntryData, EntryHeaderElement, EntryListElement, FieldTemplates, GroupElement, HeaderElement, KeywordListElement, LanguageListElement, LayoutElement, ReferenceListElement, SectionTitleElement, TextElement } from '../ir/types.ts';
+import type {
+  CompanyHeaderElement,
+  CredentialData,
+  CredentialListElement,
+  DividerElement,
+  EntryContentLineElement,
+  EntryData,
+  EntryHeaderElement,
+  EntryListElement,
+  FieldTemplates,
+  GroupElement,
+  HeaderElement,
+  KeywordListElement,
+  LanguageListElement,
+  LayoutElement,
+  ReferenceListElement,
+  SectionTitleElement,
+  TextElement,
+} from '../ir/types.ts';
 import type { TypographyOptions } from '../types/typography.ts';
 import { calculateEntryColumnWidths, type MeasureContext } from './types.ts';
 
