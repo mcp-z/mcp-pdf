@@ -7,7 +7,7 @@
 
 import type PDFKit from 'pdfkit';
 import { renderField } from '../formatting.ts';
-import type { CredentialData, CredentialListElement, DividerElement, EntryData, EntryListElement, FieldTemplates, GroupElement, HeaderElement, KeywordListElement, LanguageListElement, ReferenceListElement, SectionTitleElement, SummaryHighlightsElement, TextElement } from '../ir/types.ts';
+import type { CompanyHeaderElement, CredentialData, CredentialListElement, DividerElement, EntryContentLineElement, EntryData, EntryHeaderElement, EntryListElement, FieldTemplates, GroupElement, HeaderElement, KeywordListElement, LanguageListElement, ReferenceListElement, SectionTitleElement, SummaryHighlightsElement, TextElement } from '../ir/types.ts';
 import { renderTextWithEmoji } from '../pdf-helpers.ts';
 import type { TypographyOptions } from '../types/typography.ts';
 import { type ComputedPosition, calculateEntryColumnWidths, type Page, type PageNode, type RenderContext } from './types.ts';
@@ -842,6 +842,190 @@ export function renderGroup(ctx: RenderContext, _element: GroupElement, children
 }
 
 // =============================================================================
+// Fine-Grained Entry Element Renderers (for better pagination)
+// =============================================================================
+
+/**
+ * Render entry header element (company/position/dates only, no content).
+ */
+export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElement, position: ComputedPosition): void {
+  const { doc, typography, fieldTemplates, emojiAvailable, fonts } = ctx;
+  const style = getResolvedStyle(typography);
+  const { entry: entryStyle } = typography;
+
+  const { leftWidth, rightWidth } = calculateEntryColumnWidths(position.width, entryStyle.date.width);
+
+  const entry = element.entry;
+  const entryData = entry as Record<string, unknown>;
+  const company = ensureString(entryData.name ?? entryData.organization ?? entryData.institution ?? entryData.entity);
+  const positionText = ensureString(entryData.position ?? entryData.studyType ?? (entryData.roles as string[])?.[0]);
+  const location = element.showLocation !== false ? ensureString(entryData.location) : '';
+
+  const dateText = renderField(fieldTemplates.dateRange, {
+    start: entry.startDate,
+    end: entry.endDate,
+  });
+
+  let currentY = position.y;
+
+  if (element.variant === 'education') {
+    // Education: Institution + Dates on first line, degree on second
+    doc.font(fonts.bold).fontSize(style.fontSize).fillColor('#000000');
+    const institutionHeight = doc.heightOfString(company, { width: leftWidth });
+    renderTextWithEmoji(doc, company, style.fontSize, fonts.bold, emojiAvailable, {
+      x: position.x,
+      y: currentY,
+      width: leftWidth,
+    });
+
+    if (dateText) {
+      doc.font(fonts.italic).fontSize(style.fontSize).fillColor(entryStyle.company.color ?? '#444444');
+      doc.text(dateText, position.x + position.width - rightWidth, currentY, { width: rightWidth, align: 'right' });
+      doc.fillColor('#000000');
+    }
+
+    currentY += institutionHeight + style.itemMarginBottom;
+
+    // Degree line
+    const degreeParts = renderField(fieldTemplates.degree, {
+      studyType: entry.studyType,
+      area: entry.area,
+    });
+    if (degreeParts) {
+      doc.font(fonts.italic).fontSize(style.fontSize).fillColor('#000000');
+      renderTextWithEmoji(doc, degreeParts, style.fontSize, fonts.italic, emojiAvailable, {
+        x: position.x,
+        y: currentY,
+        width: position.width,
+        lineGap: style.lineGap,
+      });
+      const degreeHeight = doc.heightOfString(degreeParts, { width: position.width, lineGap: style.lineGap });
+      currentY += degreeHeight + style.itemMarginBottom;
+    }
+
+    // GPA line
+    if (entry.score) {
+      doc.font(fonts.regular).fontSize(style.fontSize).fillColor(entryStyle.location.color ?? '#444444');
+      const gpaText = `GPA: ${entry.score}`;
+      doc.text(gpaText, position.x, currentY, { width: position.width, lineGap: style.lineGap });
+      doc.fillColor('#000000');
+    }
+  } else if (element.isGroupedPosition) {
+    // Grouped work entry: Position + Dates (company is in separate CompanyHeaderElement)
+    doc.font(fonts.italic).fontSize(entryStyle.position.fontSize).fillColor('#000000');
+    const positionHeight = doc.heightOfString(positionText, { width: leftWidth });
+    renderTextWithEmoji(doc, positionText, entryStyle.position.fontSize, fonts.italic, emojiAvailable, {
+      x: position.x,
+      y: currentY,
+      width: leftWidth,
+    });
+
+    if (dateText) {
+      doc.font(fonts.italic).fontSize(entryStyle.company.fontSize).fillColor(entryStyle.company.color ?? '#444444');
+      doc.text(dateText, position.x + position.width - rightWidth, currentY, { width: rightWidth, align: 'right' });
+      doc.fillColor('#000000');
+    }
+
+    currentY += positionHeight;
+
+    // Location line (if shown for grouped entries with different locations)
+    if (location) {
+      doc.font(fonts.regular).fontSize(entryStyle.location.fontSize).fillColor(entryStyle.location.color ?? '#444444');
+      doc.text(location, position.x, currentY, { width: position.width });
+      doc.fillColor('#000000');
+    }
+  } else {
+    // Single work entry: Company + Location on first line, Position + Dates on second
+    doc.font(fonts.bold).fontSize(entryStyle.position.fontSize).fillColor('#000000');
+    const companyHeight = company ? doc.heightOfString(company, { width: leftWidth }) : 0;
+    if (company) {
+      renderTextWithEmoji(doc, company, entryStyle.position.fontSize, fonts.bold, emojiAvailable, {
+        x: position.x,
+        y: currentY,
+        width: leftWidth,
+      });
+    }
+
+    if (location) {
+      doc.font(fonts.bold).fontSize(entryStyle.location.fontSize);
+      doc.text(location, position.x + position.width - rightWidth, currentY, { width: rightWidth, align: 'right' });
+    }
+
+    currentY += companyHeight + (entryStyle.position.marginBottom ?? 0);
+
+    // Position + Dates line
+    doc.font(fonts.italic).fontSize(entryStyle.position.fontSize).fillColor('#000000');
+    renderTextWithEmoji(doc, positionText, entryStyle.position.fontSize, fonts.italic, emojiAvailable, {
+      x: position.x,
+      y: currentY,
+      width: leftWidth,
+    });
+
+    if (dateText) {
+      doc.font(fonts.italic).fontSize(entryStyle.company.fontSize).fillColor(entryStyle.company.color ?? '#444444');
+      doc.text(dateText, position.x + position.width - rightWidth, currentY, { width: rightWidth, align: 'right' });
+      doc.fillColor('#000000');
+    }
+  }
+}
+
+/**
+ * Render entry content line element (single summary paragraph or bullet).
+ */
+export function renderEntryContentLine(ctx: RenderContext, element: EntryContentLineElement, position: ComputedPosition): void {
+  const { doc, typography, emojiAvailable, fonts } = ctx;
+  const style = getResolvedStyle(typography);
+  const { bullet } = typography;
+
+  // Position includes marginTop from element (already factored into height measurement)
+  const currentY = position.y + element.marginTop;
+
+  if (element.contentType === 'summary') {
+    doc.font(fonts.regular).fontSize(style.fontSize).fillColor('#000000');
+    renderTextWithEmoji(doc, element.text, style.fontSize, fonts.regular, emojiAvailable, {
+      x: position.x,
+      y: currentY,
+      width: position.width,
+      lineGap: style.lineGap,
+      align: 'justify',
+    });
+  } else {
+    // Bullet
+    const bulletWidth = position.width - bullet.indent;
+    const bulletText = `• ${element.text}`;
+    doc.font(fonts.regular).fontSize(style.fontSize).fillColor('#000000');
+    renderTextWithEmoji(doc, bulletText, style.fontSize, fonts.regular, emojiAvailable, {
+      x: position.x + bullet.indent,
+      y: currentY,
+      width: bulletWidth,
+      lineGap: style.lineGap,
+    });
+  }
+}
+
+/**
+ * Render company header element (for grouped entries).
+ */
+export function renderCompanyHeader(ctx: RenderContext, element: CompanyHeaderElement, position: ComputedPosition): void {
+  const { doc, typography, emojiAvailable, fonts } = ctx;
+  const { entry: entryStyle } = typography;
+
+  const { leftWidth, rightWidth } = calculateEntryColumnWidths(position.width, entryStyle.date.width);
+
+  doc.font(fonts.bold).fontSize(entryStyle.position.fontSize).fillColor('#000000');
+  renderTextWithEmoji(doc, element.company, entryStyle.position.fontSize, fonts.bold, emojiAvailable, {
+    x: position.x,
+    y: position.y,
+    width: leftWidth,
+  });
+
+  if (element.location) {
+    doc.font(fonts.bold).fontSize(entryStyle.location.fontSize);
+    doc.text(element.location, position.x + position.width - rightWidth, position.y, { width: rightWidth, align: 'right' });
+  }
+}
+
+// =============================================================================
 // Main Dispatch Functions
 // =============================================================================
 
@@ -884,6 +1068,15 @@ export function renderPageNode(ctx: RenderContext, node: PageNode): void {
       break;
     case 'group':
       renderGroup(ctx, element, children);
+      break;
+    case 'entry-header':
+      renderEntryHeader(ctx, element, position);
+      break;
+    case 'entry-content-line':
+      renderEntryContentLine(ctx, element, position);
+      break;
+    case 'company-header':
+      renderCompanyHeader(ctx, element, position);
       break;
     case 'template':
       // Template elements should be pre-processed
