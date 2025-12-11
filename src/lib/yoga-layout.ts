@@ -276,6 +276,8 @@ interface YogaTreeNode {
   node: YogaNode;
   content: LayoutContent;
   children?: YogaTreeNode[];
+  /** Absolute-positioned children that don't participate in flex layout */
+  absoluteChildren?: YogaTreeNode[];
 }
 
 /**
@@ -318,11 +320,29 @@ function buildYogaTree(
       }
     }
 
-    for (const [i, childContent] of content.children.entries()) {
+    const absoluteChildren: YogaTreeNode[] = [];
+    let flexIndex = 0;
+
+    for (const childContent of content.children) {
       const childTree = buildYogaTree(Yoga, FlexDirection, Justify, Align, Edge, childContent, childParentWidth, measureHeight);
-      node.insertChild(childTree.node, i);
-      children.push(childTree);
+
+      // Children with both x and y are absolute-positioned - don't add to flex layout
+      if (childContent.x !== undefined && childContent.y !== undefined) {
+        // Calculate layout independently for absolute children
+        childTree.node.calculateLayout(typeof childContent.width === 'number' ? childContent.width : childParentWidth, undefined, Yoga.DIRECTION_LTR);
+        absoluteChildren.push(childTree);
+      } else {
+        node.insertChild(childTree.node, flexIndex++);
+        children.push(childTree);
+      }
     }
+
+    return {
+      node,
+      content,
+      children: children.length > 0 ? children : undefined,
+      absoluteChildren: absoluteChildren.length > 0 ? absoluteChildren : undefined,
+    };
   }
 
   return { node, content, children: children.length > 0 ? children : undefined };
@@ -342,8 +362,37 @@ function extractLayout(tree: YogaTreeNode, offsetX: number, offsetY: number): La
     content: tree.content,
   };
 
+  const allChildren: LayoutNode[] = [];
+
+  // Add flex children with computed positions
   if (tree.children && tree.children.length > 0) {
-    result.children = tree.children.map((child) => extractLayout(child, result.x, result.y));
+    for (const child of tree.children) {
+      allChildren.push(extractLayout(child, result.x, result.y));
+    }
+  }
+
+  // Add absolute children with their explicit positions
+  if (tree.absoluteChildren && tree.absoluteChildren.length > 0) {
+    for (const child of tree.absoluteChildren) {
+      const childContent = child.content;
+      const childLayout = child.node.getComputedLayout();
+      allChildren.push({
+        x: childContent.x as number,
+        y: childContent.y as number,
+        width: childLayout.width,
+        height: childLayout.height,
+        content: childContent,
+        // Recursively extract any children of the absolute item
+        ...(child.children &&
+          child.children.length > 0 && {
+            children: child.children.map((c) => extractLayout(c, childContent.x as number, childContent.y as number)),
+          }),
+      });
+    }
+  }
+
+  if (allChildren.length > 0) {
+    result.children = allChildren;
   }
 
   return result;
@@ -355,6 +404,11 @@ function extractLayout(tree: YogaTreeNode, offsetX: number, offsetY: number): La
 function freeYogaTree(tree: YogaTreeNode) {
   if (tree.children) {
     for (const child of tree.children) {
+      freeYogaTree(child);
+    }
+  }
+  if (tree.absoluteChildren) {
+    for (const child of tree.absoluteChildren) {
       freeYogaTree(child);
     }
   }
