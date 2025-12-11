@@ -259,10 +259,11 @@ function createYogaNode(
     }
   }
 
-  // Leaf nodes default to 100% width (like CSS block elements)
+  // Nodes without explicit width or flex should default to 100% width (like CSS block elements)
   // This ensures content fills container properly
-  // Without this, leaf nodes inside groups get width=0 from Yoga defaults
-  if (content.type !== 'group' && !content.children && content.width === undefined) {
+  // Without this, nodes inside groups with alignItems="center" shrink to content width
+  // However, flex children should use flex for sizing, not 100% width
+  if (content.width === undefined && content.flex === undefined) {
     node.setWidthPercent(100);
   }
 
@@ -334,6 +335,23 @@ function buildYogaTree(
       } else {
         node.insertChild(childTree.node, flexIndex++);
         children.push(childTree);
+      }
+    }
+
+    // If parent has only absolute children and no explicit height, set minimum height
+    // based on the bounding box of absolute children so subsequent siblings don't overlap
+    if (absoluteChildren.length > 0 && children.length === 0 && content.height === undefined) {
+      let maxBottom = 0;
+      for (const absChild of absoluteChildren) {
+        const absContent = absChild.content;
+        const absLayout = absChild.node.getComputedLayout();
+        const bottom = (absContent.y as number) + absLayout.height;
+        if (bottom > maxBottom) {
+          maxBottom = bottom;
+        }
+      }
+      if (maxBottom > 0) {
+        node.setHeight(maxBottom);
       }
     }
 
