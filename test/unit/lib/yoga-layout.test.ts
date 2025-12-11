@@ -184,7 +184,12 @@ describe('yoga-layout', () => {
         },
       ];
 
-      const result = await calculateLayout(content, 612, 792, fixedHeightMeasurer);
+      const result = await calculateLayout(content, 612, 792, fixedHeightMeasurer, {
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+      });
 
       assert.equal(result.length, 1);
       assert.equal(result[0]?.x, 100);

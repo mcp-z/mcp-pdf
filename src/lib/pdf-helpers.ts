@@ -46,15 +46,10 @@ export function renderTextWithEmoji(doc: PDFKit.PDFDocument, text: string, fontS
 
     // PDFKit requires three-argument form for proper positioning with width
     if (options.x !== undefined || options.y !== undefined) {
-      // When y is specified but x is not, and align is used, default x to left margin
-      // for predictable centering within the content area. Without this, doc.x could
-      // be at an unexpected position after rendering shapes, causing misaligned text.
-      const x = options.x ?? (options.align ? doc.page.margins.left : undefined);
-      const y = options.y;
       const textOptions = { ...options };
       delete textOptions.x;
       delete textOptions.y;
-      doc.text(text, x, y, textOptions);
+      doc.text(text, options.x, options.y, textOptions);
     } else {
       doc.text(text, options);
     }
@@ -64,13 +59,15 @@ export function renderTextWithEmoji(doc: PDFKit.PDFDocument, text: string, fontS
   // Setup font for measurements
   doc.fontSize(fontSize).font(fontName);
 
-  // Determine starting position
-  const startX = options.x !== undefined ? options.x : options.align ? doc.page.margins.left : doc.x;
-  const startY = options.y !== undefined ? options.y : doc.y;
+  // Use provided positions or current document position
+  const startX = options.x ?? doc.x;
+  const startY = options.y ?? doc.y;
 
-  // Calculate available width
-  const availableWidth = options.width || doc.page.width - doc.page.margins.left - doc.page.margins.right;
-  const effectiveWidth = availableWidth - (options.indent || 0);
+  // Width must be provided for wrapping - no margin-based defaults
+  if (options.width === undefined) {
+    throw new Error('width is required for emoji text rendering');
+  }
+  const effectiveWidth = options.width;
 
   // Split text into text/emoji segments
   const segments = splitTextAndEmoji(text);
@@ -138,21 +135,6 @@ export function renderTextWithEmoji(doc: PDFKit.PDFDocument, text: string, fontS
     const line = lines[lineIndex];
     if (!line) continue;
     let currentX = startX;
-
-    // Apply indent to first line if specified
-    if (lineIndex === 0 && options.indent) {
-      currentX += options.indent;
-    }
-
-    // Handle alignment - center/right text within the available width
-    if (options.align === 'center' || options.align === 'right') {
-      const lineWidth = line.reduce((sum, word) => sum + word.width, 0);
-      if (options.align === 'center') {
-        currentX += (effectiveWidth - lineWidth) / 2;
-      } else if (options.align === 'right') {
-        currentX += effectiveWidth - lineWidth;
-      }
-    }
 
     // Render each word in the line
     for (let i = 0; i < line.length; i++) {
