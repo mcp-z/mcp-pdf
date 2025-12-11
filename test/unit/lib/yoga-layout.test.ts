@@ -325,4 +325,104 @@ describe('yoga-layout', () => {
       assert.equal(group.children[2]?.width, 150); // flex: 1
     });
   });
+
+  describe('row vs column layout behavior', () => {
+    it('row children without width/flex shrink-wrap to content', async () => {
+      // In a row, children without explicit width should shrink-wrap (NOT 100%)
+      // This prevents multiple items from overflowing
+      const content: LayoutContent[] = [
+        {
+          type: 'group',
+          direction: 'row',
+          width: 500,
+          gap: 10,
+          children: [
+            { type: 'group', width: 100, height: 50 }, // Fixed width
+            { type: 'group', height: 50 }, // No width - should shrink-wrap to 0
+            { type: 'group', width: 100, height: 50 }, // Fixed width
+          ],
+        },
+      ];
+
+      const result = await calculateLayout(content, 612, undefined, fixedHeightMeasurer, {
+        top: 0,
+        right: 56,
+        bottom: 0,
+        left: 56,
+      });
+
+      const group = result[0];
+      assert.ok(group?.children);
+      // First child: 100pt
+      assert.equal(group.children[0]?.width, 100);
+      // Second child: should NOT be 500pt (which would overflow)
+      // Should shrink-wrap to 0 since it has no content
+      assert.equal(group.children[1]?.width, 0);
+      // Third child: 100pt
+      assert.equal(group.children[2]?.width, 100);
+      // Total should be 100 + 0 + 100 + 20 (gap) = 220, well under 500
+    });
+
+    it('column children without width/flex expand to 100%', async () => {
+      // In a column, children without explicit width should fill available width
+      // This is CSS block-level element behavior
+      const content: LayoutContent[] = [
+        {
+          type: 'group',
+          direction: 'column',
+          width: 500,
+          children: [
+            { type: 'group', height: 50 }, // No width - should be 100% = 500
+            { type: 'group', height: 50 }, // No width - should be 100% = 500
+          ],
+        },
+      ];
+
+      const result = await calculateLayout(content, 612, undefined, fixedHeightMeasurer, {
+        top: 0,
+        right: 56,
+        bottom: 0,
+        left: 56,
+      });
+
+      const group = result[0];
+      assert.ok(group?.children);
+      // Both children should expand to full width
+      assert.equal(group.children[0]?.width, 500);
+      assert.equal(group.children[1]?.width, 500);
+    });
+
+    it('mixed row with explicit and flex children works correctly', async () => {
+      // LCARS-style layout: fixed + flex + fixed in a row
+      const content: LayoutContent[] = [
+        {
+          type: 'group',
+          direction: 'row',
+          width: 500,
+          gap: 10,
+          children: [
+            { type: 'group', width: 100, height: 50 }, // Fixed left column
+            { type: 'group', flex: 1, height: 50 }, // Flex middle
+            { type: 'group', width: 80, height: 50 }, // Fixed right column
+          ],
+        },
+      ];
+
+      const result = await calculateLayout(content, 612, undefined, fixedHeightMeasurer, {
+        top: 0,
+        right: 56,
+        bottom: 0,
+        left: 56,
+      });
+
+      const group = result[0];
+      assert.ok(group?.children);
+      // Fixed: 100pt
+      assert.equal(group.children[0]?.width, 100);
+      // Flex: 500 - 100 - 80 - 20 (2 gaps) = 300pt
+      assert.equal(group.children[1]?.width, 300);
+      // Fixed: 80pt
+      assert.equal(group.children[2]?.width, 80);
+    });
+  });
 });
