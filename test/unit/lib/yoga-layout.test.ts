@@ -176,6 +176,7 @@ describe('yoga-layout', () => {
       const content: LayoutContent[] = [
         {
           type: 'group',
+          position: 'absolute',
           x: 100,
           y: 200,
           width: 300,
