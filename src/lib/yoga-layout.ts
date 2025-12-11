@@ -549,10 +549,9 @@ export async function calculateGroupLayout(group: LayoutContent, containerWidth:
     x = containerWidth - layout.width;
   }
 
-  // Apply explicit y if provided
-  const y = group.y ?? 0;
-
-  const result = extractLayout(tree, x, y);
+  // Let extractLayout handle y offset via relative positioning logic
+  // (group.y will be applied as relativeOffsetY in extractLayout)
+  const result = extractLayout(tree, x, 0);
   freeYogaTree(tree);
 
   return result;
