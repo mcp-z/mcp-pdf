@@ -336,7 +336,7 @@ function transformSection(resume: ResumeSchema, config: SectionConfig): LayoutEl
     const type = contentElement.type;
 
     if (type === 'entry-list') {
-      // Entry list: group title with first entry
+      // Entry list: group title with first entry, then each remaining entry as separate node
       const entryList = contentElement as EntryListElement;
       const entries = entryList.entries;
 
@@ -353,18 +353,19 @@ function transformSection(resume: ResumeSchema, config: SectionConfig): LayoutEl
         };
         elements.push(atomicGroup);
 
-        if (entries.length > 1) {
-          const remainingEntryList: EntryListElement = {
+        // Each remaining entry as a separate node for better pagination
+        for (let i = 1; i < entries.length; i++) {
+          const singleEntryList: EntryListElement = {
             ...entryList,
-            entries: entries.slice(1) as EntryData[],
+            entries: [entries[i] as EntryData],
           };
-          elements.push(remainingEntryList);
+          elements.push(singleEntryList);
         }
       } else {
         elements.push(sectionTitleElement);
       }
     } else if (type === 'keyword-list') {
-      // Keyword list (skills, interests): group title with first category
+      // Keyword list (skills, interests): group title with first category, then each remaining as separate node
       const keywordList = contentElement as KeywordListElement;
       const items = keywordList.items;
 
@@ -381,12 +382,13 @@ function transformSection(resume: ResumeSchema, config: SectionConfig): LayoutEl
         };
         elements.push(atomicGroup);
 
-        if (items.length > 1) {
-          const remainingKeywordList: KeywordListElement = {
+        // Each remaining keyword category as a separate node for better pagination
+        for (let i = 1; i < items.length; i++) {
+          const singleKeywordList: KeywordListElement = {
             ...keywordList,
-            items: items.slice(1),
+            items: [items[i]],
           };
-          elements.push(remainingKeywordList);
+          elements.push(singleKeywordList);
         }
       } else {
         elements.push(sectionTitleElement);
@@ -406,7 +408,7 @@ function transformSection(resume: ResumeSchema, config: SectionConfig): LayoutEl
         elements.push(sectionTitleElement);
       }
     } else if (type === 'credential-list') {
-      // Credential list (awards, certificates, publications): group title with first item
+      // Credential list (awards, certificates, publications): group title with first item, then each remaining as separate node
       const credentialList = contentElement as CredentialListElement;
       const items = credentialList.items;
 
@@ -423,18 +425,19 @@ function transformSection(resume: ResumeSchema, config: SectionConfig): LayoutEl
         };
         elements.push(atomicGroup);
 
-        if (items.length > 1) {
-          const remainingCredentialList: CredentialListElement = {
+        // Each remaining credential as a separate node for better pagination
+        for (let i = 1; i < items.length; i++) {
+          const singleCredentialList: CredentialListElement = {
             ...credentialList,
-            items: items.slice(1),
+            items: [items[i]],
           };
-          elements.push(remainingCredentialList);
+          elements.push(singleCredentialList);
         }
       } else {
         elements.push(sectionTitleElement);
       }
     } else if (type === 'reference-list') {
-      // Reference list: group title with first reference
+      // Reference list: group title with first reference, then each remaining as separate node
       const referenceList = contentElement as ReferenceListElement;
       const items = referenceList.items;
 
@@ -451,12 +454,13 @@ function transformSection(resume: ResumeSchema, config: SectionConfig): LayoutEl
         };
         elements.push(atomicGroup);
 
-        if (items.length > 1) {
-          const remainingReferenceList: ReferenceListElement = {
+        // Each remaining reference as a separate node for better pagination
+        for (let i = 1; i < items.length; i++) {
+          const singleReferenceList: ReferenceListElement = {
             ...referenceList,
-            items: items.slice(1),
+            items: [items[i]],
           };
-          elements.push(remainingReferenceList);
+          elements.push(singleReferenceList);
         }
       } else {
         elements.push(sectionTitleElement);
