@@ -1,5 +1,5 @@
 import type PDFKit from 'pdfkit';
-import { renderEmojiToBuffer, splitTextAndEmoji } from './emoji-renderer.ts';
+import { measureEmoji, renderEmojiToBuffer, splitTextAndEmoji } from './emoji-renderer.ts';
 import { hasEmoji } from './fonts.ts';
 
 /**
@@ -81,10 +81,11 @@ export function renderTextWithEmoji(doc: PDFKit.PDFDocument, text: string, fontS
   const words: Array<{ type: 'text' | 'emoji'; content: string; width: number }> = [];
   for (const segment of segments) {
     if (segment.type === 'emoji') {
+      const emojiMetrics = measureEmoji(segment.content, fontSize);
       words.push({
         type: 'emoji',
         content: segment.content,
-        width: fontSize * 1.1, // Emoji width with spacing
+        width: emojiMetrics.width,
       });
     } else {
       // Split text segment into words
@@ -127,8 +128,10 @@ export function renderTextWithEmoji(doc: PDFKit.PDFDocument, text: string, fontS
     lines.push(currentLine);
   }
 
-  // Calculate line height
-  const lineHeight = fontSize * (options.lineGap !== undefined ? 1 + options.lineGap / fontSize : 1.15);
+  // Get actual line height from PDFKit (matches PDFKit's internal calculation)
+  // currentLineHeight(true) = font's natural height with built-in gap
+  // + lineGap = any extra spacing user requested
+  const lineHeight = doc.currentLineHeight(true) + (options.lineGap ?? 0);
 
   // Render each line
   let currentY = startY;
@@ -167,13 +170,14 @@ export function renderTextWithEmoji(doc: PDFKit.PDFDocument, text: string, fontS
         currentX += word.width;
       } else {
         // Render emoji as inline image
+        const emojiMetrics = measureEmoji(word.content, fontSize);
         const emojiBuffer = renderEmojiToBuffer(word.content, fontSize);
         if (emojiBuffer) {
-          // Position emoji slightly above baseline to center it
-          const emojiY = currentY - fontSize * 0.1;
+          // Position emoji using measured baseline offset
+          const emojiY = currentY + emojiMetrics.baselineOffset;
           doc.image(emojiBuffer, currentX, emojiY, {
-            width: fontSize,
-            height: fontSize,
+            width: emojiMetrics.width,
+            height: emojiMetrics.height,
           });
         }
         currentX += word.width;

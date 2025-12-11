@@ -23,8 +23,8 @@ const sectionConfigSchema = z.object({
 // Divider configuration schema
 const dividerConfigSchema = z.object({
   type: z.literal('divider'),
-  thickness: z.number().optional().describe('Line thickness in points'),
-  color: z.string().optional().describe('Line color (hex or named)'),
+  thickness: z.number().optional().describe('Line thickness in points (default: 0.5)'),
+  color: z.string().optional().describe('Line color (hex or named, default: #cccccc)'),
 });
 
 // Field templates schema - LiquidJS templates for field-level formatting
