@@ -41,6 +41,58 @@ export function registerEmojiFont(): boolean {
 }
 
 /**
+ * Emoji metrics returned from measurement
+ */
+export interface EmojiMetrics {
+  width: number;
+  height: number;
+  /** Offset from text baseline to center emoji vertically with text */
+  baselineOffset: number;
+}
+
+/**
+ * Measure emoji dimensions using canvas text metrics.
+ * Returns actual measured dimensions instead of guessing.
+ *
+ * @param emoji - The emoji character to measure
+ * @param fontSize - The font size in points
+ * @returns Metrics object with width, height, and baseline offset
+ */
+export function measureEmoji(emoji: string, fontSize: number): EmojiMetrics {
+  if (!registerEmojiFont()) {
+    // Fallback: emoji fonts are typically square at fontSize
+    return { width: fontSize, height: fontSize, baselineOffset: 0 };
+  }
+
+  try {
+    // Create a small canvas just for measurement
+    const canvas = createCanvas(1, 1);
+    const ctx = canvas.getContext('2d');
+    ctx.font = `${fontSize}px NotoColorEmoji`;
+
+    const metrics = ctx.measureText(emoji);
+
+    // Width from actual measurement
+    const width = metrics.width;
+
+    // Height from font metrics (ascent + descent)
+    // actualBoundingBoxAscent/Descent give the actual rendered bounds
+    const ascent = metrics.actualBoundingBoxAscent ?? fontSize * 0.8;
+    const descent = metrics.actualBoundingBoxDescent ?? fontSize * 0.2;
+    const height = ascent + descent;
+
+    // Baseline offset: how much to shift Y to center emoji with text
+    // Emojis are typically centered, so offset by half the difference from baseline
+    const baselineOffset = (descent - ascent) / 2;
+
+    return { width, height, baselineOffset };
+  } catch (_err) {
+    // Fallback to fontSize (emojis are square)
+    return { width: fontSize, height: fontSize, baselineOffset: 0 };
+  }
+}
+
+/**
  * Render a single emoji character to a PNG buffer
  *
  * @param emoji - The emoji character to render
@@ -53,11 +105,15 @@ export function renderEmojiToBuffer(emoji: string, size: number): Buffer | null 
   }
 
   try {
-    // Create canvas with some padding for emoji rendering
-    const padding = Math.ceil(size * 0.1);
-    const canvasSize = size + padding * 2;
+    // Measure actual emoji dimensions
+    const metrics = measureEmoji(emoji, size);
 
-    const canvas = createCanvas(canvasSize, canvasSize);
+    // Canvas size based on measured dimensions with small padding for anti-aliasing
+    const padding = 2; // Fixed 2px padding for anti-aliasing, not percentage-based
+    const canvasWidth = Math.ceil(metrics.width) + padding * 2;
+    const canvasHeight = Math.ceil(metrics.height) + padding * 2;
+
+    const canvas = createCanvas(canvasWidth, canvasHeight);
     const ctx = canvas.getContext('2d');
 
     // Set font and render emoji
@@ -66,7 +122,7 @@ export function renderEmojiToBuffer(emoji: string, size: number): Buffer | null 
     ctx.textAlign = 'center';
 
     // Center the emoji in the canvas
-    ctx.fillText(emoji, canvasSize / 2, canvasSize / 2);
+    ctx.fillText(emoji, canvasWidth / 2, canvasHeight / 2);
 
     return canvas.toBuffer('image/png');
   } catch (err) {

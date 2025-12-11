@@ -18,7 +18,7 @@ From practical invoices and resumes to creative artwork—if it's a PDF, you can
 - **Full Emoji & Unicode** - Color emoji as inline images, complete international text support
 - **Offline Ready** - Works without internet after first install, perfect for local LLMs
 - **Creative Freedom** - Colors, shapes, positioning—build anything from invoices to art
-- **Three Specialized Tools** - Simple text, advanced layouts, or JSON Resume format
+- **Two Specialized Tools** - Advanced layouts with flexbox, or JSON Resume format
 - **Zero Dependencies** - Pure JavaScript, no brew install, no system configuration
 - **Smart Context Management** - Returns resource URIs instead of embedding PDFs in context
 
@@ -103,9 +103,9 @@ Once installed, create your first PDF:
 
 ```typescript
 // Ask Claude:
-"Create a simple PDF with the text 'Hello World!'"
+"Create a PDF with the text 'Hello World!'"
 
-// Claude will use the pdf-create-simple tool
+// Claude will use the pdf-create tool
 // Result: server-pdf://abc123 (resource URI)
 
 // View the PDF:
@@ -182,10 +182,14 @@ Most users should just use the default. No configuration needed.
 Start simple with plain text:
 
 ```typescript
-pdf-create-simple({
+pdf-create({
   filename: "letter.pdf",
-  text: "Dear Customer,\n\nThank you for your business.\n\nBest regards,\nACME Corp",
-  title: "Customer Thank You"
+  title: "Customer Thank You",
+  content: [
+    { type: "text", text: "Dear Customer," },
+    { type: "text", text: "Thank you for your business.", moveDown: 1 },
+    { type: "text", text: "Best regards,\nACME Corp" }
+  ]
 })
 ```
 
@@ -523,17 +527,6 @@ pdf-create-resume({
 - `columns.right.sections` - Section source paths for right column
 
 Sections not assigned to a column default to the right column. The header always spans the full width at the top.
-
----
-
-### `pdf-create-simple`
-
-Create basic text PDFs quickly.
-
-**Parameters:**
-- `filename` (string, optional) - Filename for the PDF (defaults to "document.pdf")
-- `text` (string, required) - Text content
-- `title` (string, optional) - Document metadata title
 
 ---
 
