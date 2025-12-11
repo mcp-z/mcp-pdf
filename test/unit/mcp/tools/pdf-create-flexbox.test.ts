@@ -59,7 +59,7 @@ describe('Flexbox Layout Tests', () => {
                 border: { color: '#333', width: 1 },
                 padding: 10,
                 children: [
-                  { type: 'heading', text: 'LEFT COLUMN', align: 'center' },
+                  { type: 'heading', text: 'LEFT COLUMN', textAlign: 'center' },
                   { type: 'text', text: 'This is the left column content.' },
                 ],
               },
@@ -69,7 +69,7 @@ describe('Flexbox Layout Tests', () => {
                 border: { color: '#333', width: 1 },
                 padding: 10,
                 children: [
-                  { type: 'heading', text: 'RIGHT COLUMN', align: 'center' },
+                  { type: 'heading', text: 'RIGHT COLUMN', textAlign: 'center' },
                   { type: 'text', text: 'This is the right column content.' },
                 ],
               },
@@ -106,7 +106,7 @@ describe('Flexbox Layout Tests', () => {
                 flex: 2,
                 border: { color: '#333', width: 2 },
                 padding: 10,
-                children: [{ type: 'heading', text: 'WIDE (2)', align: 'center' }],
+                children: [{ type: 'heading', text: 'WIDE (2)', textAlign: 'center' }],
               },
               {
                 type: 'group',
@@ -137,7 +137,7 @@ describe('Flexbox Layout Tests', () => {
               {
                 type: 'heading',
                 text: 'NESTED LAYOUT EXAMPLE',
-                align: 'center',
+                textAlign: 'center',
               },
               {
                 type: 'group',
@@ -327,7 +327,7 @@ describe('Flexbox Layout Tests', () => {
             border: { color: '#333', width: 2 },
             padding: 20,
             children: [
-              { type: 'heading', text: 'CENTERED CARD', align: 'center' },
+              { type: 'heading', text: 'CENTERED CARD', textAlign: 'center' },
               { type: 'text', text: 'This card is centered on the page using align: "center"' },
             ],
           },
@@ -424,12 +424,12 @@ describe('Flexbox Layout Tests', () => {
       const result = await tool.handler({
         layout: { mode: 'fixed' },
         content: [
-          // Absolute positioned header
+          // Absolute positioned header (wrapped in group for positioning)
           {
-            type: 'heading',
-            text: 'MIXED POSITIONING',
+            type: 'group',
             x: 54,
             y: 50,
+            children: [{ type: 'heading', text: 'MIXED POSITIONING' }],
           },
           // Flex group positioned at specific y
           {
@@ -455,12 +455,12 @@ describe('Flexbox Layout Tests', () => {
               },
             ],
           },
-          // Another absolute element
+          // Another absolute element (wrapped in group for positioning)
           {
-            type: 'text',
-            text: 'Footer at absolute position',
+            type: 'group',
             x: 54,
             y: 700,
+            children: [{ type: 'text', text: 'Footer at absolute position' }],
           },
         ],
         filename: 'flexbox-mixed-positioning.pdf',
@@ -511,20 +511,16 @@ describe('Flexbox Layout Tests', () => {
           backgroundColor: '#fffef5',
         },
         content: [
-          // Header
+          // Header (wrapped in group for positioning)
           {
-            type: 'heading',
-            text: 'SUMMER FESTIVAL 2024',
-            align: 'center',
-            fontSize: 28,
-            bold: true,
+            type: 'group',
             y: 50,
+            children: [{ type: 'heading', text: 'SUMMER FESTIVAL 2024', textAlign: 'center', fontSize: 28, bold: true }],
           },
           {
-            type: 'text',
-            text: 'July 15-17 | Central Park',
-            align: 'center',
+            type: 'group',
             y: 90,
+            children: [{ type: 'text', text: 'July 15-17 | Central Park', textAlign: 'center' }],
           },
           // Two-column content
           {
@@ -540,7 +536,7 @@ describe('Flexbox Layout Tests', () => {
                 border: { color: '#2196f3', width: 2 },
                 padding: 15,
                 children: [
-                  { type: 'heading', text: 'MUSIC', align: 'center', fontSize: 18 },
+                  { type: 'heading', text: 'MUSIC', textAlign: 'center', fontSize: 18 },
                   { type: 'text', text: 'Live bands all weekend' },
                   { type: 'text', text: '• Main Stage' },
                   { type: 'text', text: '• Acoustic Tent' },
@@ -553,7 +549,7 @@ describe('Flexbox Layout Tests', () => {
                 border: { color: '#4caf50', width: 2 },
                 padding: 15,
                 children: [
-                  { type: 'heading', text: 'FOOD', align: 'center', fontSize: 18 },
+                  { type: 'heading', text: 'FOOD', textAlign: 'center', fontSize: 18 },
                   { type: 'text', text: '50+ local vendors' },
                   { type: 'text', text: '• Food Court' },
                   { type: 'text', text: '• Craft Beers' },
@@ -572,9 +568,9 @@ describe('Flexbox Layout Tests', () => {
             padding: 15,
             background: '#fff8e1',
             children: [
-              { type: 'heading', text: 'TICKETS', align: 'center', fontSize: 16 },
-              { type: 'text', text: 'Early Bird: $25', align: 'center' },
-              { type: 'text', text: 'At Door: $35', align: 'center' },
+              { type: 'heading', text: 'TICKETS', textAlign: 'center', fontSize: 16 },
+              { type: 'text', text: 'Early Bird: $25', textAlign: 'center' },
+              { type: 'text', text: 'At Door: $35', textAlign: 'center' },
             ],
           },
         ],
