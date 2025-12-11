@@ -377,7 +377,8 @@ function buildYogaTree(
     const gap = content.gap ?? 0;
 
     for (let i = 0; i < content.children.length; i++) {
-      const childContent = content.children[i]!;
+      const childContent = content.children[i];
+      if (!childContent) continue;
 
       // For row containers with flex children, estimate width for accurate height measurement
       let effectiveChildWidth = childParentWidth;
