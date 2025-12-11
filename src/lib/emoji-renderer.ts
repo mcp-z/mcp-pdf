@@ -81,9 +81,11 @@ export function measureEmoji(emoji: string, fontSize: number): EmojiMetrics {
     const descent = metrics.actualBoundingBoxDescent ?? fontSize * 0.2;
     const height = ascent + descent;
 
-    // Baseline offset: how much to shift Y to center emoji with text
-    // Emojis are typically centered, so offset by half the difference from baseline
-    const baselineOffset = (descent - ascent) / 2;
+    // Baseline offset: align emoji center with text center
+    // Emoji is centered in its buffer. Text Y in PDFKit is top of text box.
+    // For alignment: emojiY + height/2 = textY + fontSize/2
+    // So: baselineOffset = (fontSize - height) / 2
+    const baselineOffset = (fontSize - height) / 2;
 
     return { width, height, baselineOffset };
   } catch (_err) {
