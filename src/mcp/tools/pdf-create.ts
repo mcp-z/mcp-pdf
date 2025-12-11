@@ -395,7 +395,6 @@ export default function createTool(toolOptions: ToolOptions) {
 
             renderTextWithEmoji(doc, item.text ?? '', fontSize, fnt, emojiAvailable, options);
             if (item.color) doc.fillColor('black');
-            if (item.moveDown !== undefined) doc.moveDown(item.moveDown);
             break;
           }
           case 'heading': {
@@ -413,7 +412,6 @@ export default function createTool(toolOptions: ToolOptions) {
 
             renderTextWithEmoji(doc, item.text ?? '', fontSize, fnt, emojiAvailable, options);
             if (item.color) doc.fillColor('black');
-            if (item.moveDown !== undefined) doc.moveDown(item.moveDown);
             break;
           }
           case 'image': {
