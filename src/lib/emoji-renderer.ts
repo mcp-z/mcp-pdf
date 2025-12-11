@@ -81,11 +81,11 @@ export function measureEmoji(emoji: string, fontSize: number): EmojiMetrics {
     const descent = metrics.actualBoundingBoxDescent ?? fontSize * 0.2;
     const height = ascent + descent;
 
-    // Baseline offset: align emoji center with text center
-    // Emoji is centered in its buffer. Text Y in PDFKit is top of text box.
-    // For alignment: emojiY + height/2 = textY + fontSize/2
-    // So: baselineOffset = (fontSize - height) / 2
-    const baselineOffset = (fontSize - height) / 2;
+    // Baseline offset: use industry standard vertical-align: -0.125em
+    // This shifts the emoji DOWN by 12.5% of fontSize to align with text.
+    // Reference: Iconify, CSS icon alignment best practices
+    // https://iconify.design/docs/icon-components/react/inline.html
+    const baselineOffset = fontSize * 0.125;
 
     return { width, height, baselineOffset };
   } catch (_err) {
