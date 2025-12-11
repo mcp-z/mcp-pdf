@@ -8,7 +8,7 @@
 import type PDFKit from 'pdfkit';
 import { measureTextHeight } from '../content-measure.ts';
 import { renderField } from '../formatting.ts';
-import type { CredentialData, CredentialListElement, DividerElement, EntryData, EntryListElement, FieldTemplates, GroupElement, HeaderElement, KeywordListElement, LanguageListElement, LayoutElement, ReferenceListElement, SectionTitleElement, TextElement } from '../ir/types.ts';
+import type { CompanyHeaderElement, CredentialData, CredentialListElement, DividerElement, EntryContentLineElement, EntryData, EntryHeaderElement, EntryListElement, FieldTemplates, GroupElement, HeaderElement, KeywordListElement, LanguageListElement, LayoutElement, ReferenceListElement, SectionTitleElement, TextElement } from '../ir/types.ts';
 import type { TypographyOptions } from '../types/typography.ts';
 import { calculateEntryColumnWidths, type MeasureContext } from './types.ts';
 
@@ -239,6 +239,136 @@ function measureCompanyHeader(ctx: MeasureContext, company: string, location: st
   doc.font(typography.fonts.bold).fontSize(entryStyle.position.fontSize);
   const companyHeight = doc.heightOfString(company, { width: leftWidth });
   const locationHeight = location ? doc.heightOfString(location, { width: rightWidth }) : 0;
+  const line1Height = Math.max(companyHeight, locationHeight);
+
+  return line1Height + (entryStyle.position.marginBottom ?? 0) + style.blockMarginBottom;
+}
+
+// =============================================================================
+// Fine-Grained Entry Element Measurers (for better pagination)
+// =============================================================================
+
+/**
+ * Measure entry header element height (company/position/dates only, no content).
+ */
+export function measureEntryHeader(ctx: MeasureContext, element: EntryHeaderElement): number {
+  const { doc, typography, fieldTemplates, width } = ctx;
+  const style = getResolvedStyle(typography);
+  const { entry: entryStyle } = typography;
+
+  const { leftWidth, rightWidth } = calculateEntryColumnWidths(width, entryStyle.date.width);
+
+  const entry = element.entry;
+  const entryData = entry as Record<string, unknown>;
+  const company = ensureString(entryData.name ?? entryData.organization ?? entryData.institution ?? entryData.entity);
+  const position = ensureString(entryData.position ?? entryData.studyType ?? (entryData.roles as string[])?.[0]);
+  const location = element.showLocation !== false ? ensureString(entryData.location) : '';
+
+  const dateText = renderField(fieldTemplates.dateRange, {
+    start: entry.startDate,
+    end: entry.endDate,
+  });
+
+  let totalHeight = 0;
+
+  if (element.variant === 'education') {
+    // Education: Institution + Dates on first line, degree on second
+    doc.font(typography.fonts.bold).fontSize(style.fontSize);
+    const institutionHeight = doc.heightOfString(company, { width: leftWidth });
+    doc.font(typography.fonts.italic).fontSize(style.fontSize);
+    const dateHeight = dateText ? doc.heightOfString(dateText, { width: rightWidth }) : 0;
+    totalHeight += Math.max(institutionHeight, dateHeight) + style.itemMarginBottom;
+
+    // Degree line
+    const degreeParts = renderField(fieldTemplates.degree, {
+      studyType: entry.studyType,
+      area: entry.area,
+    });
+    if (degreeParts) {
+      doc.font(typography.fonts.italic).fontSize(style.fontSize);
+      totalHeight += doc.heightOfString(degreeParts, { width, lineGap: style.lineGap }) + style.itemMarginBottom;
+    }
+
+    // GPA line
+    if (entry.score) {
+      doc.font(typography.fonts.regular).fontSize(style.fontSize);
+      totalHeight += doc.heightOfString(`GPA: ${entry.score}`, { width, lineGap: style.lineGap }) + style.itemMarginBottom;
+    }
+  } else if (element.isGroupedPosition) {
+    // Grouped work entry: Position + Dates (company is in separate CompanyHeaderElement)
+    doc.font(typography.fonts.italic).fontSize(entryStyle.position.fontSize);
+    const positionHeight = doc.heightOfString(position, { width: leftWidth });
+    doc.font(typography.fonts.italic).fontSize(entryStyle.company.fontSize);
+    const dateHeight = dateText ? doc.heightOfString(dateText, { width: rightWidth }) : 0;
+    totalHeight += Math.max(positionHeight, dateHeight);
+
+    // Location line (if shown for grouped entries with different locations)
+    if (location) {
+      doc.font(typography.fonts.regular).fontSize(entryStyle.location.fontSize);
+      totalHeight += doc.heightOfString(location, { width });
+    }
+  } else {
+    // Single work entry: Company + Location on first line, Position + Dates on second
+    doc.font(typography.fonts.bold).fontSize(entryStyle.position.fontSize);
+    const companyHeight = company ? doc.heightOfString(company, { width: leftWidth }) : 0;
+    const locationHeight = location ? doc.heightOfString(location, { width: rightWidth }) : 0;
+    totalHeight += Math.max(companyHeight, locationHeight) + (entryStyle.position.marginBottom ?? 0);
+
+    // Position + Dates line
+    doc.font(typography.fonts.italic).fontSize(entryStyle.position.fontSize);
+    const positionHeight = doc.heightOfString(position, { width: leftWidth });
+    doc.font(typography.fonts.italic).fontSize(entryStyle.company.fontSize);
+    const dateHeight = dateText ? doc.heightOfString(dateText, { width: rightWidth }) : 0;
+    totalHeight += Math.max(positionHeight, dateHeight);
+  }
+
+  // Add small spacing after header before content
+  totalHeight += style.blockMarginBottom + 4;
+
+  return totalHeight;
+}
+
+/**
+ * Measure entry content line element height (single summary paragraph or bullet).
+ */
+export function measureEntryContentLine(ctx: MeasureContext, element: EntryContentLineElement): number {
+  const { doc, typography, width } = ctx;
+  const style = getResolvedStyle(typography);
+  const { bullet } = typography;
+
+  let totalHeight = element.marginTop;
+
+  if (element.contentType === 'summary') {
+    doc.font(typography.fonts.regular).fontSize(style.fontSize);
+    totalHeight += doc.heightOfString(element.text, { width, lineGap: style.lineGap });
+  } else {
+    // Bullet
+    const bulletWidth = width - bullet.indent;
+    doc.font(typography.fonts.regular).fontSize(style.fontSize);
+    totalHeight += doc.heightOfString(`• ${element.text}`, { width: bulletWidth, lineGap: style.lineGap });
+  }
+
+  // Add trailing margin for last item
+  if (element.position === 'last' || element.position === 'only') {
+    totalHeight += style.blockMarginBottom;
+  }
+
+  return totalHeight;
+}
+
+/**
+ * Measure company header element height (for grouped entries).
+ */
+export function measureCompanyHeaderElement(ctx: MeasureContext, element: CompanyHeaderElement): number {
+  const { doc, typography, width } = ctx;
+  const { entry: entryStyle } = typography;
+  const style = getResolvedStyle(typography);
+
+  const { leftWidth, rightWidth } = calculateEntryColumnWidths(width, entryStyle.date.width);
+
+  doc.font(typography.fonts.bold).fontSize(entryStyle.position.fontSize);
+  const companyHeight = doc.heightOfString(element.company, { width: leftWidth });
+  const locationHeight = element.location ? doc.heightOfString(element.location, { width: rightWidth }) : 0;
   const line1Height = Math.max(companyHeight, locationHeight);
 
   return line1Height + (entryStyle.position.marginBottom ?? 0) + style.blockMarginBottom;
@@ -523,6 +653,12 @@ export function measureElement(ctx: MeasureContext, element: LayoutElement): num
       return measureReferenceList(ctx, element);
     case 'group':
       return measureGroup(ctx, element);
+    case 'entry-header':
+      return measureEntryHeader(ctx, element);
+    case 'entry-content-line':
+      return measureEntryContentLine(ctx, element);
+    case 'company-header':
+      return measureCompanyHeaderElement(ctx, element);
     case 'template':
       // Template elements require custom measurement based on rendered content
       // For now, return 0 - templates should be transformed before layout
