@@ -262,10 +262,9 @@ function createYogaNode(
     }
   }
 
-  // In column layouts, nodes without explicit width should fill available width (like CSS block elements)
-  // In row layouts, nodes should shrink-wrap to content (flexbox behavior)
-  // Without this for columns, nodes inside groups with alignItems="center" shrink to content width
-  // However, flex children should use flex for sizing, not 100% width
+  // Column children fill available width (CSS block behavior)
+  // Row children shrink-wrap to content (CSS flexbox behavior)
+  // Flex children use flex for sizing, not auto-width
   if (content.width === undefined && content.flex === undefined && parentDirection === 'column') {
     node.setWidthPercent(100);
   }
@@ -379,8 +378,7 @@ function buildYogaTree(
 function extractLayout(tree: YogaTreeNode, offsetX: number, offsetY: number): LayoutNode {
   const layout = tree.node.getComputedLayout();
 
-  // Apply relative x/y offsets (CSS-like behavior for relative positioning)
-  // Items in flow with x/y get those as offsets from computed position
+  // Apply relative x/y offsets from computed position
   const content = tree.content;
   const relativeOffsetX = content.position !== 'absolute' && typeof content.x === 'number' ? content.x : 0;
   const relativeOffsetY = content.position !== 'absolute' && typeof content.y === 'number' ? content.y : 0;
@@ -554,8 +552,6 @@ export async function calculateGroupLayout(group: LayoutContent, containerWidth:
     x = containerWidth - layout.width;
   }
 
-  // Let extractLayout handle y offset via relative positioning logic
-  // (group.y will be applied as relativeOffsetY in extractLayout)
   const result = extractLayout(tree, x, 0);
   freeYogaTree(tree);
 

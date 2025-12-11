@@ -280,8 +280,9 @@ function decomposeEntry(entry: EntryData, variant: 'work' | 'education', isFirst
   atomicChildren.push(headerElement);
 
   // First content line (if any) goes in atomic group to prevent orphaned header
-  if (contentLines.length > 0) {
-    atomicChildren.push(contentLines.shift()!);
+  const firstLine = contentLines.shift();
+  if (firstLine) {
+    atomicChildren.push(firstLine);
   }
 
   // Create the atomic group
