@@ -65,8 +65,6 @@ export function renderTextWithEmoji(doc: PDFKit.PDFDocument, text: string, fontS
   doc.fontSize(fontSize).font(fontName);
 
   // Determine starting position
-  // When y is specified but x is not, and align is used, default x to left margin
-  // for predictable centering within the content area.
   const startX = options.x !== undefined ? options.x : options.align ? doc.page.margins.left : doc.x;
   const startY = options.y !== undefined ? options.y : doc.y;
 

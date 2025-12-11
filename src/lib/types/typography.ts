@@ -1,6 +1,5 @@
 /**
  * Typography and styling types for resume PDF generation.
- * Adapted from pdf-resume reference with emoji support integration.
  */
 
 // =============================================================================
