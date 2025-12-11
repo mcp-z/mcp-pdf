@@ -259,9 +259,10 @@ function createYogaNode(
     }
   }
 
-  // Text/heading nodes default to 100% width (like CSS behavior)
-  // This ensures text fills container and uses internal alignment
-  if ((content.type === 'text' || content.type === 'heading') && content.width === undefined) {
+  // Leaf nodes default to 100% width (like CSS block elements)
+  // This ensures content fills container properly
+  // Without this, leaf nodes inside groups get width=0 from Yoga defaults
+  if (content.type !== 'group' && !content.children && content.width === undefined) {
     node.setWidthPercent(100);
   }
 
