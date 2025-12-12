@@ -422,7 +422,6 @@ describe('Flexbox Layout Tests', () => {
   describe('Mixed absolute + flex positioning', () => {
     it('absolute positioned items bypass flex layout', async () => {
       const result = await tool.handler({
-        layout: { mode: 'fixed' },
         content: [
           // Absolute positioned header (wrapped in group for positioning)
           {
@@ -506,7 +505,6 @@ describe('Flexbox Layout Tests', () => {
   describe('Complex real-world example: Flyer', () => {
     it('creates a two-column event flyer', async () => {
       const result = await tool.handler({
-        layout: { mode: 'fixed' },
         pageSetup: {
           backgroundColor: '#fffef5',
         },
