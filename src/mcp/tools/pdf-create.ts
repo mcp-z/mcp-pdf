@@ -63,6 +63,7 @@ const baseContentItemSchema = z.union([
     type: z.literal('image'),
     imagePath: z.string().describe('Path to image file'),
     position: z.enum(['relative', 'absolute']).optional().default('absolute').describe('Positioning mode (default: "absolute"). "absolute": left/top are exact page coordinates. "relative": left/top offset from document flow position.'),
+    page: z.number().int().min(1).optional().describe('Target page for absolute-positioned items (default: 1). Pages are created as needed. Ignored for relative items.'),
     left: z.number().optional().describe('Horizontal position in points (CSS-style). Exact position when position="absolute", offset when position="relative".'),
     top: z.number().optional().describe('Vertical position in points (CSS-style). Exact position when position="absolute", offset when position="relative".'),
     width: z.number().optional().describe('Image width in points (default: natural width)'),
@@ -71,6 +72,7 @@ const baseContentItemSchema = z.union([
   z.object({
     type: z.literal('rect'),
     position: z.enum(['relative', 'absolute']).optional().default('absolute').describe('Positioning mode (default: "absolute"). "absolute": left/top are exact page coordinates. "relative": left/top offset from document flow position.'),
+    page: z.number().int().min(1).optional().describe('Target page for absolute-positioned items (default: 1). Pages are created as needed. Ignored for relative items.'),
     left: z.number().describe('Horizontal position in points (CSS-style). Exact position when position="absolute", offset when position="relative".'),
     top: z.number().describe('Vertical position in points (CSS-style). Exact position when position="absolute", offset when position="relative".'),
     width: z.number().describe('Width in points'),
@@ -82,6 +84,7 @@ const baseContentItemSchema = z.union([
   z.object({
     type: z.literal('circle'),
     position: z.enum(['relative', 'absolute']).optional().default('absolute').describe('Positioning mode (default: "absolute"). "absolute": left/top are exact page coordinates for center. "relative": left/top offset from document flow position.'),
+    page: z.number().int().min(1).optional().describe('Target page for absolute-positioned items (default: 1). Pages are created as needed. Ignored for relative items.'),
     left: z.number().describe('Center horizontal position in points (CSS-style). Exact position when position="absolute", offset when position="relative".'),
     top: z.number().describe('Center vertical position in points (CSS-style). Exact position when position="absolute", offset when position="relative".'),
     radius: z.number().describe('Radius in points'),
@@ -92,6 +95,7 @@ const baseContentItemSchema = z.union([
   z.object({
     type: z.literal('line'),
     position: z.enum(['relative', 'absolute']).optional().default('absolute').describe('Positioning mode (default: "absolute"). "absolute": coordinates are exact page positions. "relative": coordinates offset from document flow position.'),
+    page: z.number().int().min(1).optional().describe('Target page for absolute-positioned items (default: 1). Pages are created as needed. Ignored for relative items.'),
     x1: z.number().describe('Start X coordinate in points'),
     y1: z.number().describe('Start Y coordinate in points'),
     x2: z.number().describe('End X coordinate in points'),
@@ -113,6 +117,7 @@ const groupSchema: z.ZodType<GroupItem> = z.lazy(() =>
 
     // Positioning (CSS-style)
     position: z.enum(['relative', 'absolute']).optional().default('relative').describe('Positioning mode (default: "relative"). "relative": group flows in document order after previous content. "absolute": group placed at exact page coordinates (use this for fixed layouts like dashboards).'),
+    page: z.number().int().min(1).optional().describe('Target page for absolute-positioned groups (default: 1). Pages are created as needed. Ignored for relative groups.'),
     left: z.number().optional().describe('Horizontal position in points (CSS-style). Required when position="absolute". When position="relative": optional offset from flow position.'),
     top: z.number().optional().describe('Vertical position in points (CSS-style). Required when position="absolute". When position="relative": optional offset from flow position.'),
 
@@ -144,6 +149,7 @@ const groupSchema: z.ZodType<GroupItem> = z.lazy(() =>
 interface GroupItem {
   type: 'group';
   position?: 'relative' | 'absolute';
+  page?: number;
   left?: number;
   top?: number;
   width?: number | string;
@@ -169,10 +175,10 @@ type ContentItem = BaseContentItem | GroupItem;
 // Layout configuration schema
 const layoutSchema = z
   .object({
-    mode: z.enum(['document', 'fixed']).optional().default('document').describe("Layout mode: 'document' = auto page breaks (default), 'fixed' = no auto breaks (flyers/posters)"),
+    overflow: z.enum(['auto', 'warn']).optional().default('auto').describe("Overflow behavior: 'auto' = normal pagination (default), 'warn' = log warning if content exceeds final page"),
   })
   .optional()
-  .describe('Layout configuration for page break behavior');
+  .describe('Layout configuration for overflow handling');
 
 const inputSchema = z.object({
   filename: z.string().optional().describe('Optional logical filename (metadata only). Storage uses UUID. Defaults to "document.pdf".'),
@@ -215,7 +221,13 @@ const outputSchema = z.object({
 
 const config = {
   title: 'Create PDF',
-  description: 'Create a PDF document with text, images, shapes, and layout control. Supports Unicode + emoji fonts, backgrounds, vector shapes, and flexbox layout via groups.',
+  description: `Create a PDF document with text, images, shapes, and layout control. Supports Unicode + emoji fonts, backgrounds, vector shapes, and flexbox layout via groups.
+
+Positioning determines pagination:
+- position="relative" (default): Content flows in document order, auto-paginates
+- position="absolute": Content placed at exact coordinates on specified page
+
+Multi-page layouts: Use the "page" property on absolute items to target specific pages (e.g., page: 2). Pages are created as needed. Perfect for slide decks and dashboards.`,
   inputSchema,
   outputSchema: z.object({
     result: outputSchema,
@@ -269,7 +281,7 @@ export default function createTool(toolOptions: ToolOptions) {
 
   async function handler(args: Input): Promise<CallToolResult> {
     const { filename = 'document.pdf', title, author, font, layout, pageSetup, content } = args;
-    const _layoutMode = layout?.mode ?? 'document';
+    const overflowBehavior = layout?.overflow ?? 'auto';
 
     try {
       // Resolve page size from preset or custom dimensions
@@ -544,8 +556,8 @@ export default function createTool(toolOptions: ToolOptions) {
       // Calculate layout using Yoga
       const layoutNodes = await calculateLayout(layoutContent, pageWidth, pageHeight, measureHeight, margins, measureWidth);
 
-      // Check for content overflow in fixed layout mode
-      if (_layoutMode === 'fixed') {
+      // Check for content overflow when warn mode is enabled
+      if (overflowBehavior === 'warn') {
         const getMaxBottom = (node: LayoutNode): number => {
           let maxBottom = node.y + node.height;
           if (node.children) {
@@ -565,9 +577,52 @@ export default function createTool(toolOptions: ToolOptions) {
         }
       }
 
-      // Render all content using computed layout
-      for (const layoutNode of layoutNodes) {
-        renderLayoutNode(layoutNode);
+      // Helper to check if item has position property
+      function isPositioned(item: ContentItem): boolean {
+        return 'position' in item && item.position === 'absolute';
+      }
+
+      // Helper to get page number for an item (only meaningful for absolute items)
+      function getItemPage(item: ContentItem): number {
+        if (!isPositioned(item)) return 1; // Relative items render on page 1
+        if ('page' in item && typeof item.page === 'number') return item.page;
+        return 1; // Default page for absolute items
+      }
+
+      // Separate absolute and relative items
+      const absoluteNodes = layoutNodes.filter((node) => {
+        const item = node.content as ContentItem;
+        return isPositioned(item);
+      });
+      const relativeNodes = layoutNodes.filter((node) => {
+        const item = node.content as ContentItem;
+        return !isPositioned(item);
+      });
+
+      // Determine max page needed from absolute items
+      const maxPage = absoluteNodes.length > 0 ? Math.max(...absoluteNodes.map((node) => getItemPage(node.content as ContentItem))) : 1;
+
+      // Render content page by page
+      for (let pageNum = 1; pageNum <= maxPage; pageNum++) {
+        if (pageNum > 1) {
+          doc.addPage();
+          // Background is drawn via pageAdded event handler
+        }
+
+        // Render absolute items for this page
+        for (const node of absoluteNodes) {
+          const item = node.content as ContentItem;
+          if (getItemPage(item) === pageNum) {
+            renderLayoutNode(node);
+          }
+        }
+
+        // Render relative items on page 1 (they flow after absolute items)
+        if (pageNum === 1) {
+          for (const node of relativeNodes) {
+            renderLayoutNode(node);
+          }
+        }
       }
 
       doc.end();
