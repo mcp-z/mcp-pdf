@@ -5,9 +5,6 @@ import { hasEmoji } from './fonts.ts';
 import type { PDFTextOptions } from './pdf-helpers.ts';
 import type { LayoutContent } from './yoga-layout.ts';
 
-// Re-export font size constants for backward compatibility
-export { DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE };
-
 /**
  * Content measurement utilities for determining heights before rendering.
  *

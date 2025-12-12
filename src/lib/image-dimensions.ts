@@ -61,7 +61,7 @@ function getLocalImageDimensions(imagePath: string): ImageDimensions | null {
  * @param imagePath - Path or URL to image
  * @returns Dimensions or null if unavailable
  */
-export function getImageDimensions(imagePath: string): ImageDimensions | null {
+function getImageDimensions(imagePath: string): ImageDimensions | null {
   if (isUrl(imagePath)) {
     // Network images require explicit dimensions (React Native pattern)
     // Return null so caller knows dimensions must be provided
@@ -96,11 +96,6 @@ export function resolveImageDimensions(imagePath: string, explicitWidth?: number
 
   // Try to get intrinsic dimensions
   const intrinsic = getImageDimensions(imagePath);
-
-  // Both dimensions provided explicitly
-  if (explicitWidth !== undefined && explicitHeight !== undefined) {
-    return { width: explicitWidth, height: explicitHeight };
-  }
 
   // Only width provided - calculate height from aspect ratio
   if (explicitWidth !== undefined && intrinsic) {
