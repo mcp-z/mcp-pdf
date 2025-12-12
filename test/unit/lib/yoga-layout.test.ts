@@ -177,8 +177,8 @@ describe('yoga-layout', () => {
         {
           type: 'group',
           position: 'absolute',
-          x: 100,
-          y: 200,
+          left: 100,
+          top: 200,
           width: 300,
           height: 150,
         },
@@ -263,13 +263,13 @@ describe('yoga-layout', () => {
       assert.equal(result.x, 300); // Right-aligned in 500pt container
     });
 
-    it('preserves explicit y position', async () => {
+    it('preserves explicit top position', async () => {
       const group: LayoutContent = {
         type: 'group',
         width: 300,
         height: 100,
         align: 'center',
-        y: 150,
+        top: 150,
       };
 
       const result = await calculateGroupLayout(group, 600, fixedHeightMeasurer);

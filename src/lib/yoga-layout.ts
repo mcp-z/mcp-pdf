@@ -72,10 +72,10 @@ export interface LayoutContent {
   type: string;
   /** Position mode: 'relative' (default) stays in flow, 'absolute' removes from flow */
   position?: 'relative' | 'absolute';
-  /** X position - absolute coord if position='absolute', offset from flow position otherwise */
-  x?: number;
-  /** Y position - absolute coord if position='absolute', offset from flow position otherwise */
-  y?: number;
+  /** Horizontal position (CSS-style) - absolute coord if position='absolute', offset from flow position otherwise */
+  left?: number;
+  /** Vertical position (CSS-style) - absolute coord if position='absolute', offset from flow position otherwise */
+  top?: number;
   /** Flexbox properties */
   direction?: 'column' | 'row';
   gap?: number;
@@ -407,7 +407,7 @@ function buildYogaTree(
       for (const absChild of absoluteChildren) {
         const absContent = absChild.content;
         const absLayout = absChild.node.getComputedLayout();
-        const bottom = (absContent.y as number) + absLayout.height;
+        const bottom = (absContent.top as number) + absLayout.height;
         if (bottom > maxBottom) {
           maxBottom = bottom;
         }
@@ -434,10 +434,10 @@ function buildYogaTree(
 function extractLayout(tree: YogaTreeNode, offsetX: number, offsetY: number): LayoutNode {
   const layout = tree.node.getComputedLayout();
 
-  // Apply relative x/y offsets from computed position
+  // Apply relative left/top offsets from computed position
   const content = tree.content;
-  const relativeOffsetX = content.position !== 'absolute' && typeof content.x === 'number' ? content.x : 0;
-  const relativeOffsetY = content.position !== 'absolute' && typeof content.y === 'number' ? content.y : 0;
+  const relativeOffsetX = content.position !== 'absolute' && typeof content.left === 'number' ? content.left : 0;
+  const relativeOffsetY = content.position !== 'absolute' && typeof content.top === 'number' ? content.top : 0;
 
   const result: LayoutNode = {
     x: offsetX + layout.left + relativeOffsetX,
@@ -462,15 +462,15 @@ function extractLayout(tree: YogaTreeNode, offsetX: number, offsetY: number): La
       const childContent = child.content;
       const childLayout = child.node.getComputedLayout();
       allChildren.push({
-        x: childContent.x as number,
-        y: childContent.y as number,
+        x: childContent.left as number,
+        y: childContent.top as number,
         width: childLayout.width,
         height: childLayout.height,
         content: childContent,
         // Recursively extract any children of the absolute item
         ...(child.children &&
           child.children.length > 0 && {
-            children: child.children.map((c) => extractLayout(c, childContent.x as number, childContent.y as number)),
+            children: child.children.map((c) => extractLayout(c, childContent.left as number, childContent.top as number)),
           }),
       });
     }
@@ -555,14 +555,14 @@ export async function calculateLayout(content: LayoutContent[], pageWidth: numbe
       const item = tree.content;
       const layout = tree.node.getComputedLayout();
       results.push({
-        x: item.x as number,
-        y: item.y as number,
+        x: item.left as number,
+        y: item.top as number,
         width: layout.width,
         height: layout.height,
         content: tree.content,
         ...(tree.children &&
           tree.children.length > 0 && {
-            children: tree.children.map((child) => extractLayout(child, item.x as number, item.y as number)),
+            children: tree.children.map((child) => extractLayout(child, item.left as number, item.top as number)),
           }),
       });
     } else {

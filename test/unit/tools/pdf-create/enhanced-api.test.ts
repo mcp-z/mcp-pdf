@@ -5,10 +5,10 @@ import { hasEmoji, setupFonts } from '../../../../src/lib/fonts.ts';
 import { type PDFTextOptions, renderTextWithEmoji } from '../../../../src/lib/pdf-helpers.ts';
 
 type ContentItem =
-  | { type: 'text'; text: string; fontSize?: number; bold?: boolean; color?: string; x?: number; y?: number; width?: number; align?: string; oblique?: number | boolean; characterSpacing?: number; moveDown?: number }
-  | { type: 'heading'; text: string; fontSize?: number; bold?: boolean; color?: string; x?: number; y?: number; width?: number; align?: string; oblique?: number | boolean; characterSpacing?: number; moveDown?: number }
-  | { type: 'rect'; x: number; y: number; width: number; height: number; fillColor?: string; strokeColor?: string; lineWidth?: number }
-  | { type: 'circle'; x: number; y: number; radius: number; fillColor?: string; strokeColor?: string; lineWidth?: number }
+  | { type: 'text'; text: string; fontSize?: number; bold?: boolean; color?: string; left?: number; top?: number; width?: number; align?: string; oblique?: number | boolean; characterSpacing?: number; moveDown?: number }
+  | { type: 'heading'; text: string; fontSize?: number; bold?: boolean; color?: string; left?: number; top?: number; width?: number; align?: string; oblique?: number | boolean; characterSpacing?: number; moveDown?: number }
+  | { type: 'rect'; left: number; top: number; width: number; height: number; fillColor?: string; strokeColor?: string; lineWidth?: number }
+  | { type: 'circle'; left: number; top: number; radius: number; fillColor?: string; strokeColor?: string; lineWidth?: number }
   | { type: 'line'; x1: number; y1: number; x2: number; y2: number; strokeColor?: string; lineWidth?: number }
   | { type: 'pageBreak' };
 
@@ -86,8 +86,8 @@ async function createPdfWithEnhancements(options: {
         if (item.color) doc.fillColor(item.color);
 
         const options: PDFTextOptions = {};
-        if (item.x !== undefined) options.x = item.x;
-        if (item.y !== undefined) options.y = item.y;
+        if (item.left !== undefined) options.x = item.left;
+        if (item.top !== undefined) options.y = item.top;
         if (item.align !== undefined) options.align = item.align as 'left' | 'center' | 'right' | 'justify';
         if (item.width !== undefined) options.width = item.width;
         if (item.oblique !== undefined) options.oblique = item.oblique;
@@ -101,7 +101,7 @@ async function createPdfWithEnhancements(options: {
       }
 
       case 'rect': {
-        doc.rect(item.x, item.y, item.width, item.height);
+        doc.rect(item.left, item.top, item.width, item.height);
         if (item.fillColor && item.strokeColor) {
           doc.fillAndStroke(item.fillColor, item.strokeColor);
         } else if (item.fillColor) {
@@ -114,7 +114,7 @@ async function createPdfWithEnhancements(options: {
       }
 
       case 'circle': {
-        doc.circle(item.x, item.y, item.radius);
+        doc.circle(item.left, item.top, item.radius);
         if (item.fillColor && item.strokeColor) {
           doc.fillAndStroke(item.fillColor, item.strokeColor);
         } else if (item.fillColor) {
@@ -189,7 +189,7 @@ describe('Enhanced API - New Features', () => {
         size: [612, 792],
         margins: { top: 0, bottom: 0, left: 0, right: 0 },
       },
-      content: [{ type: 'text', text: 'Full bleed document with zero margins', x: 50, y: 50 }],
+      content: [{ type: 'text', text: 'Full bleed document with zero margins', left: 50, top: 50 }],
     });
 
     assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
@@ -217,19 +217,19 @@ describe('Enhanced API - New Features', () => {
     const pdfBuffer = await createPdfWithEnhancements({
       content: [
         // Rectangle header
-        { type: 'rect', x: 0, y: 0, width: 612, height: 80, fillColor: '#4A90E2' },
-        { type: 'heading', text: 'Shapes Demo', color: 'white', align: 'center', y: 30 },
+        { type: 'rect', left: 0, top: 0, width: 612, height: 80, fillColor: '#4A90E2' },
+        { type: 'heading', text: 'Shapes Demo', color: 'white', align: 'center', top: 30 },
 
         // Horizontal line
         { type: 'line', x1: 72, y1: 100, x2: 540, y2: 100, strokeColor: '#4A90E2', lineWidth: 2 },
 
         // Circles
-        { type: 'circle', x: 150, y: 200, radius: 30, fillColor: '#FF6B6B' },
-        { type: 'circle', x: 300, y: 200, radius: 30, fillColor: '#4ECDC4' },
-        { type: 'circle', x: 450, y: 200, radius: 30, fillColor: '#FFD93D' },
+        { type: 'circle', left: 150, top: 200, radius: 30, fillColor: '#FF6B6B' },
+        { type: 'circle', left: 300, top: 200, radius: 30, fillColor: '#4ECDC4' },
+        { type: 'circle', left: 450, top: 200, radius: 30, fillColor: '#FFD93D' },
 
         // Rectangle with border
-        { type: 'rect', x: 100, y: 300, width: 200, height: 100, fillColor: '#F0F0F0', strokeColor: '#333333', lineWidth: 3 },
+        { type: 'rect', left: 100, top: 300, width: 200, height: 100, fillColor: '#F0F0F0', strokeColor: '#333333', lineWidth: 3 },
       ],
     });
 
@@ -288,7 +288,7 @@ describe('Enhanced API - Agent Workflow Simulation', () => {
         type: 'text',
         text: line,
         width,
-        x,
+        left: x,
         align: 'center',
         fontSize: 14,
         moveDown: 0.5,
@@ -405,7 +405,7 @@ describe('Enhanced API - Space Journey Resume (Sci-Fi Style)', () => {
         bold: isHeading,
         color: '#B794F6', // Purple
         width,
-        x,
+        left: x,
         align: 'center',
         oblique: 15, // Italic slant for perspective
         characterSpacing: 0.3,
