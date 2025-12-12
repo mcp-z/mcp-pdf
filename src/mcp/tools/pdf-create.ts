@@ -62,15 +62,17 @@ const baseContentItemSchema = z.union([
   z.object({
     type: z.literal('image'),
     imagePath: z.string().describe('Path to image file'),
-    x: z.number().optional().describe('X position in points'),
-    y: z.number().optional().describe('Y position in points'),
+    position: z.enum(['relative', 'absolute']).optional().default('absolute').describe('Positioning mode (default: "absolute"). "absolute": x/y are exact page coordinates. "relative": x/y offset from document flow position.'),
+    x: z.number().optional().describe('X coordinate in points (exact position when position="absolute", offset when position="relative")'),
+    y: z.number().optional().describe('Y coordinate in points (exact position when position="absolute", offset when position="relative")'),
     width: z.number().optional().describe('Image width in points (default: natural width)'),
     height: z.number().optional().describe('Image height in points (default: natural height or aspect-ratio scaled)'),
   }),
   z.object({
     type: z.literal('rect'),
-    x: z.number().describe('X position in points'),
-    y: z.number().describe('Y position in points'),
+    position: z.enum(['relative', 'absolute']).optional().default('absolute').describe('Positioning mode (default: "absolute"). "absolute": x/y are exact page coordinates. "relative": x/y offset from document flow position.'),
+    x: z.number().describe('X coordinate in points (exact position when position="absolute", offset when position="relative")'),
+    y: z.number().describe('Y coordinate in points (exact position when position="absolute", offset when position="relative")'),
     width: z.number().describe('Width in points'),
     height: z.number().describe('Height in points'),
     fillColor: z.string().optional().describe('Fill color (default: no fill)'),
@@ -79,8 +81,9 @@ const baseContentItemSchema = z.union([
   }),
   z.object({
     type: z.literal('circle'),
-    x: z.number().describe('Center X position in points'),
-    y: z.number().describe('Center Y position in points'),
+    position: z.enum(['relative', 'absolute']).optional().default('absolute').describe('Positioning mode (default: "absolute"). "absolute": x/y are exact page coordinates. "relative": x/y offset from document flow position.'),
+    x: z.number().describe('Center X coordinate in points (exact position when position="absolute", offset when position="relative")'),
+    y: z.number().describe('Center Y coordinate in points (exact position when position="absolute", offset when position="relative")'),
     radius: z.number().describe('Radius in points'),
     fillColor: z.string().optional().describe('Fill color (default: no fill)'),
     strokeColor: z.string().optional().describe('Stroke color (default: no stroke)'),
@@ -88,10 +91,11 @@ const baseContentItemSchema = z.union([
   }),
   z.object({
     type: z.literal('line'),
-    x1: z.number().describe('Start X position in points'),
-    y1: z.number().describe('Start Y position in points'),
-    x2: z.number().describe('End X position in points'),
-    y2: z.number().describe('End Y position in points'),
+    position: z.enum(['relative', 'absolute']).optional().default('absolute').describe('Positioning mode (default: "absolute"). "absolute": coordinates are exact page positions. "relative": coordinates offset from document flow position.'),
+    x1: z.number().describe('Start X coordinate in points'),
+    y1: z.number().describe('Start Y coordinate in points'),
+    x2: z.number().describe('End X coordinate in points'),
+    y2: z.number().describe('End Y coordinate in points'),
     strokeColor: z.string().optional().describe('Line color (default: black)'),
     lineWidth: z.number().optional().describe('Line width in points (default: 1)'),
   }),
@@ -107,9 +111,10 @@ const groupSchema: z.ZodType<GroupItem> = z.lazy(() =>
   z.object({
     type: z.literal('group'),
 
-    // Position (optional - omit for flow)
-    x: z.number().optional().describe('Absolute x position. Omit for flow layout.'),
-    y: z.number().optional().describe('Absolute y position. Omit for flow layout.'),
+    // Positioning
+    position: z.enum(['relative', 'absolute']).optional().default('relative').describe('Positioning mode (default: "relative"). "relative": group participates in document flow, x/y are offsets. "absolute": x/y are exact page coordinates.'),
+    x: z.number().optional().describe('X position in points. When position="absolute": exact page coordinate. When position="relative": offset from flow position.'),
+    y: z.number().optional().describe('Y position in points. When position="absolute": exact page coordinate. When position="relative": offset from flow position.'),
 
     // Size
     width: sizeSchema.optional().describe('Width in points or percentage (e.g., "50%")'),
@@ -138,6 +143,7 @@ const groupSchema: z.ZodType<GroupItem> = z.lazy(() =>
 // Type for group item
 interface GroupItem {
   type: 'group';
+  position?: 'relative' | 'absolute';
   x?: number;
   y?: number;
   width?: number | string;
