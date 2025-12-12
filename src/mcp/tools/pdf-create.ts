@@ -32,10 +32,12 @@ const borderSchema = z.object({
 });
 
 // Text base properties (shared between text and heading)
-// NOTE: Text items flow within parent groups - no x/y positioning.
-// Use groups for absolute positioning.
 const textBaseSchema = z.object({
   text: z.string().optional().describe('Text content to render'),
+  position: z.enum(['relative', 'absolute']).optional().describe('Positioning mode (default: "relative"). "absolute": left/top are exact page coordinates. "relative": flows in document order.'),
+  page: z.number().int().min(1).optional().describe('Target page for absolute-positioned items (default: 1). Pages are created as needed. Ignored for relative items.'),
+  left: z.number().optional().describe('Horizontal position in points. Required when position="absolute".'),
+  top: z.number().optional().describe('Vertical position in points. Required when position="absolute".'),
   fontSize: z.number().optional().describe('Font size in points (default: 12 for text, 24 for heading)'),
   bold: z.boolean().optional().describe('Use bold font weight (default: false for text, true for heading)'),
   color: z.string().optional().describe('Text color as hex (e.g., "#333333") or named color (default: black)'),
@@ -62,7 +64,7 @@ const baseContentItemSchema = z.union([
   z.object({
     type: z.literal('image'),
     imagePath: z.string().describe('Path to image file'),
-    position: z.enum(['relative', 'absolute']).optional().default('absolute').describe('Positioning mode (default: "absolute"). "absolute": left/top are exact page coordinates. "relative": left/top offset from document flow position.'),
+    position: z.enum(['relative', 'absolute']).optional().describe('Positioning mode (default: "absolute"). "absolute": left/top are exact page coordinates. "relative": left/top offset from document flow position.'),
     page: z.number().int().min(1).optional().describe('Target page for absolute-positioned items (default: 1). Pages are created as needed. Ignored for relative items.'),
     left: z.number().optional().describe('Horizontal position in points (CSS-style). Exact position when position="absolute", offset when position="relative".'),
     top: z.number().optional().describe('Vertical position in points (CSS-style). Exact position when position="absolute", offset when position="relative".'),
@@ -71,7 +73,7 @@ const baseContentItemSchema = z.union([
   }),
   z.object({
     type: z.literal('rect'),
-    position: z.enum(['relative', 'absolute']).optional().default('absolute').describe('Positioning mode (default: "absolute"). "absolute": left/top are exact page coordinates. "relative": left/top offset from document flow position.'),
+    position: z.enum(['relative', 'absolute']).optional().describe('Positioning mode (default: "absolute"). "absolute": left/top are exact page coordinates. "relative": left/top offset from document flow position.'),
     page: z.number().int().min(1).optional().describe('Target page for absolute-positioned items (default: 1). Pages are created as needed. Ignored for relative items.'),
     left: z.number().describe('Horizontal position in points (CSS-style). Exact position when position="absolute", offset when position="relative".'),
     top: z.number().describe('Vertical position in points (CSS-style). Exact position when position="absolute", offset when position="relative".'),
@@ -83,7 +85,7 @@ const baseContentItemSchema = z.union([
   }),
   z.object({
     type: z.literal('circle'),
-    position: z.enum(['relative', 'absolute']).optional().default('absolute').describe('Positioning mode (default: "absolute"). "absolute": left/top are exact page coordinates for center. "relative": left/top offset from document flow position.'),
+    position: z.enum(['relative', 'absolute']).optional().describe('Positioning mode (default: "absolute"). "absolute": left/top are exact page coordinates for center. "relative": left/top offset from document flow position.'),
     page: z.number().int().min(1).optional().describe('Target page for absolute-positioned items (default: 1). Pages are created as needed. Ignored for relative items.'),
     left: z.number().describe('Center horizontal position in points (CSS-style). Exact position when position="absolute", offset when position="relative".'),
     top: z.number().describe('Center vertical position in points (CSS-style). Exact position when position="absolute", offset when position="relative".'),
@@ -94,7 +96,7 @@ const baseContentItemSchema = z.union([
   }),
   z.object({
     type: z.literal('line'),
-    position: z.enum(['relative', 'absolute']).optional().default('absolute').describe('Positioning mode (default: "absolute"). "absolute": coordinates are exact page positions. "relative": coordinates offset from document flow position.'),
+    position: z.enum(['relative', 'absolute']).optional().describe('Positioning mode (default: "absolute"). "absolute": coordinates are exact page positions. "relative": coordinates offset from document flow position.'),
     page: z.number().int().min(1).optional().describe('Target page for absolute-positioned items (default: 1). Pages are created as needed. Ignored for relative items.'),
     x1: z.number().describe('Start X coordinate in points'),
     y1: z.number().describe('Start Y coordinate in points'),
@@ -418,11 +420,21 @@ export default function createTool(toolOptions: ToolOptions) {
 
             const options = extractTextOptions(item);
 
-            // Use computed position from Yoga layout - pass in options so renderTextWithEmoji
-            // uses the 3-arg form of doc.text() which prevents auto-pagination
-            if (computedX !== undefined) options.x = computedX;
-            if (computedY !== undefined) options.y = computedY;
+            // For absolute-positioned text, use left/top directly; otherwise use Yoga-computed position
+            const textItem = item as { position?: string; left?: number; top?: number };
+            if (textItem.position === 'absolute' && textItem.left !== undefined && textItem.top !== undefined) {
+              options.x = textItem.left;
+              options.y = textItem.top;
+            } else {
+              if (computedX !== undefined) options.x = computedX;
+              if (computedY !== undefined) options.y = computedY;
+            }
             if (computedWidth !== undefined) options.width = computedWidth;
+
+            // DEBUG: Log text rendering position
+            if (process.env.DEBUG_PDF) {
+              console.log(`[DEBUG] Rendering text "${item.text?.slice(0, 20)}..." at x=${options.x}, y=${options.y}, width=${options.width}`);
+            }
 
             renderTextWithEmoji(doc, item.text ?? '', fontSize, fnt, emojiAvailable, options);
             if (item.color) doc.fillColor('black');
@@ -435,10 +447,20 @@ export default function createTool(toolOptions: ToolOptions) {
 
             const options = extractTextOptions(item);
 
-            // Use computed position from Yoga layout - pass in options so renderTextWithEmoji
-            // uses the 3-arg form of doc.text() which prevents auto-pagination
-            if (computedX !== undefined) options.x = computedX;
-            if (computedY !== undefined) options.y = computedY;
+            // For absolute-positioned headings, use left/top directly; otherwise use Yoga-computed position
+            const headingItem = item as { position?: string; left?: number; top?: number };
+            if (headingItem.position === 'absolute' && headingItem.left !== undefined && headingItem.top !== undefined) {
+              options.x = headingItem.left;
+              options.y = headingItem.top;
+            } else {
+              if (computedX !== undefined) options.x = computedX;
+              if (computedY !== undefined) options.y = computedY;
+            }
+
+            // DEBUG: Log heading rendering position
+            if (process.env.DEBUG_PDF) {
+              console.log(`[DEBUG] Rendering heading "${item.text?.slice(0, 20)}..." at x=${options.x}, y=${options.y}, width=${options.width}`);
+            }
             if (computedWidth !== undefined) options.width = computedWidth;
 
             renderTextWithEmoji(doc, item.text ?? '', fontSize, fnt, emojiAvailable, options);
@@ -592,12 +614,22 @@ export default function createTool(toolOptions: ToolOptions) {
       // Separate absolute and relative items
       const absoluteNodes = layoutNodes.filter((node) => {
         const item = node.content as ContentItem;
-        return isPositioned(item);
+        const result = isPositioned(item);
+        // DEBUG: Log item positioning
+        if (process.env.DEBUG_PDF) {
+          console.log(`[DEBUG] Item type=${item.type}, position=${'position' in item ? (item as { position?: string }).position : 'none'}, isAbsolute=${result}`);
+        }
+        return result;
       });
       const relativeNodes = layoutNodes.filter((node) => {
         const item = node.content as ContentItem;
         return !isPositioned(item);
       });
+
+      // DEBUG: Log counts
+      if (process.env.DEBUG_PDF) {
+        console.log(`[DEBUG] Total nodes: ${layoutNodes.length}, Absolute: ${absoluteNodes.length}, Relative: ${relativeNodes.length}`);
+      }
 
       // Determine max page needed from absolute items
       const maxPage = absoluteNodes.length > 0 ? Math.max(...absoluteNodes.map((node) => getItemPage(node.content as ContentItem))) : 1;
