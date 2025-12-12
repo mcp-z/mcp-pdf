@@ -2,7 +2,8 @@ import { getFileUri, type ToolModule, writeFile } from '@mcpeasy/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import PDFDocument from 'pdfkit';
 import { z } from 'zod';
-import { createWidthMeasurer, DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE, measureTextHeight } from '../../lib/content-measure.ts';
+import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_PAGE_SIZE, DEFAULT_TEXT_FONT_SIZE, PAGE_SIZES, type PageSizePreset } from '../../constants.ts';
+import { createWidthMeasurer, measureTextHeight } from '../../lib/content-measure.ts';
 import { registerEmojiFont } from '../../lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts, validateTextForFont } from '../../lib/fonts.ts';
 import { type PDFTextOptions, renderTextWithEmoji } from '../../lib/pdf-helpers.ts';
@@ -174,7 +175,10 @@ const inputSchema = z.object({
   layout: layoutSchema,
   pageSetup: z
     .object({
-      size: z.tuple([z.number(), z.number()]).optional(),
+      size: z
+        .union([z.enum(['LETTER', 'A4', 'LEGAL']), z.tuple([z.number(), z.number()])])
+        .optional()
+        .describe('Page size preset ("LETTER", "A4", "LEGAL") or custom [width, height] in points'),
       margins: z
         .object({
           top: z.number(),
@@ -245,11 +249,25 @@ export default function createTool(toolOptions: ToolOptions) {
     return options;
   }
 
+  /**
+   * Resolve page size from preset name or custom dimensions.
+   */
+  function resolvePageSize(size: PageSizePreset | [number, number] | undefined): { width: number; height: number } {
+    if (!size) return DEFAULT_PAGE_SIZE;
+    if (typeof size === 'string') {
+      return PAGE_SIZES[size];
+    }
+    return { width: size[0], height: size[1] };
+  }
+
   async function handler(args: Input): Promise<CallToolResult> {
     const { filename = 'document.pdf', title, author, font, layout, pageSetup, content } = args;
     const _layoutMode = layout?.mode ?? 'document';
 
     try {
+      // Resolve page size from preset or custom dimensions
+      const pageSize = resolvePageSize(pageSetup?.size as PageSizePreset | [number, number] | undefined);
+
       interface PDFDocOptions {
         info: {
           Title?: string;
@@ -271,13 +289,8 @@ export default function createTool(toolOptions: ToolOptions) {
           ...(author && { Author: author }),
           ...(filename && { Subject: filename }),
         },
+        size: [pageSize.width, pageSize.height],
       };
-      if (pageSetup?.size && pageSetup.size.length >= 2) {
-        const [width, height] = pageSetup.size;
-        if (width !== undefined && height !== undefined) {
-          docOptions.size = [width, height] as [number, number];
-        }
-      }
       if (pageSetup?.margins) docOptions.margins = pageSetup.margins;
       const doc = new PDFDocument(docOptions);
 
@@ -289,8 +302,7 @@ export default function createTool(toolOptions: ToolOptions) {
       });
 
       if (pageSetup?.backgroundColor) {
-        const pageSize: [number, number] = pageSetup?.size && pageSetup.size.length >= 2 ? [pageSetup.size[0] ?? 612, pageSetup.size[1] ?? 792] : [612, 792];
-        doc.rect(0, 0, pageSize[0], pageSize[1]).fill(pageSetup.backgroundColor);
+        doc.rect(0, 0, pageSize.width, pageSize.height).fill(pageSetup.backgroundColor);
         doc.fillColor('black'); // Reset fill color after background
       }
 
@@ -322,10 +334,9 @@ export default function createTool(toolOptions: ToolOptions) {
       const drawBackgroundOnPage = () => {
         actualPageCount++;
         if (pageSetup?.backgroundColor) {
-          const pageSize = pageSetup?.size || [612, 792];
           const x = doc.x;
           const y = doc.y;
-          doc.rect(0, 0, pageSize[0], pageSize[1]).fill(pageSetup.backgroundColor);
+          doc.rect(0, 0, pageSize.width, pageSize.height).fill(pageSetup.backgroundColor);
           doc.fillColor('black'); // Reset fill color after background
           doc.x = x;
           doc.y = y;

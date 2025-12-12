@@ -1,4 +1,5 @@
 import type PDFKit from 'pdfkit';
+import { WRAP_EPSILON } from '../constants.ts';
 import { measureEmoji, renderEmojiToBuffer, splitTextAndEmoji } from './emoji-renderer.ts';
 import { hasEmoji } from './fonts.ts';
 
@@ -102,13 +103,10 @@ export function renderTextWithEmoji(doc: PDFKit.PDFDocument, text: string, fontS
   let currentLine: Array<{ type: 'text' | 'emoji'; content: string; width: number }> = [];
   let currentLineWidth = 0;
 
-  // Epsilon for floating-point tolerance (must match content-measure.ts)
-  const epsilon = 0.5;
-
   for (const word of words) {
     const wordWidth = word.width;
 
-    if (currentLineWidth + wordWidth > effectiveWidth + epsilon && currentLine.length > 0) {
+    if (currentLineWidth + wordWidth > effectiveWidth + WRAP_EPSILON && currentLine.length > 0) {
       // Start a new line
       lines.push(currentLine);
       currentLine = [word];
