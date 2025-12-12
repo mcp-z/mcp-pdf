@@ -1,2 +1,3 @@
-export { default as pdfCreate } from './pdf-create.ts';
-export { default as pdfCreateResume } from './pdf-create-resume.ts';
+export { default as pdfDocument } from './pdf-document.ts';
+export { default as pdfLayout } from './pdf-layout.ts';
+export { default as pdfResume } from './pdf-resume.ts';

@@ -9,7 +9,7 @@ import { renderTextWithEmoji } from '../../../../src/lib/pdf-helpers.ts';
 // Use .tmp/ in package root per QUALITY.md rule T8
 const testOutputDir = join(process.cwd(), '.tmp', 'layout-tests');
 
-describe('Layout Options for pdf-create', () => {
+describe('Layout Options for pdf-layout', () => {
   it('renders text with custom alignment', async () => {
     await mkdir(testOutputDir, { recursive: true });
     const outputPath = join(testOutputDir, 'alignment-test.pdf');

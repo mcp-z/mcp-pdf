@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { mkdirSync } from 'fs';
 import { join } from 'path';
-import createPdfCreateResume, { type Input, type Output } from '../../../../src/mcp/tools/pdf-create-resume.ts';
+import createPdfResume, { type Input, type Output } from '../../../../src/mcp/tools/pdf-resume.ts';
 import type { ServerConfig } from '../../../../src/types.ts';
 
 // Use .tmp/ in package root per QUALITY.md rule T8
@@ -39,7 +39,7 @@ describe('Fine-grained pagination', () => {
 
   it('creates multi-page resume with fine-grained content flow', async () => {
     const config = createTestConfig();
-    const tool = createPdfCreateResume({ serverConfig: config });
+    const tool = createPdfResume({ serverConfig: config });
 
     // Create a resume with enough content to span multiple pages
     // This tests that:
@@ -186,7 +186,7 @@ describe('Fine-grained pagination', () => {
 
   it('handles resume with only summaries (no bullets)', async () => {
     const config = createTestConfig();
-    const tool = createPdfCreateResume({ serverConfig: config });
+    const tool = createPdfResume({ serverConfig: config });
 
     const input: Input = {
       filename: 'summary-only-pagination-test.pdf',
@@ -225,7 +225,7 @@ describe('Fine-grained pagination', () => {
 
   it('handles resume with only bullets (no summaries)', async () => {
     const config = createTestConfig();
-    const tool = createPdfCreateResume({ serverConfig: config });
+    const tool = createPdfResume({ serverConfig: config });
 
     const input: Input = {
       filename: 'bullets-only-pagination-test.pdf',
@@ -263,7 +263,7 @@ describe('Fine-grained pagination', () => {
 
   it('handles education entries with courses', async () => {
     const config = createTestConfig();
-    const tool = createPdfCreateResume({ serverConfig: config });
+    const tool = createPdfResume({ serverConfig: config });
 
     const input: Input = {
       filename: 'education-pagination-test.pdf',

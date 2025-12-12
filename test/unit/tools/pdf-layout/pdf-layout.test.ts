@@ -1,11 +1,11 @@
 import assert from 'assert';
 import { existsSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
-import createPdfCreate, { type Input, type Output } from '../../../../src/mcp/tools/pdf-create.ts';
+import createPdfLayout, { type Input, type Output } from '../../../../src/mcp/tools/pdf-layout.ts';
 import type { ServerConfig } from '../../../../src/types.ts';
 
 // Use .tmp/ in package root per QUALITY.md rule T8
-const testOutputDir = join(process.cwd(), '.tmp', 'pdf-create-tests');
+const testOutputDir = join(process.cwd(), '.tmp', 'pdf-layout-tests');
 const testStorageDir = join(testOutputDir, 'storage');
 
 /**
@@ -24,7 +24,7 @@ function createTestConfig(): ServerConfig {
   };
 }
 
-describe('pdf-create tool', () => {
+describe('pdf-layout tool', () => {
   before(() => {
     mkdirSync(testStorageDir, { recursive: true });
   });
@@ -37,9 +37,9 @@ describe('pdf-create tool', () => {
 
   it('creates PDF with text content', async () => {
     const config = createTestConfig();
-    const tool = createPdfCreate({ serverConfig: config });
+    const tool = createPdfLayout({ serverConfig: config });
 
-    assert.equal(tool.name, 'pdf-create', 'tool name should match');
+    assert.equal(tool.name, 'pdf-layout', 'tool name should match');
 
     const input: Input = {
       filename: 'test-document.pdf',
@@ -61,14 +61,14 @@ describe('pdf-create tool', () => {
 
   it('creates PDF with shapes', async () => {
     const config = createTestConfig();
-    const tool = createPdfCreate({ serverConfig: config });
+    const tool = createPdfLayout({ serverConfig: config });
 
     const input: Input = {
       filename: 'shapes.pdf',
       content: [
-        { type: 'rect', position: 'absolute', left: 50, top: 50, width: 100, height: 100, fillColor: 'blue' },
-        { type: 'circle', position: 'absolute', left: 200, top: 100, radius: 50, fillColor: 'red' },
-        { type: 'line', position: 'absolute', x1: 50, y1: 200, x2: 250, y2: 200, strokeColor: 'green' },
+        { type: 'rect', left: 50, top: 50, width: 100, height: 100, fillColor: 'blue' },
+        { type: 'circle', left: 200, top: 100, radius: 50, fillColor: 'red' },
+        { type: 'line', x1: 50, y1: 200, x2: 250, y2: 200, strokeColor: 'green' },
       ],
     };
 
@@ -81,7 +81,7 @@ describe('pdf-create tool', () => {
 
   it('creates PDF with page setup', async () => {
     const config = createTestConfig();
-    const tool = createPdfCreate({ serverConfig: config });
+    const tool = createPdfLayout({ serverConfig: config });
 
     const input: Input = {
       filename: 'custom-page.pdf',

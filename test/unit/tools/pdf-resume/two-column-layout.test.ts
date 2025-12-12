@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { existsSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
-import createPdfCreateResume, { type Input, type Output } from '../../../../src/mcp/tools/pdf-create-resume.ts';
+import createPdfResume, { type Input, type Output } from '../../../../src/mcp/tools/pdf-resume.ts';
 import type { ServerConfig } from '../../../../src/types.ts';
 
 // Use .tmp/ in package root per QUALITY.md rule T8
@@ -21,7 +21,7 @@ function createTestConfig(): ServerConfig {
   };
 }
 
-describe('pdf-create-resume two-column layout', () => {
+describe('pdf-resume two-column layout', () => {
   before(() => {
     mkdirSync(testStorageDir, { recursive: true });
   });
@@ -34,7 +34,7 @@ describe('pdf-create-resume two-column layout', () => {
 
   it('creates two-column resume with left sidebar', async () => {
     const config = createTestConfig();
-    const tool = createPdfCreateResume({ serverConfig: config });
+    const tool = createPdfResume({ serverConfig: config });
 
     const input: Input = {
       filename: 'two-column-resume.pdf',
@@ -98,7 +98,7 @@ describe('pdf-create-resume two-column layout', () => {
 
   it('validates sections exist in layout columns', async () => {
     const config = createTestConfig();
-    const tool = createPdfCreateResume({ serverConfig: config });
+    const tool = createPdfResume({ serverConfig: config });
 
     const input: Input = {
       resume: {
@@ -125,7 +125,7 @@ describe('pdf-create-resume two-column layout', () => {
 
   it('rejects duplicate sections across columns', async () => {
     const config = createTestConfig();
-    const tool = createPdfCreateResume({ serverConfig: config });
+    const tool = createPdfResume({ serverConfig: config });
 
     const input: Input = {
       resume: {
@@ -156,7 +156,7 @@ describe('pdf-create-resume two-column layout', () => {
 
   it('creates two-column layout with percentage widths', async () => {
     const config = createTestConfig();
-    const tool = createPdfCreateResume({ serverConfig: config });
+    const tool = createPdfResume({ serverConfig: config });
 
     const input: Input = {
       filename: 'two-column-percentage.pdf',
@@ -215,7 +215,7 @@ describe('pdf-create-resume two-column layout', () => {
 
   it('creates two-column layout with point widths', async () => {
     const config = createTestConfig();
-    const tool = createPdfCreateResume({ serverConfig: config });
+    const tool = createPdfResume({ serverConfig: config });
 
     const input: Input = {
       filename: 'two-column-points.pdf',
@@ -262,7 +262,7 @@ describe('pdf-create-resume two-column layout', () => {
 
   it('defaults to single-column when layout not specified', async () => {
     const config = createTestConfig();
-    const tool = createPdfCreateResume({ serverConfig: config });
+    const tool = createPdfResume({ serverConfig: config });
 
     const input: Input = {
       filename: 'single-column-default.pdf',
