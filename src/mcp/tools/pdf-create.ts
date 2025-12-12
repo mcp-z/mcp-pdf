@@ -431,11 +431,6 @@ export default function createTool(toolOptions: ToolOptions) {
             }
             if (computedWidth !== undefined) options.width = computedWidth;
 
-            // DEBUG: Log text rendering position
-            if (process.env.DEBUG_PDF) {
-              console.log(`[DEBUG] Rendering text "${item.text?.slice(0, 20)}..." at x=${options.x}, y=${options.y}, width=${options.width}`);
-            }
-
             renderTextWithEmoji(doc, item.text ?? '', fontSize, fnt, emojiAvailable, options);
             if (item.color) doc.fillColor('black');
             break;
@@ -455,11 +450,6 @@ export default function createTool(toolOptions: ToolOptions) {
             } else {
               if (computedX !== undefined) options.x = computedX;
               if (computedY !== undefined) options.y = computedY;
-            }
-
-            // DEBUG: Log heading rendering position
-            if (process.env.DEBUG_PDF) {
-              console.log(`[DEBUG] Rendering heading "${item.text?.slice(0, 20)}..." at x=${options.x}, y=${options.y}, width=${options.width}`);
             }
             if (computedWidth !== undefined) options.width = computedWidth;
 
@@ -614,22 +604,12 @@ export default function createTool(toolOptions: ToolOptions) {
       // Separate absolute and relative items
       const absoluteNodes = layoutNodes.filter((node) => {
         const item = node.content as ContentItem;
-        const result = isPositioned(item);
-        // DEBUG: Log item positioning
-        if (process.env.DEBUG_PDF) {
-          console.log(`[DEBUG] Item type=${item.type}, position=${'position' in item ? (item as { position?: string }).position : 'none'}, isAbsolute=${result}`);
-        }
-        return result;
+        return isPositioned(item);
       });
       const relativeNodes = layoutNodes.filter((node) => {
         const item = node.content as ContentItem;
         return !isPositioned(item);
       });
-
-      // DEBUG: Log counts
-      if (process.env.DEBUG_PDF) {
-        console.log(`[DEBUG] Total nodes: ${layoutNodes.length}, Absolute: ${absoluteNodes.length}, Relative: ${relativeNodes.length}`);
-      }
 
       // Determine max page needed from absolute items
       const maxPage = absoluteNodes.length > 0 ? Math.max(...absoluteNodes.map((node) => getItemPage(node.content as ContentItem))) : 1;
