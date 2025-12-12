@@ -5,6 +5,12 @@ import type { PDFTextOptions } from './pdf-helpers.ts';
 import type { LayoutContent } from './yoga-layout.ts';
 
 /**
+ * Default font sizes for content types
+ */
+export const DEFAULT_TEXT_FONT_SIZE = 12;
+export const DEFAULT_HEADING_FONT_SIZE = 24;
+
+/**
  * Content measurement utilities for determining heights before rendering.
  *
  * These functions measure content without modifying the document,
@@ -92,12 +98,13 @@ function measureLinesWithEmoji(doc: PDFKit.PDFDocument, text: string, fontSize: 
     }
   }
 
-  // Simulate line wrapping
+  // Simulate line wrapping with epsilon tolerance for floating-point precision
+  const epsilon = 0.5;
   let lineCount = 1;
   let currentLineWidth = 0;
 
   for (const word of words) {
-    if (currentLineWidth + word.width > effectiveWidth && currentLineWidth > 0) {
+    if (currentLineWidth + word.width > effectiveWidth + epsilon && currentLineWidth > 0) {
       lineCount++;
       currentLineWidth = word.width;
     } else {
@@ -179,12 +186,9 @@ export function createWidthMeasurer(doc: PDFKit.PDFDocument, regularFont: string
     const text = content.text as string;
     if (!text) return 0;
 
-    const fontSize = content.fontSize as number;
-    if (fontSize === undefined || fontSize === null) {
-      throw new Error(`fontSize is required for measuring ${content.type} content`);
-    }
+    const fontSize = content.type === 'heading' ? ((content.fontSize as number) ?? DEFAULT_HEADING_FONT_SIZE) : ((content.fontSize as number) ?? DEFAULT_TEXT_FONT_SIZE);
 
-    const fontName = content.bold ? boldFont : regularFont;
+    const fontName = content.type === 'heading' ? (content.bold !== false ? boldFont : regularFont) : content.bold ? boldFont : regularFont;
 
     return measureTextWidth(doc, text, fontSize, fontName, emojiAvailable);
   };

@@ -260,18 +260,19 @@ function createYogaNode(
       }
     }
 
-    const height = measureHeight(content, availableWidth);
-    if (height > 0) {
-      node.setHeight(height);
-    }
-
-    // For row children without explicit width, measure natural text width
-    // This is critical for justify: space-between to position items correctly
+    // For row children without explicit width, measure natural text width first
+    // This ensures height is measured at the correct width
     if (parentDirection === 'row' && content.width === undefined && content.flex === undefined && measureWidth) {
       const naturalWidth = measureWidth(content);
       if (naturalWidth > 0) {
         node.setWidth(naturalWidth);
+        availableWidth = naturalWidth;
       }
+    }
+
+    const height = measureHeight(content, availableWidth);
+    if (height > 0) {
+      node.setHeight(height);
     }
   }
 

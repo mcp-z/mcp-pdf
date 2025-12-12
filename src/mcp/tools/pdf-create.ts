@@ -2,7 +2,7 @@ import { getFileUri, type ToolModule, writeFile } from '@mcpeasy/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import PDFDocument from 'pdfkit';
 import { z } from 'zod';
-import { measureTextHeight } from '../../lib/content-measure.ts';
+import { createWidthMeasurer, DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE, measureTextHeight } from '../../lib/content-measure.ts';
 import { registerEmojiFont } from '../../lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts, validateTextForFont } from '../../lib/fonts.ts';
 import { type PDFTextOptions, renderTextWithEmoji } from '../../lib/pdf-helpers.ts';
@@ -347,7 +347,7 @@ export default function createTool(toolOptions: ToolOptions) {
       const measureHeight = (item: LayoutContent, availableWidth: number): number => {
         if (item.type === 'text' || item.type === 'heading') {
           if (!item.text) return 0;
-          const fontSize = item.type === 'heading' ? ((item.fontSize as number) ?? 24) : ((item.fontSize as number) ?? 12);
+          const fontSize = item.type === 'heading' ? ((item.fontSize as number) ?? DEFAULT_HEADING_FONT_SIZE) : ((item.fontSize as number) ?? DEFAULT_TEXT_FONT_SIZE);
           const fontName = item.type === 'heading' ? (item.bold !== false ? boldFont : regularFont) : item.bold ? boldFont : regularFont;
           let height = measureTextHeight(doc, item.text as string, fontSize, fontName, emojiAvailable, {
             width: availableWidth,
@@ -381,7 +381,7 @@ export default function createTool(toolOptions: ToolOptions) {
       function renderBaseItem(item: BaseContentItem, computedX?: number, computedY?: number, computedWidth?: number) {
         switch (item.type) {
           case 'text': {
-            const fontSize = item.fontSize ?? 12;
+            const fontSize = item.fontSize ?? DEFAULT_TEXT_FONT_SIZE;
             const fnt = item.bold ? boldFont : regularFont;
             if (item.color) doc.fillColor(item.color);
 
@@ -398,7 +398,7 @@ export default function createTool(toolOptions: ToolOptions) {
             break;
           }
           case 'heading': {
-            const fontSize = item.fontSize ?? 24;
+            const fontSize = item.fontSize ?? DEFAULT_HEADING_FONT_SIZE;
             const fnt = item.bold !== false ? boldFont : regularFont;
             if (item.color) doc.fillColor(item.color);
 
@@ -519,8 +519,11 @@ export default function createTool(toolOptions: ToolOptions) {
       // Convert content to LayoutContent for Yoga
       const layoutContent: LayoutContent[] = content.map((item) => item as unknown as LayoutContent);
 
+      // Width measurer for row layouts with space-between
+      const measureWidth = createWidthMeasurer(doc, regularFont, boldFont, emojiAvailable);
+
       // Calculate layout using Yoga
-      const layoutNodes = await calculateLayout(layoutContent, pageWidth, pageHeight, measureHeight, margins);
+      const layoutNodes = await calculateLayout(layoutContent, pageWidth, pageHeight, measureHeight, margins, measureWidth);
 
       // Check for content overflow in fixed layout mode
       if (_layoutMode === 'fixed') {
