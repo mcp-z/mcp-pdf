@@ -427,8 +427,8 @@ describe('Flexbox Layout Tests', () => {
           // Absolute positioned header (wrapped in group for positioning)
           {
             type: 'group',
-            x: 54,
-            y: 50,
+            left: 54,
+            top: 50,
             children: [{ type: 'heading', text: 'MIXED POSITIONING' }],
           },
           // Flex group positioned at specific y
@@ -436,8 +436,8 @@ describe('Flexbox Layout Tests', () => {
             type: 'group',
             direction: 'row',
             gap: 20,
-            x: 54,
-            y: 100,
+            left: 54,
+            top: 100,
             children: [
               {
                 type: 'group',
@@ -458,8 +458,8 @@ describe('Flexbox Layout Tests', () => {
           // Another absolute element (wrapped in group for positioning)
           {
             type: 'group',
-            x: 54,
-            y: 700,
+            left: 54,
+            top: 700,
             children: [{ type: 'text', text: 'Footer at absolute position' }],
           },
         ],
@@ -514,12 +514,12 @@ describe('Flexbox Layout Tests', () => {
           // Header (wrapped in group for positioning)
           {
             type: 'group',
-            y: 50,
+            top: 50,
             children: [{ type: 'heading', text: 'SUMMER FESTIVAL 2024', textAlign: 'center', fontSize: 28, bold: true }],
           },
           {
             type: 'group',
-            y: 90,
+            top: 90,
             children: [{ type: 'text', text: 'July 15-17 | Central Park', textAlign: 'center' }],
           },
           // Two-column content
@@ -527,8 +527,8 @@ describe('Flexbox Layout Tests', () => {
             type: 'group',
             direction: 'row',
             gap: 20,
-            x: 54,
-            y: 130,
+            left: 54,
+            top: 130,
             children: [
               {
                 type: 'group',
@@ -563,7 +563,7 @@ describe('Flexbox Layout Tests', () => {
             type: 'group',
             width: 300,
             align: 'center',
-            y: 400,
+            top: 400,
             border: { color: '#ff9800', width: 2 },
             padding: 15,
             background: '#fff8e1',
