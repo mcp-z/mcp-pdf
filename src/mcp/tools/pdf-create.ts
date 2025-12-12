@@ -193,7 +193,7 @@ const inputSchema = z.object({
       size: z
         .union([z.enum(['LETTER', 'A4', 'LEGAL']), z.tuple([z.number(), z.number()])])
         .optional()
-        .describe('Page size preset ("LETTER", "A4", "LEGAL") or custom [width, height] in points'),
+        .describe('Page size preset or custom [width, height] in points. ' + 'LETTER: 612×792pt (8.5×11in). A4: 595×842pt (210×297mm). LEGAL: 612×1008pt (8.5×14in). ' + 'Default: LETTER.'),
       margins: z
         .object({
           top: z.number(),
@@ -201,10 +201,18 @@ const inputSchema = z.object({
           left: z.number(),
           right: z.number(),
         })
-        .optional(),
-      backgroundColor: z.string().optional(),
+        .optional()
+        .describe(
+          'Page margins in points (default: 0 on all sides for full page access). ' +
+            'For documents with flowing text, recommended margins: ' +
+            'LETTER/LEGAL: {top:72, bottom:72, left:72, right:72} (1 inch). ' +
+            'A4: {top:56, bottom:56, left:56, right:56} (≈20mm). ' +
+            'For absolute-positioned layouts (dashboards, flyers), use 0 margins and position content explicitly.'
+        ),
+      backgroundColor: z.string().optional().describe('Page background color (hex like "#000000" or named color). Default: white.'),
     })
-    .optional(),
+    .optional()
+    .describe('Page configuration including size, margins, and background color.'),
   content: z.array(contentItemSchema),
 });
 
@@ -304,6 +312,9 @@ export default function createTool(toolOptions: ToolOptions) {
         };
       }
 
+      // Default margins to 0 for full page access (see schema description for recommended values)
+      const defaultMargins = { top: 0, bottom: 0, left: 0, right: 0 };
+
       const docOptions: PDFDocOptions = {
         info: {
           ...(title && { Title: title }),
@@ -311,8 +322,8 @@ export default function createTool(toolOptions: ToolOptions) {
           ...(filename && { Subject: filename }),
         },
         size: [pageSize.width, pageSize.height],
+        margins: pageSetup?.margins ?? defaultMargins,
       };
-      if (pageSetup?.margins) docOptions.margins = pageSetup.margins;
       const doc = new PDFDocument(docOptions);
 
       const chunks: Buffer[] = [];
