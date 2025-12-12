@@ -66,9 +66,9 @@ describe('pdf-create tool', () => {
     const input: Input = {
       filename: 'shapes.pdf',
       content: [
-        { type: 'rect', x: 50, y: 50, width: 100, height: 100, fillColor: 'blue' },
-        { type: 'circle', x: 200, y: 100, radius: 50, fillColor: 'red' },
-        { type: 'line', x1: 50, y1: 200, x2: 250, y2: 200, strokeColor: 'green' },
+        { type: 'rect', position: 'absolute', x: 50, y: 50, width: 100, height: 100, fillColor: 'blue' },
+        { type: 'circle', position: 'absolute', x: 200, y: 100, radius: 50, fillColor: 'red' },
+        { type: 'line', position: 'absolute', x1: 50, y1: 200, x2: 250, y2: 200, strokeColor: 'green' },
       ],
     };
 
