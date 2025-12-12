@@ -112,9 +112,9 @@ const groupSchema: z.ZodType<GroupItem> = z.lazy(() =>
     type: z.literal('group'),
 
     // Positioning
-    position: z.enum(['relative', 'absolute']).optional().default('relative').describe('Positioning mode (default: "relative"). "relative": group participates in document flow, x/y are offsets. "absolute": x/y are exact page coordinates.'),
-    x: z.number().optional().describe('X position in points. When position="absolute": exact page coordinate. When position="relative": offset from flow position.'),
-    y: z.number().optional().describe('Y position in points. When position="absolute": exact page coordinate. When position="relative": offset from flow position.'),
+    position: z.enum(['relative', 'absolute']).optional().default('relative').describe('Positioning mode (default: "relative"). "relative": group flows in document order after previous content. "absolute": group placed at exact x/y page coordinates (use this for fixed layouts like dashboards or LCARS displays).'),
+    x: z.number().optional().describe('X position in points. Required when position="absolute" for exact page placement. When position="relative": optional offset from flow position.'),
+    y: z.number().optional().describe('Y position in points. Required when position="absolute" for exact page placement. When position="relative": optional offset from flow position.'),
 
     // Size
     width: sizeSchema.optional().describe('Width in points or percentage (e.g., "50%")'),
@@ -131,7 +131,7 @@ const groupSchema: z.ZodType<GroupItem> = z.lazy(() =>
     align: z.enum(['start', 'center', 'end']).optional().describe('Self alignment within parent. Use align: "center" to center this group.'),
 
     // Visual
-    padding: paddingSchema.optional().describe('Inner spacing in points'),
+    padding: paddingSchema.optional().describe('Inner spacing between group border and content (CSS box model). NOT for positioning - use position="absolute" with x/y to place group at specific page coordinates.'),
     background: z.string().optional().describe('Background fill color'),
     border: borderSchema.optional().describe('Border with color and width'),
 

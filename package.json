@@ -84,10 +84,10 @@
     "@types/express": "^5.0.6",
     "@types/fontkit": "^2.0.8",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^25.0.0",
+    "@types/node": "^25.0.1",
     "@types/pdfkit": "^0.17.4",
     "json-schema-to-typescript": "^15.0.4",
-    "node-version-use": "^2.1.2",
+    "node-version-use": "^2.1.3",
     "ts-dev-stack": "^1.21.3",
     "tsds-config": "^0.2.0",
     "typescript": "^5.9.3"
