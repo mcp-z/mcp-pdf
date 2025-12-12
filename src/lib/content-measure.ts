@@ -1,14 +1,12 @@
 import type PDFKit from 'pdfkit';
+import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE, WRAP_EPSILON } from '../constants.ts';
 import { measureEmoji, splitTextAndEmoji } from './emoji-renderer.ts';
 import { hasEmoji } from './fonts.ts';
 import type { PDFTextOptions } from './pdf-helpers.ts';
 import type { LayoutContent } from './yoga-layout.ts';
 
-/**
- * Default font sizes for content types
- */
-export const DEFAULT_TEXT_FONT_SIZE = 12;
-export const DEFAULT_HEADING_FONT_SIZE = 24;
+// Re-export font size constants for backward compatibility
+export { DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE };
 
 /**
  * Content measurement utilities for determining heights before rendering.
@@ -99,12 +97,11 @@ function measureLinesWithEmoji(doc: PDFKit.PDFDocument, text: string, fontSize: 
   }
 
   // Simulate line wrapping with epsilon tolerance for floating-point precision
-  const epsilon = 0.5;
   let lineCount = 1;
   let currentLineWidth = 0;
 
   for (const word of words) {
-    if (currentLineWidth + word.width > effectiveWidth + epsilon && currentLineWidth > 0) {
+    if (currentLineWidth + word.width > effectiveWidth + WRAP_EPSILON && currentLineWidth > 0) {
       lineCount++;
       currentLineWidth = word.width;
     } else {

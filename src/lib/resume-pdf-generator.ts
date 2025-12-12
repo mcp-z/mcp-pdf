@@ -5,6 +5,7 @@
 import PDFDocument from 'pdfkit';
 // Import generated type from JSON Schema
 import type { ResumeSchema } from '../../assets/resume.d.ts';
+import { DEFAULT_PAGE_SIZE, PAGE_SIZES, type PageSizePreset, RESUME_DEFAULT_MARGINS } from '../constants.ts';
 import { registerEmojiFont } from './emoji-renderer.ts';
 import { hasEmoji, isPDFStandardFont, needsUnicodeFont, resolveFont } from './fonts.ts';
 import { isTwoColumnLayout, transformToResumeLayout } from './ir/layout-transform.ts';
@@ -56,6 +57,8 @@ export interface RenderOptions {
   font?: string;
   /** Layout configuration for spatial arrangement (single-column or two-column) */
   layout?: LayoutConfig;
+  /** Page size preset (default: LETTER) */
+  pageSize?: PageSizePreset;
 }
 
 /**
@@ -201,13 +204,16 @@ export async function generateResumePDFBuffer(resume: ResumeSchema, options: Ren
   // Apply layout transform for two-column support
   const resumeLayout = transformToResumeLayout(layoutDoc.elements, sectionsConfig.sections ?? [], options.layout);
 
+  // Resolve page size
+  const pageSize = options.pageSize ? PAGE_SIZES[options.pageSize] : DEFAULT_PAGE_SIZE;
+
   // Build ATS-friendly metadata from IR
   const { name, label, keywords } = layoutDoc.metadata;
   const skillKeywords = keywords?.join(', ') || '';
 
   const doc = new PDFDocument({
-    size: 'LETTER',
-    margins: { top: 50, bottom: 50, left: 54, right: 54 },
+    size: [pageSize.width, pageSize.height],
+    margins: RESUME_DEFAULT_MARGINS,
     // ATS & Accessibility improvements
     pdfVersion: '1.5',
     tagged: true,
@@ -229,9 +235,9 @@ export async function generateResumePDFBuffer(resume: ResumeSchema, options: Ren
 
   // Page configuration
   const pageConfig: PageConfig = {
-    width: 612, // LETTER width
-    height: 792, // LETTER height
-    margins: { top: 50, right: 54, bottom: 50, left: 54 },
+    width: pageSize.width,
+    height: pageSize.height,
+    margins: RESUME_DEFAULT_MARGINS,
   };
 
   // Create render context

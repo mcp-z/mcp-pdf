@@ -6,21 +6,17 @@
  * for each page.
  */
 
+import { DEFAULT_PAGE_SIZE, RESUME_DEFAULT_MARGINS } from '../../constants.ts';
 import type { GroupElement, LayoutElement } from '../ir/types.ts';
 import type { Page, PageConfig, PageNode, ResumeLayoutNode } from './types.ts';
 
 /**
- * Default page configuration (US Letter).
+ * Default page configuration (US Letter with resume margins).
  */
 export const DEFAULT_PAGE_CONFIG: PageConfig = {
-  width: 612, // 8.5"
-  height: 792, // 11"
-  margins: {
-    top: 50,
-    right: 54,
-    bottom: 50,
-    left: 54,
-  },
+  width: DEFAULT_PAGE_SIZE.width,
+  height: DEFAULT_PAGE_SIZE.height,
+  margins: RESUME_DEFAULT_MARGINS,
 };
 
 /**

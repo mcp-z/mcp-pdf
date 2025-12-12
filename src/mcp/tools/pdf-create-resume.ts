@@ -1,6 +1,7 @@
 import { getFileUri, type ToolModule, writeFile } from '@mcpeasy/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
+import type { PageSizePreset } from '../../constants.ts';
 import { generateResumePDFBuffer, type RenderOptions, type TypographyOptions } from '../../lib/resume-pdf-generator.ts';
 import { validateResume } from '../../lib/validator.ts';
 import type { ToolOptions } from '../../types.ts';
@@ -121,6 +122,7 @@ const inputSchema = z.object({
   filename: z.string().optional().describe('Optional logical filename (metadata only). Storage uses UUID. Defaults to "resume.pdf".'),
   resume: resumeInputSchema,
   font: z.string().optional().describe('Font for the PDF. Defaults to "auto" (system font detection). Built-ins are limited to ASCII; provide a path or URL for full Unicode.'),
+  pageSize: z.enum(['LETTER', 'A4', 'LEGAL']).optional().describe('Page size preset (default: "LETTER"). Use "A4" for international standard.'),
   sections: sectionsConfigSchema,
   layout: layoutSchema,
   styling: stylingSchema,
@@ -161,7 +163,7 @@ export default function createTool(toolOptions: ToolOptions) {
   }
 
   async function handler(args: Input): Promise<CallToolResult> {
-    const { filename = 'resume.pdf', resume, font, sections, layout, styling } = args;
+    const { filename = 'resume.pdf', resume, font, pageSize, sections, layout, styling } = args;
 
     try {
       // Validate resume against JSON Schema
@@ -211,6 +213,7 @@ export default function createTool(toolOptions: ToolOptions) {
       // Build render options
       const renderOptions: RenderOptions = {
         font,
+        pageSize: pageSize as PageSizePreset | undefined,
       };
 
       // Map sections config
