@@ -1,3 +1,17 @@
+/**
+ * pdf-resume tool - Professional resume PDF from JSON Resume format.
+ *
+ * Best for: Resumes and CVs using the JSON Resume standard.
+ * Uses its own specialized rendering system with section-based layout.
+ *
+ * Features:
+ * - JSON Resume format validation
+ * - Single-column or two-column layouts
+ * - LiquidJS templates for custom field formatting
+ * - Typography customization
+ * - Automatic section rendering based on data shape
+ */
+
 import { getFileUri, type ToolModule, writeFile } from '@mcpeasy/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
@@ -158,7 +172,7 @@ export default function createTool(toolOptions: ToolOptions) {
   // Validate configuration at startup - fail fast if HTTP/WS transport without baseUrl or port
   if (transport && transport.type === 'http') {
     if (!serverConfig?.baseUrl && !transport.port) {
-      throw new Error('pdf-create-resume: HTTP/WS transport requires either baseUrl in server config or port in transport config. This is a server configuration error - please provide --base-url or --port.');
+      throw new Error('pdf-resume: HTTP/WS transport requires either baseUrl in server config or port in transport config. This is a server configuration error - please provide --base-url or --port.');
     }
   }
 
@@ -371,7 +385,7 @@ export default function createTool(toolOptions: ToolOptions) {
   }
 
   return {
-    name: 'pdf-create-resume',
+    name: 'pdf-resume',
     config,
     handler,
   } satisfies ToolModule;

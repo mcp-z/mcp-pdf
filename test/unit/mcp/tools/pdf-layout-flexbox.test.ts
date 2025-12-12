@@ -1,5 +1,5 @@
 /**
- * Flexbox Layout Tests for pdf-create tool
+ * Flexbox Layout Tests for pdf-layout tool
  *
  * Tests the Yoga layout integration for flexbox-style layouts
  */
@@ -7,7 +7,7 @@
 import assert from 'assert';
 import { existsSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
-import createPdfCreateTool, { type Output } from '../../../../src/mcp/tools/pdf-create.ts';
+import createPdfLayoutTool, { type Output } from '../../../../src/mcp/tools/pdf-layout.ts';
 import type { ServerConfig } from '../../../../src/types.ts';
 
 // Use .tmp/ in package root per QUALITY.md rule T8
@@ -32,7 +32,7 @@ function createTestConfig(): ServerConfig {
 
 describe('Flexbox Layout Tests', () => {
   const config = createTestConfig();
-  const tool = createPdfCreateTool({ serverConfig: config });
+  const tool = createPdfLayoutTool({ serverConfig: config });
 
   before(() => {
     mkdirSync(testStorageDir, { recursive: true });

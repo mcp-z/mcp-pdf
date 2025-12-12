@@ -1,11 +1,11 @@
 import assert from 'assert';
 import { existsSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
-import createPdfCreateResume, { type Input, type Output } from '../../../../src/mcp/tools/pdf-create-resume.ts';
+import createPdfResume, { type Input, type Output } from '../../../../src/mcp/tools/pdf-resume.ts';
 import type { ServerConfig } from '../../../../src/types.ts';
 
 // Use .tmp/ in package root per QUALITY.md rule T8
-const testOutputDir = join(process.cwd(), '.tmp', 'pdf-create-resume-tests');
+const testOutputDir = join(process.cwd(), '.tmp', 'pdf-resume-tests');
 const testStorageDir = join(testOutputDir, 'storage');
 
 /**
@@ -24,7 +24,7 @@ function createTestConfig(): ServerConfig {
   };
 }
 
-describe('pdf-create-resume tool', () => {
+describe('pdf-resume tool', () => {
   before(() => {
     mkdirSync(testStorageDir, { recursive: true });
   });
@@ -37,9 +37,9 @@ describe('pdf-create-resume tool', () => {
 
   it('creates resume PDF from JSON Resume format', async () => {
     const config = createTestConfig();
-    const tool = createPdfCreateResume({ serverConfig: config });
+    const tool = createPdfResume({ serverConfig: config });
 
-    assert.equal(tool.name, 'pdf-create-resume', 'tool name should match');
+    assert.equal(tool.name, 'pdf-resume', 'tool name should match');
 
     const input: Input = {
       filename: 'resume.pdf',
@@ -78,7 +78,7 @@ describe('pdf-create-resume tool', () => {
 
   it('creates resume with custom styling', async () => {
     const config = createTestConfig();
-    const tool = createPdfCreateResume({ serverConfig: config });
+    const tool = createPdfResume({ serverConfig: config });
 
     const input: Input = {
       resume: {
@@ -105,7 +105,7 @@ describe('pdf-create-resume tool', () => {
 
   it('handles resume with all sections', async () => {
     const config = createTestConfig();
-    const tool = createPdfCreateResume({ serverConfig: config });
+    const tool = createPdfResume({ serverConfig: config });
 
     const input: Input = {
       resume: {
