@@ -102,11 +102,13 @@ export function renderTextWithEmoji(doc: PDFKit.PDFDocument, text: string, fontS
   let currentLine: Array<{ type: 'text' | 'emoji'; content: string; width: number }> = [];
   let currentLineWidth = 0;
 
+  // Epsilon for floating-point tolerance (must match content-measure.ts)
+  const epsilon = 0.5;
+
   for (const word of words) {
     const wordWidth = word.width;
 
-    // Check if adding this word would exceed the line width
-    if (currentLineWidth + wordWidth > effectiveWidth && currentLine.length > 0) {
+    if (currentLineWidth + wordWidth > effectiveWidth + epsilon && currentLine.length > 0) {
       // Start a new line
       lines.push(currentLine);
       currentLine = [word];
