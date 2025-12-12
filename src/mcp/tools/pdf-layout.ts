@@ -421,67 +421,71 @@ export default function createTool(toolOptions: ToolOptions) {
         }
       }
 
-      // Convert content to LayoutContent for Yoga
-      const layoutContent: LayoutContent[] = content.map((item) => item as unknown as LayoutContent);
-
-      // Width measurer for row layouts with space-between
-      const measureWidth = createWidthMeasurer(doc, regularFont, boldFont, emojiAvailable);
-
-      // Calculate layout using Yoga
-      const layoutNodes = await calculateLayout(layoutContent, pageWidth, pageHeight, measureHeight, margins, measureWidth);
-
-      // Check for content overflow when warn mode is enabled
-      if (overflowBehavior === 'warn') {
-        const getMaxBottom = (node: LayoutNode): number => {
-          let maxBottom = node.y + node.height;
-          if (node.children) {
-            for (const child of node.children) {
-              maxBottom = Math.max(maxBottom, getMaxBottom(child));
-            }
-          }
-          return maxBottom;
-        };
-
-        for (const node of layoutNodes) {
-          const bottom = getMaxBottom(node);
-          if (bottom > pageHeight) {
-            warnings.push(`Content exceeds page height by ${Math.ceil(bottom - pageHeight)}px. Consider reducing font sizes or removing content.`);
-            break;
-          }
-        }
-      }
-
       // Helper to get page number for an item
       function getItemPage(item: ContentItem): number {
         if ('page' in item && typeof item.page === 'number') return item.page;
         return 1;
       }
 
-      // Determine max page needed
-      const getMaxPageFromContent = (items: ContentItem[]): number => {
-        let maxPage = 1;
+      // Group content by page number
+      function groupContentByPage(items: ContentItem[]): Map<number, ContentItem[]> {
+        const pageGroups = new Map<number, ContentItem[]>();
         for (const item of items) {
-          maxPage = Math.max(maxPage, getItemPage(item));
-          if (item.type === 'group' && item.children) {
-            maxPage = Math.max(maxPage, getMaxPageFromContent(item.children));
-          }
+          const pageNum = getItemPage(item);
+          const existing = pageGroups.get(pageNum) ?? [];
+          existing.push(item);
+          pageGroups.set(pageNum, existing);
         }
-        return maxPage;
-      };
-      const maxPage = getMaxPageFromContent(content as ContentItem[]);
+        return pageGroups;
+      }
 
-      // Render content page by page
+      // Group content by page
+      const pageGroups = groupContentByPage(content as ContentItem[]);
+      const maxPage = Math.max(...pageGroups.keys(), 1);
+
+      // Width measurer for row layouts with space-between
+      const measureWidth = createWidthMeasurer(doc, regularFont, boldFont, emojiAvailable);
+
+      // Calculate layout and render per page
       for (let pageNum = 1; pageNum <= maxPage; pageNum++) {
         if (pageNum > 1) {
           doc.addPage();
         }
 
+        // Get content for this page
+        const pageContent = pageGroups.get(pageNum) ?? [];
+        if (pageContent.length === 0) continue;
+
+        // Convert to LayoutContent for Yoga
+        const layoutContent: LayoutContent[] = pageContent.map((item) => item as unknown as LayoutContent);
+
+        // Calculate layout for THIS page only
+        const layoutNodes = await calculateLayout(layoutContent, pageWidth, pageHeight, measureHeight, margins, measureWidth);
+
+        // Check for content overflow when warn mode is enabled
+        if (overflowBehavior === 'warn') {
+          const getMaxBottom = (node: LayoutNode): number => {
+            let maxBottom = node.y + node.height;
+            if (node.children) {
+              for (const child of node.children) {
+                maxBottom = Math.max(maxBottom, getMaxBottom(child));
+              }
+            }
+            return maxBottom;
+          };
+
+          for (const node of layoutNodes) {
+            const bottom = getMaxBottom(node);
+            if (bottom > pageHeight) {
+              warnings.push(`Page ${pageNum}: Content exceeds page height by ${Math.ceil(bottom - pageHeight)}px. Consider reducing font sizes or removing content.`);
+              break;
+            }
+          }
+        }
+
         // Render items for this page
         for (const node of layoutNodes) {
-          const item = node.content as ContentItem;
-          if (getItemPage(item) === pageNum) {
-            renderLayoutNode(node);
-          }
+          renderLayoutNode(node);
         }
       }
 
