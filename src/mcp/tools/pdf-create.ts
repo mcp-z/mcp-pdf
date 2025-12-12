@@ -62,17 +62,17 @@ const baseContentItemSchema = z.union([
   z.object({
     type: z.literal('image'),
     imagePath: z.string().describe('Path to image file'),
-    position: z.enum(['relative', 'absolute']).optional().default('absolute').describe('Positioning mode (default: "absolute"). "absolute": x/y are exact page coordinates. "relative": x/y offset from document flow position.'),
-    x: z.number().optional().describe('X coordinate in points (exact position when position="absolute", offset when position="relative")'),
-    y: z.number().optional().describe('Y coordinate in points (exact position when position="absolute", offset when position="relative")'),
+    position: z.enum(['relative', 'absolute']).optional().default('absolute').describe('Positioning mode (default: "absolute"). "absolute": left/top are exact page coordinates. "relative": left/top offset from document flow position.'),
+    left: z.number().optional().describe('Horizontal position in points (CSS-style). Exact position when position="absolute", offset when position="relative".'),
+    top: z.number().optional().describe('Vertical position in points (CSS-style). Exact position when position="absolute", offset when position="relative".'),
     width: z.number().optional().describe('Image width in points (default: natural width)'),
     height: z.number().optional().describe('Image height in points (default: natural height or aspect-ratio scaled)'),
   }),
   z.object({
     type: z.literal('rect'),
-    position: z.enum(['relative', 'absolute']).optional().default('absolute').describe('Positioning mode (default: "absolute"). "absolute": x/y are exact page coordinates. "relative": x/y offset from document flow position.'),
-    x: z.number().describe('X coordinate in points (exact position when position="absolute", offset when position="relative")'),
-    y: z.number().describe('Y coordinate in points (exact position when position="absolute", offset when position="relative")'),
+    position: z.enum(['relative', 'absolute']).optional().default('absolute').describe('Positioning mode (default: "absolute"). "absolute": left/top are exact page coordinates. "relative": left/top offset from document flow position.'),
+    left: z.number().describe('Horizontal position in points (CSS-style). Exact position when position="absolute", offset when position="relative".'),
+    top: z.number().describe('Vertical position in points (CSS-style). Exact position when position="absolute", offset when position="relative".'),
     width: z.number().describe('Width in points'),
     height: z.number().describe('Height in points'),
     fillColor: z.string().optional().describe('Fill color (default: no fill)'),
@@ -81,9 +81,9 @@ const baseContentItemSchema = z.union([
   }),
   z.object({
     type: z.literal('circle'),
-    position: z.enum(['relative', 'absolute']).optional().default('absolute').describe('Positioning mode (default: "absolute"). "absolute": x/y are exact page coordinates. "relative": x/y offset from document flow position.'),
-    x: z.number().describe('Center X coordinate in points (exact position when position="absolute", offset when position="relative")'),
-    y: z.number().describe('Center Y coordinate in points (exact position when position="absolute", offset when position="relative")'),
+    position: z.enum(['relative', 'absolute']).optional().default('absolute').describe('Positioning mode (default: "absolute"). "absolute": left/top are exact page coordinates for center. "relative": left/top offset from document flow position.'),
+    left: z.number().describe('Center horizontal position in points (CSS-style). Exact position when position="absolute", offset when position="relative".'),
+    top: z.number().describe('Center vertical position in points (CSS-style). Exact position when position="absolute", offset when position="relative".'),
     radius: z.number().describe('Radius in points'),
     fillColor: z.string().optional().describe('Fill color (default: no fill)'),
     strokeColor: z.string().optional().describe('Stroke color (default: no stroke)'),
@@ -111,10 +111,10 @@ const groupSchema: z.ZodType<GroupItem> = z.lazy(() =>
   z.object({
     type: z.literal('group'),
 
-    // Positioning
-    position: z.enum(['relative', 'absolute']).optional().default('relative').describe('Positioning mode (default: "relative"). "relative": group flows in document order after previous content. "absolute": group placed at exact x/y page coordinates (use this for fixed layouts like dashboards or LCARS displays).'),
-    x: z.number().optional().describe('X position in points. Required when position="absolute" for exact page placement. When position="relative": optional offset from flow position.'),
-    y: z.number().optional().describe('Y position in points. Required when position="absolute" for exact page placement. When position="relative": optional offset from flow position.'),
+    // Positioning (CSS-style)
+    position: z.enum(['relative', 'absolute']).optional().default('relative').describe('Positioning mode (default: "relative"). "relative": group flows in document order after previous content. "absolute": group placed at exact page coordinates (use this for fixed layouts like dashboards).'),
+    left: z.number().optional().describe('Horizontal position in points (CSS-style). Required when position="absolute". When position="relative": optional offset from flow position.'),
+    top: z.number().optional().describe('Vertical position in points (CSS-style). Required when position="absolute". When position="relative": optional offset from flow position.'),
 
     // Size
     width: sizeSchema.optional().describe('Width in points or percentage (e.g., "50%")'),
@@ -131,7 +131,7 @@ const groupSchema: z.ZodType<GroupItem> = z.lazy(() =>
     align: z.enum(['start', 'center', 'end']).optional().describe('Self alignment within parent. Use align: "center" to center this group.'),
 
     // Visual
-    padding: paddingSchema.optional().describe('Inner spacing between group border and content (CSS box model). NOT for positioning - use position="absolute" with x/y to place group at specific page coordinates.'),
+    padding: paddingSchema.optional().describe('Inner spacing between group border and content (CSS box model). NOT for positioning - use position="absolute" with left/top to place group at specific page coordinates.'),
     background: z.string().optional().describe('Background fill color'),
     border: borderSchema.optional().describe('Border with color and width'),
 
@@ -144,8 +144,8 @@ const groupSchema: z.ZodType<GroupItem> = z.lazy(() =>
 interface GroupItem {
   type: 'group';
   position?: 'relative' | 'absolute';
-  x?: number;
-  y?: number;
+  left?: number;
+  top?: number;
   width?: number | string;
   height?: number | string;
   direction?: 'column' | 'row';
@@ -438,8 +438,8 @@ export default function createTool(toolOptions: ToolOptions) {
             const dimensions = resolveImageDimensions(item.imagePath, item.width as number | undefined, item.height as number | undefined);
             const opts = { width: dimensions.width, height: dimensions.height };
 
-            const imgX = computedX ?? item.x;
-            const imgY = computedY ?? item.y;
+            const imgX = computedX ?? item.left;
+            const imgY = computedY ?? item.top;
 
             if (imgX !== undefined && imgY !== undefined) {
               doc.image(item.imagePath, imgX, imgY, opts);
@@ -449,8 +449,8 @@ export default function createTool(toolOptions: ToolOptions) {
             break;
           }
           case 'rect': {
-            const rectX = computedX ?? item.x;
-            const rectY = computedY ?? item.y;
+            const rectX = computedX ?? item.left;
+            const rectY = computedY ?? item.top;
             const rectWidth = computedWidth ?? item.width;
 
             doc.rect(rectX, rectY, rectWidth, item.height);
@@ -467,8 +467,8 @@ export default function createTool(toolOptions: ToolOptions) {
             break;
           }
           case 'circle': {
-            const circleX = computedX ?? item.x;
-            const circleY = computedY ?? item.y;
+            const circleX = computedX ?? item.left;
+            const circleY = computedY ?? item.top;
 
             doc.circle(circleX, circleY, item.radius);
             if (item.fillColor && item.strokeColor) {
