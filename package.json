@@ -71,6 +71,7 @@
     "emoji-regex": "^10.6.0",
     "express": "^5.2.1",
     "fontkit": "^2.0.4",
+    "image-size": "^2.0.2",
     "liquidjs": "^10.24.0",
     "module-root-sync": "^2.0.0",
     "pdfkit": "^0.17.2",

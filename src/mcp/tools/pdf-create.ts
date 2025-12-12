@@ -6,6 +6,7 @@ import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_PAGE_SIZE, DEFAULT_TEXT_FONT_SIZE, P
 import { createWidthMeasurer, measureTextHeight } from '../../lib/content-measure.ts';
 import { registerEmojiFont } from '../../lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts, validateTextForFont } from '../../lib/fonts.ts';
+import { resolveImageDimensions } from '../../lib/image-dimensions.ts';
 import { type PDFTextOptions, renderTextWithEmoji } from '../../lib/pdf-helpers.ts';
 import { calculateLayout, type LayoutContent, type LayoutNode } from '../../lib/yoga-layout.ts';
 import type { ToolOptions } from '../../types.ts';
@@ -374,7 +375,8 @@ export default function createTool(toolOptions: ToolOptions) {
           return height;
         }
         if (item.type === 'image') {
-          return (item.height as number) ?? 100;
+          const dimensions = resolveImageDimensions(item.imagePath as string, item.width as number | undefined, item.height as number | undefined);
+          return dimensions.height;
         }
         if (item.type === 'rect') {
           return item.height as number;
@@ -426,9 +428,9 @@ export default function createTool(toolOptions: ToolOptions) {
             break;
           }
           case 'image': {
-            const opts: Record<string, unknown> = {};
-            if (item.width !== undefined) opts.width = item.width;
-            if (item.height !== undefined) opts.height = item.height;
+            // Resolve dimensions consistently with measurement
+            const dimensions = resolveImageDimensions(item.imagePath, item.width as number | undefined, item.height as number | undefined);
+            const opts = { width: dimensions.width, height: dimensions.height };
 
             const imgX = computedX ?? item.x;
             const imgY = computedY ?? item.y;
