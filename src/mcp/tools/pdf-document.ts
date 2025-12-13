@@ -14,7 +14,7 @@ import { getFileUri, type ToolModule, writeFile } from '@mcpeasy/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import PDFDocument from 'pdfkit';
 import { z } from 'zod';
-import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_MARGIN, DEFAULT_TEXT_FONT_SIZE, type PageSizePreset } from '../../constants.ts';
+import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE, getDefaultMargins, type Margins, type PageSizePreset } from '../../constants.ts';
 import { registerEmojiFont } from '../../lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts, validateTextForFont } from '../../lib/fonts.ts';
 import { resolveImageDimensions } from '../../lib/image-dimensions.ts';
@@ -77,7 +77,7 @@ const inputSchema = z.object({
           right: z.number(),
         })
         .optional()
-        .describe('Page margins in points (default: 72pt / 1 inch on all sides).'),
+        .describe('Page margins in points. all 4 (top, bottom, left, right) are REQUIRED if provided. Defaults vary by page size (LETTER/LEGAL: 72pt, A4: ~56pt).'),
       backgroundColor: z.string().optional().describe('Page background color (hex like "#000000" or named color). Default: white.'),
     })
     .optional()
@@ -101,10 +101,17 @@ Supported content types:
 - spacer: Vertical whitespace
 - pageBreak: Force new page
 
-Default margins: 72pt (1 inch) for standard document formatting.`,
+Default margins: Varies by page size (e.g., 72pt/1" for Letter, ~56pt for A4).`,
   inputSchema,
   outputSchema: z.object({
-    result: pdfOutputSchema,
+    result: pdfOutputSchema.extend({
+      effectiveMargins: z.object({
+        top: z.number(),
+        bottom: z.number(),
+        left: z.number(),
+        right: z.number(),
+      }),
+    }),
   }),
 } as const;
 
@@ -125,16 +132,11 @@ export default function createTool(toolOptions: ToolOptions) {
     const { filename = 'document.pdf', title, author, font, pageSetup, content } = args;
 
     try {
-      // Resolve page size
-      const pageSize = resolvePageSize(pageSetup?.size as PageSizePreset | [number, number] | undefined);
+      // Resolve page size and margins
+      const resolvedPageSize = resolvePageSize(pageSetup?.size as PageSizePreset | [number, number] | undefined);
 
-      // Default margins for flowing documents (1 inch = 72 points)
-      const defaultMargins = {
-        top: DEFAULT_MARGIN,
-        bottom: DEFAULT_MARGIN,
-        left: DEFAULT_MARGIN,
-        right: DEFAULT_MARGIN,
-      };
+      const sizePreset = typeof pageSetup?.size === 'string' ? (pageSetup.size as PageSizePreset) : 'LETTER';
+      const effectiveMargins = pageSetup?.margins ?? getDefaultMargins(sizePreset);
 
       const docOptions = {
         info: {
@@ -142,8 +144,8 @@ export default function createTool(toolOptions: ToolOptions) {
           ...(author && { Author: author }),
           ...(filename && { Subject: filename }),
         },
-        size: [pageSize.width, pageSize.height] as [number, number],
-        margins: pageSetup?.margins ?? defaultMargins,
+        size: [resolvedPageSize.width, resolvedPageSize.height] as [number, number],
+        margins: effectiveMargins,
       };
 
       const doc = new PDFDocument({ ...docOptions, autoFirstPage: false });
@@ -170,7 +172,7 @@ export default function createTool(toolOptions: ToolOptions) {
       doc.on('pageAdded', () => {
         actualPageCount++;
         if (pageSetup?.backgroundColor) {
-          doc.rect(0, 0, pageSize.width, pageSize.height).fill(pageSetup.backgroundColor);
+          doc.rect(0, 0, resolvedPageSize.width, resolvedPageSize.height).fill(pageSetup.backgroundColor);
           doc.fillColor('black');
         }
       });
@@ -298,7 +300,7 @@ export default function createTool(toolOptions: ToolOptions) {
         endpoint: '/files',
       });
 
-      const result: PDFOutput = {
+      const result: PDFOutput & { effectiveMargins: Margins } = {
         operationSummary: `Created PDF document: ${filename}`,
         itemsProcessed: content.length,
         itemsChanged: 1,
@@ -308,11 +310,17 @@ export default function createTool(toolOptions: ToolOptions) {
         uri: fileUri,
         sizeBytes: pdfBuffer.length,
         pageCount: actualPageCount,
+        effectiveMargins,
         ...(warnings.length > 0 && { warnings }),
       };
 
       return {
-        content: [{ type: 'text' as const, text: JSON.stringify(result) }],
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(result),
+          },
+        ],
         structuredContent: { result },
       };
     } catch (error) {

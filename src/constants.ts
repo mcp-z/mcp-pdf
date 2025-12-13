@@ -25,7 +25,38 @@ export type PageSize = { width: number; height: number };
 export const DEFAULT_PAGE_SIZE = PAGE_SIZES.LETTER;
 
 /**
+ * Margin type used across PDF tools.
+ */
+export type Margins = {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+};
+
+/**
+ * Default margins by page size for general PDF documents.
+ * Based on standard document conventions for each paper size.
+ */
+export const DEFAULT_MARGINS_BY_SIZE: Record<PageSizePreset, Margins> = {
+  /** LETTER: 1 inch (72pt) all sides - US standard */
+  LETTER: { top: 72, bottom: 72, left: 72, right: 72 },
+  /** A4: 2.5cm (~71pt) top/bottom, 2cm (~57pt) left/right - ISO standard */
+  A4: { top: 71, bottom: 71, left: 57, right: 57 },
+  /** LEGAL: 1 inch (72pt) all sides - same as LETTER */
+  LEGAL: { top: 72, bottom: 72, left: 72, right: 72 },
+} as const;
+
+/**
+ * Get default margins for a page size.
+ */
+export function getDefaultMargins(size: PageSizePreset = 'LETTER'): Margins {
+  return DEFAULT_MARGINS_BY_SIZE[size];
+}
+
+/**
  * Default margin for general PDF documents (1 inch = 72 points).
+ * @deprecated Use getDefaultMargins(size) instead for page-size-appropriate defaults.
  */
 export const DEFAULT_MARGIN = 72;
 
@@ -34,12 +65,12 @@ export const DEFAULT_MARGIN = 72;
  * Intentionally tighter than standard 1-inch margins to fit more content.
  * top/bottom: 50pt (~0.69"), left/right: 54pt (~0.75")
  */
-export const RESUME_DEFAULT_MARGINS = {
+export const RESUME_DEFAULT_MARGINS: Margins = {
   top: 50,
   right: 54,
   bottom: 50,
   left: 54,
-} as const;
+};
 
 /**
  * Epsilon tolerance for floating-point comparisons in text wrapping.

@@ -13,7 +13,7 @@
 import { getFileUri, type ToolModule, writeFile } from '@mcpeasy/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE, type PageSizePreset } from '../../constants.ts';
+import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE, type Margins, type PageSizePreset } from '../../constants.ts';
 import { createWidthMeasurer, measureTextHeight } from '../../lib/content-measure.ts';
 import { resolveImageDimensions } from '../../lib/image-dimensions.ts';
 import { createPDFDocument, extractTextOptions, type PDFOutput, pdfOutputSchema, textBaseSchema, validateContentText } from '../../lib/pdf-core.ts';
@@ -193,7 +193,7 @@ const inputSchema = z.object({
           right: z.number(),
         })
         .optional()
-        .describe('Page margins in points (default: 0 on all sides for full canvas access).'),
+        .describe('Page margins in points. all 4 (top, bottom, left, right) are REQUIRED if provided. Default: 0 on all sides for full canvas access.'),
       backgroundColor: z.string().optional().describe('Page background color (hex like "#000000" or named color). Default: white.'),
     })
     .optional()
@@ -214,12 +214,19 @@ Use groups for flexbox containers - they support direction, gap, justify, alignI
 Default margins: 0 (full canvas access for precise positioning).`,
   inputSchema,
   outputSchema: z.object({
-    result: pdfOutputSchema,
+    result: pdfOutputSchema.extend({
+      effectiveMargins: z.object({
+        top: z.number(),
+        bottom: z.number(),
+        left: z.number(),
+        right: z.number(),
+      }),
+    }),
   }),
 } as const;
 
 export type Input = z.infer<typeof inputSchema>;
-export type Output = PDFOutput;
+export type Output = PDFOutput & { effectiveMargins: Margins };
 
 export default function createTool(toolOptions: ToolOptions) {
   const { serverConfig } = toolOptions;
@@ -245,7 +252,7 @@ export default function createTool(toolOptions: ToolOptions) {
           author,
           subject: filename,
           pageSize: pageSetup?.size as PageSizePreset | [number, number] | undefined,
-          margins: pageSetup?.margins,
+          margins: pageSetup?.margins ?? { top: 0, bottom: 0, left: 0, right: 0 },
           backgroundColor: pageSetup?.backgroundColor,
         },
         font,
@@ -519,7 +526,7 @@ export default function createTool(toolOptions: ToolOptions) {
         endpoint: '/files',
       });
 
-      const result: PDFOutput = {
+      const result: Output = {
         operationSummary: `Created PDF layout: ${filename}`,
         itemsProcessed: 1,
         itemsChanged: 1,
@@ -529,6 +536,7 @@ export default function createTool(toolOptions: ToolOptions) {
         uri: fileUri,
         sizeBytes: pdfBuffer.length,
         pageCount: setup.actualPageCount,
+        effectiveMargins: setup.doc.page.margins as Margins,
         ...(warnings.length > 0 && { warnings }),
       };
 
