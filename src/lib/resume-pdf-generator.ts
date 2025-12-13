@@ -5,7 +5,7 @@
 import PDFDocument from 'pdfkit';
 // Import generated type from JSON Schema
 import type { ResumeSchema } from '../../assets/resume.d.ts';
-import { DEFAULT_PAGE_SIZE, PAGE_SIZES, type PageSizePreset, RESUME_DEFAULT_MARGINS } from '../constants.ts';
+import { DEFAULT_PAGE_SIZE, type Margins, PAGE_SIZES, type PageSizePreset, RESUME_DEFAULT_MARGINS } from '../constants.ts';
 import { registerEmojiFont } from './emoji-renderer.ts';
 import { hasEmoji, isPDFStandardFont, needsUnicodeFont, resolveFont } from './fonts.ts';
 import { isTwoColumnLayout, transformToResumeLayout } from './ir/layout-transform.ts';
@@ -61,6 +61,8 @@ export interface RenderOptions {
   pageSize?: PageSizePreset;
   /** Page background color (hex like "#fffff0" or named color). Default: white. */
   backgroundColor?: string;
+  /** Explicit margins (if provided, overrides default resume margins) */
+  margins?: Margins;
 }
 
 /**
@@ -215,7 +217,7 @@ export async function generateResumePDFBuffer(resume: ResumeSchema, options: Ren
 
   const doc = new PDFDocument({
     size: [pageSize.width, pageSize.height],
-    margins: RESUME_DEFAULT_MARGINS,
+    margins: options.margins ?? RESUME_DEFAULT_MARGINS,
     autoFirstPage: false, // Create pages explicitly for consistent background handling
     // ATS & Accessibility improvements
     pdfVersion: '1.5',
@@ -251,7 +253,7 @@ export async function generateResumePDFBuffer(resume: ResumeSchema, options: Ren
   const pageConfig: PageConfig = {
     width: pageSize.width,
     height: pageSize.height,
-    margins: RESUME_DEFAULT_MARGINS,
+    margins: options.margins ?? RESUME_DEFAULT_MARGINS,
   };
 
   // Create render context

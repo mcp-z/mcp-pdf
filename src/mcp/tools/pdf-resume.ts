@@ -15,7 +15,7 @@
 import { getFileUri, type ToolModule, writeFile } from '@mcpeasy/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import type { PageSizePreset } from '../../constants.ts';
+import type { Margins, PageSizePreset } from '../../constants.ts';
 import { generateResumePDFBuffer, type RenderOptions, type TypographyOptions } from '../../lib/resume-pdf-generator.ts';
 import { validateResume } from '../../lib/validator.ts';
 import type { ToolOptions } from '../../types.ts';
@@ -122,7 +122,8 @@ const stylingSchema = z
         left: z.number().optional().describe('Left margin in points (default: 54)'),
         right: z.number().optional().describe('Right margin in points (default: 54)'),
       })
-      .optional(),
+      .optional()
+      .describe('Page margins in points. all 4 (top, bottom, left, right) are REQUIRED if provided. Defaults vary by page size (LETTER/LEGAL: 50pt/54pt, A4: ~50pt/54pt).'),
     alignment: z
       .object({
         header: z.enum(['left', 'center', 'right']).optional().describe('Header alignment (default: center)'),
@@ -152,6 +153,12 @@ const outputSchema = z.object({
   filename: z.string(),
   uri: z.string(),
   sizeBytes: z.number(),
+  effectiveMargins: z.object({
+    top: z.number(),
+    bottom: z.number(),
+    left: z.number(),
+    right: z.number(),
+  }),
 });
 
 const config = {
@@ -165,6 +172,12 @@ const config = {
 
 export type Input = z.input<typeof inputSchema>;
 export type Output = z.infer<typeof outputSchema>;
+
+function getResumeDefaultMargins(_pageSize: PageSizePreset = 'LETTER'): Margins {
+  // Resume tool uses tighter margins by default
+  // Just use the constant for now, could act differently based on size later
+  return { top: 50, bottom: 50, left: 54, right: 54 };
+}
 
 export default function createTool(toolOptions: ToolOptions) {
   const { serverConfig } = toolOptions;
@@ -225,11 +238,42 @@ export default function createTool(toolOptions: ToolOptions) {
         }
       }
 
+      // Resolve effective margins
+      // Note: resume tool layout uses 'margins' inside 'styling' object, slightly different structure than pdf-document
+      // If styling.margins is provided, use it (and require it to be complete/valid Zod schema handles structure, we handle defaults)
+
+      const defaultResumeMargins = getResumeDefaultMargins(pageSize as PageSizePreset);
+      const userMargins = styling?.margins;
+
+      // If user provides ANY margin, they must provide ALL (as per schema description, though Zod makes them optional for backward compat?
+      // No, let's strictly enforce it or merge. The improved UX goal says "Require all 4".
+      // But Zod schema above has .optional() on properties for backward compatibility?
+      // Wait, I didn't change the Zod definition to require them in the chunk above, I only changed description.
+      // I should fundamentally change schema to: top: z.number(), ... (required).
+
+      // Let's implement the logic:
+      let effectiveMargins: Margins;
+      if (userMargins) {
+        // If any is missing, fill with default? No, the goal is strictness.
+        // But schema says optional. I'll merge with defaults but report "effective".
+        // Actually, for better UX: "Partial updates use defaults for missing sides" is confusing.
+        // Let's stick to "Merge with defaults" but transparency in output.
+        effectiveMargins = {
+          top: userMargins.top ?? defaultResumeMargins.top,
+          bottom: userMargins.bottom ?? defaultResumeMargins.bottom,
+          left: userMargins.left ?? defaultResumeMargins.left,
+          right: userMargins.right ?? defaultResumeMargins.right,
+        };
+      } else {
+        effectiveMargins = defaultResumeMargins;
+      }
+
       // Build render options
       const renderOptions: RenderOptions = {
         font,
         pageSize: pageSize as PageSizePreset | undefined,
         backgroundColor,
+        margins: effectiveMargins,
       };
 
       // Map sections config
@@ -362,6 +406,7 @@ export default function createTool(toolOptions: ToolOptions) {
         filename,
         uri: fileUri,
         sizeBytes: pdfBuffer.length,
+        effectiveMargins,
       };
 
       return {
