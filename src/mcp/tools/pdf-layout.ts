@@ -215,7 +215,7 @@ Default margins: 0 (full canvas access for precise positioning).`,
   inputSchema,
   outputSchema: z.object({
     result: pdfOutputSchema.extend({
-      effectiveMargins: z.object({
+      margins: z.object({
         top: z.number(),
         bottom: z.number(),
         left: z.number(),
@@ -226,7 +226,7 @@ Default margins: 0 (full canvas access for precise positioning).`,
 } as const;
 
 export type Input = z.infer<typeof inputSchema>;
-export type Output = PDFOutput & { effectiveMargins: Margins };
+export type Output = PDFOutput & { margins: Margins };
 
 export default function createTool(toolOptions: ToolOptions) {
   const { serverConfig } = toolOptions;
@@ -536,7 +536,7 @@ export default function createTool(toolOptions: ToolOptions) {
         uri: fileUri,
         sizeBytes: pdfBuffer.length,
         pageCount: setup.actualPageCount,
-        effectiveMargins: setup.doc.page.margins as Margins,
+        margins: setup.doc.page.margins as Margins,
         ...(warnings.length > 0 && { warnings }),
       };
 

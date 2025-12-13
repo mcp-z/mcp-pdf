@@ -153,7 +153,7 @@ const outputSchema = z.object({
   filename: z.string(),
   uri: z.string(),
   sizeBytes: z.number(),
-  effectiveMargins: z.object({
+  margins: z.object({
     top: z.number(),
     bottom: z.number(),
     left: z.number(),
@@ -252,20 +252,20 @@ export default function createTool(toolOptions: ToolOptions) {
       // I should fundamentally change schema to: top: z.number(), ... (required).
 
       // Let's implement the logic:
-      let effectiveMargins: Margins;
+      let margins: Margins;
       if (userMargins) {
         // If any is missing, fill with default? No, the goal is strictness.
         // But schema says optional. I'll merge with defaults but report "effective".
         // Actually, for better UX: "Partial updates use defaults for missing sides" is confusing.
         // Let's stick to "Merge with defaults" but transparency in output.
-        effectiveMargins = {
+        margins = {
           top: userMargins.top ?? defaultResumeMargins.top,
           bottom: userMargins.bottom ?? defaultResumeMargins.bottom,
           left: userMargins.left ?? defaultResumeMargins.left,
           right: userMargins.right ?? defaultResumeMargins.right,
         };
       } else {
-        effectiveMargins = defaultResumeMargins;
+        margins = defaultResumeMargins;
       }
 
       // Build render options
@@ -273,7 +273,7 @@ export default function createTool(toolOptions: ToolOptions) {
         font,
         pageSize: pageSize as PageSizePreset | undefined,
         backgroundColor,
-        margins: effectiveMargins,
+        margins: margins,
       };
 
       // Map sections config
@@ -406,7 +406,7 @@ export default function createTool(toolOptions: ToolOptions) {
         filename,
         uri: fileUri,
         sizeBytes: pdfBuffer.length,
-        effectiveMargins,
+        margins,
       };
 
       return {
