@@ -968,7 +968,14 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
     // Single work entry: Company + Location on first line, Position + Dates on second
     doc.font(fonts.bold).fontSize(entryStyle.position.fontSize).fillColor('#000000');
     const companyHeight = company ? doc.heightOfString(company, { width: leftWidth }) : 0;
+
+    // Measure location height using correct font before rendering
+    doc.font(fonts.bold).fontSize(entryStyle.location.fontSize);
+    const locationHeight = location ? doc.heightOfString(location, { width: rightWidth }) : 0;
+
+    // Render company
     if (company) {
+      doc.font(fonts.bold).fontSize(entryStyle.position.fontSize).fillColor('#000000');
       renderTextWithEmoji(doc, company, entryStyle.position.fontSize, fonts.bold, emojiAvailable, {
         x: position.x,
         y: currentY,
@@ -976,12 +983,14 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
       });
     }
 
+    // Render location
     if (location) {
       doc.font(fonts.bold).fontSize(entryStyle.location.fontSize);
       doc.text(location, position.x + position.width - rightWidth, currentY, { width: rightWidth, align: 'right' });
     }
 
-    currentY += companyHeight + (entryStyle.position.marginBottom ?? 0);
+    // Use maximum of company and location heights to prevent overlap
+    currentY += Math.max(companyHeight, locationHeight) + (entryStyle.position.marginBottom ?? 0);
 
     // Position + Dates line
     doc.font(fonts.italic).fontSize(entryStyle.position.fontSize).fillColor('#000000');
