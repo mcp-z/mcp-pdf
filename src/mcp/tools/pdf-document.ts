@@ -105,7 +105,7 @@ Default margins: Varies by page size (e.g., 72pt/1" for Letter, ~56pt for A4).`,
   inputSchema,
   outputSchema: z.object({
     result: pdfOutputSchema.extend({
-      effectiveMargins: z.object({
+      margins: z.object({
         top: z.number(),
         bottom: z.number(),
         left: z.number(),
@@ -136,7 +136,7 @@ export default function createTool(toolOptions: ToolOptions) {
       const resolvedPageSize = resolvePageSize(pageSetup?.size as PageSizePreset | [number, number] | undefined);
 
       const sizePreset = typeof pageSetup?.size === 'string' ? (pageSetup.size as PageSizePreset) : 'LETTER';
-      const effectiveMargins = pageSetup?.margins ?? getDefaultMargins(sizePreset);
+      const margins = pageSetup?.margins ?? getDefaultMargins(sizePreset);
 
       const docOptions = {
         info: {
@@ -145,7 +145,7 @@ export default function createTool(toolOptions: ToolOptions) {
           ...(filename && { Subject: filename }),
         },
         size: [resolvedPageSize.width, resolvedPageSize.height] as [number, number],
-        margins: effectiveMargins,
+        margins: margins,
       };
 
       const doc = new PDFDocument({ ...docOptions, autoFirstPage: false });
@@ -300,7 +300,7 @@ export default function createTool(toolOptions: ToolOptions) {
         endpoint: '/files',
       });
 
-      const result: PDFOutput & { effectiveMargins: Margins } = {
+      const result: PDFOutput & { margins: Margins } = {
         operationSummary: `Created PDF document: ${filename}`,
         itemsProcessed: content.length,
         itemsChanged: 1,
@@ -310,7 +310,7 @@ export default function createTool(toolOptions: ToolOptions) {
         uri: fileUri,
         sizeBytes: pdfBuffer.length,
         pageCount: actualPageCount,
-        effectiveMargins,
+        margins,
         ...(warnings.length > 0 && { warnings }),
       };
 
