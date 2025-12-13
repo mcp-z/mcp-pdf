@@ -26,7 +26,7 @@ export const textBaseSchema = z.object({
   indent: z.number().optional().describe('First line indent in points (default: 0)'),
   lineGap: z.number().optional().describe('Extra spacing between lines in points (default: 0)'),
   paragraphGap: z.number().optional().describe('Extra spacing after paragraph in points (default: 0)'),
-  width: z.number().optional().describe('Text width constraint in points (default: available width)'),
+  width: z.number().optional().describe('Text width for wrapping in points. Without width, text renders on a single line. Width depends on font, font size, and character count. Use text-measure tool for precise dimensions.'),
   moveDown: z.number().optional().describe('Move cursor down by N lines after rendering (default: 0)'),
   underline: z.boolean().optional().describe('Underline text (default: false)'),
   strike: z.boolean().optional().describe('Strikethrough text (default: false)'),
