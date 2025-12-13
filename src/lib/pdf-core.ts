@@ -132,7 +132,7 @@ export async function createPDFDocument(options: PDFDocumentOptions, font: strin
     margins: options.margins ?? defaultMargins,
   };
 
-  const doc = new PDFDocument(docOptions);
+  const doc = new PDFDocument({ ...docOptions, autoFirstPage: false });
 
   // Buffer accumulation
   const chunks: Buffer[] = [];
@@ -142,31 +142,24 @@ export async function createPDFDocument(options: PDFDocumentOptions, font: strin
     doc.on('error', reject);
   });
 
-  // Apply background color to first page
-  if (options.backgroundColor) {
-    doc.rect(0, 0, pageSize.width, pageSize.height).fill(options.backgroundColor);
-    doc.fillColor('black');
-  }
-
   // Setup fonts and emoji support
   const containsEmoji = hasEmoji(contentForEmojiCheck);
   const emojiAvailable = containsEmoji ? registerEmojiFont() : false;
   const fonts = await setupFonts(doc, font);
 
-  // Track page count with background support
-  let actualPageCount = 1;
+  // Track page count and apply background to ALL pages consistently
+  let actualPageCount = 0;
   const drawBackgroundOnPage = () => {
     actualPageCount++;
     if (options.backgroundColor) {
-      const x = doc.x;
-      const y = doc.y;
       doc.rect(0, 0, pageSize.width, pageSize.height).fill(options.backgroundColor);
       doc.fillColor('black');
-      doc.x = x;
-      doc.y = y;
     }
   };
   doc.on('pageAdded', drawBackgroundOnPage);
+
+  // Add first page explicitly - goes through same event handler as all other pages
+  doc.addPage();
 
   return {
     doc,

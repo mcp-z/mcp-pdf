@@ -59,6 +59,8 @@ export interface RenderOptions {
   layout?: LayoutConfig;
   /** Page size preset (default: LETTER) */
   pageSize?: PageSizePreset;
+  /** Page background color (hex like "#fffff0" or named color). Default: white. */
+  backgroundColor?: string;
 }
 
 /**
@@ -214,6 +216,7 @@ export async function generateResumePDFBuffer(resume: ResumeSchema, options: Ren
   const doc = new PDFDocument({
     size: [pageSize.width, pageSize.height],
     margins: RESUME_DEFAULT_MARGINS,
+    autoFirstPage: false, // Create pages explicitly for consistent background handling
     // ATS & Accessibility improvements
     pdfVersion: '1.5',
     tagged: true,
@@ -226,6 +229,17 @@ export async function generateResumePDFBuffer(resume: ResumeSchema, options: Ren
       Keywords: `resume, CV${skillKeywords ? `, ${skillKeywords}` : ''}`,
     },
   });
+
+  // Apply background color to ALL pages consistently via pageAdded event
+  doc.on('pageAdded', () => {
+    if (options.backgroundColor) {
+      doc.rect(0, 0, pageSize.width, pageSize.height).fill(options.backgroundColor);
+      doc.fillColor('black');
+    }
+  });
+
+  // Add first page explicitly - triggers same event handler as all other pages
+  doc.addPage();
 
   // Setup fonts
   const fonts = await setupFonts(doc, options.font);

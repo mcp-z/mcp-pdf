@@ -146,7 +146,7 @@ export default function createTool(toolOptions: ToolOptions) {
         margins: pageSetup?.margins ?? defaultMargins,
       };
 
-      const doc = new PDFDocument(docOptions);
+      const doc = new PDFDocument({ ...docOptions, autoFirstPage: false });
 
       // Buffer accumulation
       const chunks: Buffer[] = [];
@@ -155,12 +155,6 @@ export default function createTool(toolOptions: ToolOptions) {
         doc.on('end', () => resolve(Buffer.concat(chunks)));
         doc.on('error', reject);
       });
-
-      // Apply background color
-      if (pageSetup?.backgroundColor) {
-        doc.rect(0, 0, pageSize.width, pageSize.height).fill(pageSetup.backgroundColor);
-        doc.fillColor('black');
-      }
 
       // Setup fonts and emoji
       const contentText = JSON.stringify(content);
@@ -171,19 +165,18 @@ export default function createTool(toolOptions: ToolOptions) {
 
       const warnings: string[] = [];
 
-      // Track page count with background
-      let actualPageCount = 1;
+      // Track page count and apply background to ALL pages consistently
+      let actualPageCount = 0;
       doc.on('pageAdded', () => {
         actualPageCount++;
         if (pageSetup?.backgroundColor) {
-          const x = doc.x;
-          const y = doc.y;
           doc.rect(0, 0, pageSize.width, pageSize.height).fill(pageSetup.backgroundColor);
           doc.fillColor('black');
-          doc.x = x;
-          doc.y = y;
         }
       });
+
+      // Add first page explicitly - goes through same event handler as all other pages
+      doc.addPage();
 
       // Validate text content
       for (const item of content) {

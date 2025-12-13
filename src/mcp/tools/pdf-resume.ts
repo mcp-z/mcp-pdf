@@ -137,6 +137,7 @@ const inputSchema = z.object({
   resume: resumeInputSchema,
   font: z.string().optional().describe('Font for the PDF. Defaults to "auto" (system font detection). Built-ins are limited to ASCII; provide a path or URL for full Unicode.'),
   pageSize: z.enum(['LETTER', 'A4', 'LEGAL']).optional().describe('Page size preset (default: "LETTER"). Use "A4" for international standard.'),
+  backgroundColor: z.string().optional().describe('Page background color (hex like "#fffff0" or named color like "ivory"). Default: white.'),
   sections: sectionsConfigSchema,
   layout: layoutSchema,
   styling: stylingSchema,
@@ -177,7 +178,7 @@ export default function createTool(toolOptions: ToolOptions) {
   }
 
   async function handler(args: Input): Promise<CallToolResult> {
-    const { filename = 'resume.pdf', resume, font, pageSize, sections, layout, styling } = args;
+    const { filename = 'resume.pdf', resume, font, pageSize, backgroundColor, sections, layout, styling } = args;
 
     try {
       // Validate resume against JSON Schema
@@ -228,6 +229,7 @@ export default function createTool(toolOptions: ToolOptions) {
       const renderOptions: RenderOptions = {
         font,
         pageSize: pageSize as PageSizePreset | undefined,
+        backgroundColor,
       };
 
       // Map sections config
