@@ -48,6 +48,7 @@ const paddingSchema = z.union([
 // Positioned text schema (extends text base with position properties)
 const positionedTextSchema = textBaseSchema.extend({
   page: z.number().int().min(1).optional().describe('Target page (default: 1). Pages are created as needed.'),
+  position: z.enum(['absolute', 'relative']).optional().describe('Positioning strategy: absolute (exact coordinates) or relative (flexbox flow). Default: absolute for root items, relative for children.'),
   left: z.number().optional().describe('Horizontal position in points from page left edge.'),
   top: z.number().optional().describe('Vertical position in points from page top edge.'),
 });
@@ -109,6 +110,7 @@ const groupSchema: z.ZodType<GroupItem> = z.lazy(() =>
 
     // Positioning
     page: z.number().int().min(1).optional().describe('Target page (default: 1). Pages are created as needed.'),
+    position: z.enum(['absolute', 'relative']).optional().describe('Positioning strategy: absolute (exact coordinates) or relative (flexbox flow). Default: absolute for root items, relative for children.'),
     left: z.number().optional().describe('Horizontal position in points from page left edge.'),
     top: z.number().optional().describe('Vertical position in points from page top edge.'),
 
@@ -140,6 +142,7 @@ const groupSchema: z.ZodType<GroupItem> = z.lazy(() =>
 interface GroupItem {
   type: 'group';
   page?: number;
+  position?: 'absolute' | 'relative';
   left?: number;
   top?: number;
   width?: number | string;
@@ -457,7 +460,21 @@ export default function createTool(toolOptions: ToolOptions) {
         if (pageContent.length === 0) continue;
 
         // Convert to LayoutContent for Yoga
-        const layoutContent: LayoutContent[] = pageContent.map((item) => item as unknown as LayoutContent);
+        const layoutContent: LayoutContent[] = pageContent.map((item) => {
+          const layoutItem = item as unknown as LayoutContent;
+          // Root items in pdf-layout default to absolute IF they have explicit coordinates
+          // Items without coordinates (pure flex layouts) remain relative
+          // Users can override with explicit position property
+          if (layoutItem.position !== undefined) {
+            return layoutItem; // Explicit position, use as-is
+          }
+          // Default: absolute if coordinates exist, relative otherwise
+          const hasCoordinates = layoutItem.left !== undefined && layoutItem.top !== undefined;
+          return {
+            ...layoutItem,
+            position: hasCoordinates ? 'absolute' : 'relative',
+          };
+        });
 
         // Calculate layout for THIS page only
         const layoutNodes = await calculateLayout(layoutContent, pageWidth, pageHeight, measureHeight, margins, measureWidth);
