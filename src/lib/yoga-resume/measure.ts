@@ -329,6 +329,8 @@ export function measureEntryHeader(ctx: MeasureContext, element: EntryHeaderElem
     // Single work entry: Company + Location on first line, Position + Dates on second
     doc.font(typography.fonts.bold).fontSize(entryStyle.position.fontSize);
     const companyHeight = company ? doc.heightOfString(company, { width: leftWidth }) : 0;
+    // Use correct font for location measurement (matches rendering)
+    doc.font(typography.fonts.bold).fontSize(entryStyle.location.fontSize);
     const locationHeight = location ? doc.heightOfString(location, { width: rightWidth }) : 0;
     totalHeight += Math.max(companyHeight, locationHeight) + (entryStyle.position.marginBottom ?? 0);
 
