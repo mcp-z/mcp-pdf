@@ -1,4 +1,4 @@
-import type { BaseServerConfig, Logger as ServerLogger } from '@mcpeasy/server';
+import type { BaseServerConfig, MiddlewareLayer, PromptModule, ResourceModule, Logger as ServerLogger, ToolModule } from '@mcpeasy/server';
 
 export type Logger = ServerLogger;
 
@@ -19,4 +19,33 @@ export interface ServerConfig extends BaseServerConfig {
 
 export interface ToolOptions {
   serverConfig: ServerConfig;
+}
+
+/** Runtime dependencies exposed to middleware/factories. */
+export interface RuntimeDeps {
+  config: ServerConfig;
+  logger: ServerLogger;
+}
+
+/** Collections of MCP modules produced by domain factories. */
+export type DomainModules = {
+  tools: ToolModule[];
+  resources: ResourceModule[];
+  prompts: PromptModule[];
+};
+
+/** Factory that produces a middleware layer given runtime dependencies. */
+export type MiddlewareFactory = (deps: RuntimeDeps) => MiddlewareLayer;
+
+/** Shared runtime configuration returned by `createDefaultRuntime`. */
+export interface CommonRuntime {
+  deps: RuntimeDeps;
+  middlewareFactories: MiddlewareFactory[];
+  createDomainModules: (deps: RuntimeDeps) => DomainModules;
+  close: () => Promise<void>;
+}
+
+export interface RuntimeOverrides {
+  middlewareFactories?: MiddlewareFactory[];
+  createDomainModules?: (deps: RuntimeDeps) => DomainModules;
 }
