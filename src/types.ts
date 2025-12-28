@@ -55,3 +55,9 @@ export interface RuntimeOverrides {
   middlewareFactories?: MiddlewareFactory[];
   createDomainModules?: () => DomainModules;
 }
+
+// ============================================================================
+// Reusable Content Types
+// ============================================================================
+
+export type { ContentItem, FlowingContentItem, GroupItem } from './schemas/index.ts';

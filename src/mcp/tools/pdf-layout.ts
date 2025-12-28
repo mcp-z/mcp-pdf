@@ -16,162 +16,17 @@ import { z } from 'zod';
 import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE, type Margins, type PageSizePreset } from '../../constants.ts';
 import { createWidthMeasurer, measureTextHeight } from '../../lib/content-measure.ts';
 import { resolveImageDimensions } from '../../lib/image-dimensions.ts';
-import { createPDFDocument, extractTextOptions, type PDFOutput, pdfOutputSchema, textBaseSchema, validateContentText } from '../../lib/pdf-core.ts';
+import { createPDFDocument, extractTextOptions, type PDFOutput, pdfOutputSchema, validateContentText } from '../../lib/pdf-core.ts';
 import { renderTextWithEmoji } from '../../lib/pdf-helpers.ts';
 import { calculateLayout, type LayoutContent, type LayoutNode } from '../../lib/yoga-layout.ts';
+import type { BaseContentItem } from '../../schemas/content.ts';
+import { type ContentItem, contentItemSchema, type GroupItem, layoutSchema } from '../../schemas/layout.ts';
 import type { StorageExtra } from '../../types.ts';
 
 // ============================================================================
-// Schemas
+// Tool-specific schemas and types
 // ============================================================================
-
-// Size schema - number or percentage string
-const sizeSchema = z.union([z.number(), z.string().regex(/^\d+(\.\d+)?%$/)]);
-
-// Border schema
-const borderSchema = z.object({
-  color: z.string(),
-  width: z.number(),
-});
-
-// Padding schema - number or object
-const paddingSchema = z.union([
-  z.number(),
-  z.object({
-    top: z.number().optional(),
-    right: z.number().optional(),
-    bottom: z.number().optional(),
-    left: z.number().optional(),
-  }),
-]);
-
-// Positioned text schema (extends text base with position properties)
-const positionedTextSchema = textBaseSchema.extend({
-  page: z.number().int().min(1).optional().describe('Target page (default: 1). Pages are created as needed.'),
-  position: z.enum(['absolute', 'relative']).optional().describe('Positioning strategy: absolute (exact coordinates) or relative (flexbox flow). Default: absolute for root items, relative for children.'),
-  left: z.number().optional().describe('Horizontal position in points from page left edge.'),
-  top: z.number().optional().describe('Vertical position in points from page top edge.'),
-});
-
-// Base content items (without group to avoid circular reference)
-const baseContentItemSchema = z.union([
-  positionedTextSchema.extend({ type: z.literal('text') }),
-  positionedTextSchema.extend({ type: z.literal('heading') }),
-  z.object({
-    type: z.literal('image'),
-    imagePath: z.string().describe('Path to image file'),
-    page: z.number().int().min(1).optional().describe('Target page (default: 1). Pages are created as needed.'),
-    left: z.number().optional().describe('Horizontal position in points from page left edge.'),
-    top: z.number().optional().describe('Vertical position in points from page top edge.'),
-    width: z.number().optional().describe('Image width in points (default: natural width)'),
-    height: z.number().optional().describe('Image height in points (default: natural height or aspect-ratio scaled)'),
-  }),
-  z.object({
-    type: z.literal('rect'),
-    page: z.number().int().min(1).optional().describe('Target page (default: 1). Pages are created as needed.'),
-    left: z.number().describe('Horizontal position in points from page left edge.'),
-    top: z.number().describe('Vertical position in points from page top edge.'),
-    width: z.number().describe('Width in points'),
-    height: z.number().describe('Height in points'),
-    fillColor: z.string().optional().describe('Fill color (default: no fill)'),
-    strokeColor: z.string().optional().describe('Stroke color (default: no stroke)'),
-    lineWidth: z.number().optional().describe('Stroke width in points (default: 1)'),
-  }),
-  z.object({
-    type: z.literal('circle'),
-    page: z.number().int().min(1).optional().describe('Target page (default: 1). Pages are created as needed.'),
-    left: z.number().describe('Center horizontal position in points from page left edge.'),
-    top: z.number().describe('Center vertical position in points from page top edge.'),
-    radius: z.number().describe('Radius in points'),
-    fillColor: z.string().optional().describe('Fill color (default: no fill)'),
-    strokeColor: z.string().optional().describe('Stroke color (default: no stroke)'),
-    lineWidth: z.number().optional().describe('Stroke width in points (default: 1)'),
-  }),
-  z.object({
-    type: z.literal('line'),
-    page: z.number().int().min(1).optional().describe('Target page (default: 1). Pages are created as needed.'),
-    x1: z.number().describe('Start X coordinate in points'),
-    y1: z.number().describe('Start Y coordinate in points'),
-    x2: z.number().describe('End X coordinate in points'),
-    y2: z.number().describe('End Y coordinate in points'),
-    strokeColor: z.string().optional().describe('Line color (default: black)'),
-    lineWidth: z.number().optional().describe('Line width in points (default: 1)'),
-  }),
-]);
-
-// Type for base content item
-type BaseContentItem = z.infer<typeof baseContentItemSchema>;
-
-// Group schema - flexbox container with children
-// Using z.lazy for recursive type
-const groupSchema: z.ZodType<GroupItem> = z.lazy(() =>
-  z.object({
-    type: z.literal('group'),
-
-    // Positioning
-    page: z.number().int().min(1).optional().describe('Target page (default: 1). Pages are created as needed.'),
-    position: z.enum(['absolute', 'relative']).optional().describe('Positioning strategy: absolute (exact coordinates) or relative (flexbox flow). Default: absolute for root items, relative for children.'),
-    left: z.number().optional().describe('Horizontal position in points from page left edge.'),
-    top: z.number().optional().describe('Vertical position in points from page top edge.'),
-
-    // Size
-    width: sizeSchema.optional().describe('Width in points or percentage (e.g., "50%")'),
-    height: sizeSchema.optional().describe('Height in points or percentage (e.g., "50%")'),
-
-    // Flexbox layout
-    direction: z.enum(['column', 'row']).optional().default('column').describe('Flex direction: column (default) or row'),
-    gap: z.number().optional().describe('Gap between children in points'),
-    flex: z.number().optional().describe('Flex grow factor (1 = equal share of remaining space)'),
-    justify: z.enum(['start', 'center', 'end', 'space-between', 'space-around']).optional().describe('Main axis alignment'),
-    alignItems: z.enum(['start', 'center', 'end', 'stretch']).optional().describe('Cross axis alignment for children'),
-
-    // Self-positioning
-    align: z.enum(['start', 'center', 'end']).optional().describe('Self alignment within parent. Use align: "center" to center this group.'),
-
-    // Visual
-    padding: paddingSchema.optional().describe('Inner spacing between group border and content.'),
-    background: z.string().optional().describe('Background fill color'),
-    border: borderSchema.optional().describe('Border with color and width'),
-
-    // Children
-    children: z.array(z.union([baseContentItemSchema, groupSchema])).describe('Nested content items'),
-  })
-);
-
-// Type for group item
-interface GroupItem {
-  type: 'group';
-  page?: number;
-  position?: 'absolute' | 'relative';
-  left?: number;
-  top?: number;
-  width?: number | string;
-  height?: number | string;
-  direction?: 'column' | 'row';
-  gap?: number;
-  flex?: number;
-  justify?: 'start' | 'center' | 'end' | 'space-between' | 'space-around';
-  alignItems?: 'start' | 'center' | 'end' | 'stretch';
-  align?: 'start' | 'center' | 'end';
-  padding?: number | { top?: number; right?: number; bottom?: number; left?: number };
-  background?: string;
-  border?: { color: string; width: number };
-  children: ContentItem[];
-}
-
-// Full content item schema including groups
-const contentItemSchema = z.union([baseContentItemSchema, groupSchema]);
-
-// Content item type
-type ContentItem = BaseContentItem | GroupItem;
-
-// Layout configuration schema
-const layoutSchema = z
-  .object({
-    overflow: z.enum(['auto', 'warn']).optional().default('auto').describe("Overflow behavior: 'auto' = normal (default), 'warn' = log warning if content exceeds page bounds"),
-  })
-  .optional()
-  .describe('Layout configuration for overflow handling');
+// Note: Reusable schemas are now imported from ../../schemas/layout.ts and ../../schemas/content.ts
 
 const inputSchema = z.object({
   filename: z.string().optional().describe('Optional logical filename (metadata only). Storage uses UUID. Defaults to "document.pdf".'),
