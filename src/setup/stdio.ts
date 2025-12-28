@@ -5,7 +5,7 @@ import { createDefaultRuntime } from './runtime.ts';
 
 export async function createStdioServer(config: ServerConfig, overrides?: RuntimeOverrides) {
   const runtime = await createDefaultRuntime(config, overrides);
-  const modules = runtime.createDomainModules(runtime.deps);
+  const modules = runtime.createDomainModules();
   const layers = runtime.middlewareFactories.map((factory) => factory(runtime.deps));
   const composed = composeMiddleware(modules, layers);
   const logger = runtime.deps.logger;

@@ -3,7 +3,7 @@ import { createLoggingMiddleware } from '@mcpeasy/server';
 import * as fs from 'fs';
 import * as path from 'path';
 import pino from 'pino';
-import type { CommonRuntime, RuntimeDeps, RuntimeOverrides, ServerConfig } from '../types.ts';
+import type { CommonRuntime, RuntimeDeps, RuntimeOverrides, ServerConfig, StorageContext } from '../types.ts';
 import { createMcpComponents } from './components.ts';
 
 export function createLogger(config: ServerConfig): Logger {
@@ -23,12 +23,40 @@ export function createLoggingLayer(logger: Logger): MiddlewareLayer {
   };
 }
 
+export function createStorageLayer(storageContext: StorageContext): MiddlewareLayer {
+  const wrapAtPosition = <T extends { name: string; handler: unknown; [key: string]: unknown }>(module: T, extraPosition: number): T => {
+    const originalHandler = module.handler as (...args: unknown[]) => Promise<unknown>;
+
+    const wrappedHandler = async (...allArgs: unknown[]) => {
+      const extra = allArgs[extraPosition];
+      (extra as { storageContext?: StorageContext }).storageContext = storageContext;
+      return await originalHandler(...allArgs);
+    };
+
+    return {
+      ...module,
+      handler: wrappedHandler,
+    } as T;
+  };
+
+  return {
+    withTool: <T extends { name: string; config: unknown; handler: unknown }>(module: T): T => wrapAtPosition(module, 1) as T,
+  };
+}
+
 export async function createDefaultRuntime(config: ServerConfig, overrides?: RuntimeOverrides): Promise<CommonRuntime> {
+  if (config.transport.type === 'http' && !config.baseUrl && !config.transport.port) {
+    throw new Error('pdf-document: HTTP/WS transport requires either baseUrl in server config or port in transport config.');
+  }
+  if (!config.storageDir) {
+    throw new Error('pdf-document: Server configuration missing storageDir.');
+  }
+
   const logger = createLogger(config);
   const deps: RuntimeDeps = { config, logger };
 
-  const createDomainModules = overrides?.createDomainModules ?? (() => createMcpComponents(config));
-  const middlewareFactories = overrides?.middlewareFactories ?? [() => createLoggingLayer(logger)];
+  const createDomainModules = overrides?.createDomainModules ?? (() => createMcpComponents());
+  const middlewareFactories = overrides?.middlewareFactories ?? [() => createLoggingLayer(logger), () => createStorageLayer({ storageDir: config.storageDir, baseUrl: config.baseUrl, transport: config.transport })];
 
   return {
     deps,

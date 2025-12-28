@@ -1,8 +1,9 @@
 import assert from 'assert';
 import { mkdirSync } from 'fs';
 import { join } from 'path';
-import createPdfResume, { type Input, type Output } from '../../../../src/mcp/tools/pdf-resume.ts';
+import createTool, { type Input, type Output } from '../../../../src/mcp/tools/pdf-resume.ts';
 import type { ServerConfig } from '../../../../src/types.ts';
+import { createStorageExtra } from '../../../lib/create-extra.ts';
 
 // Use .tmp/ in package root per QUALITY.md rule T8
 const testOutputDir = join(process.cwd(), '.tmp', 'fine-grained-pagination-tests');
@@ -39,7 +40,8 @@ describe('Fine-grained pagination', () => {
 
   it('creates multi-page resume with fine-grained content flow', async () => {
     const config = createTestConfig();
-    const tool = createPdfResume({ serverConfig: config });
+    const tool = createTool();
+    const extra = createStorageExtra(config);
 
     // Create a resume with enough content to span multiple pages
     // This tests that:
@@ -169,7 +171,7 @@ describe('Fine-grained pagination', () => {
       },
     };
 
-    const result = await tool.handler(input);
+    const result = await tool.handler(input, extra);
 
     assert.ok(result.structuredContent, 'should have structuredContent');
     const output = result.structuredContent?.result as Output;
@@ -186,7 +188,8 @@ describe('Fine-grained pagination', () => {
 
   it('handles resume with only summaries (no bullets)', async () => {
     const config = createTestConfig();
-    const tool = createPdfResume({ serverConfig: config });
+    const tool = createTool();
+    const extra = createStorageExtra(config);
 
     const input: Input = {
       filename: 'summary-only-pagination-test.pdf',
@@ -214,7 +217,7 @@ describe('Fine-grained pagination', () => {
       },
     };
 
-    const result = await tool.handler(input);
+    const result = await tool.handler(input, extra);
 
     assert.ok(result.structuredContent, 'should have structuredContent');
     const output = result.structuredContent?.result as Output;
@@ -225,7 +228,8 @@ describe('Fine-grained pagination', () => {
 
   it('handles resume with only bullets (no summaries)', async () => {
     const config = createTestConfig();
-    const tool = createPdfResume({ serverConfig: config });
+    const tool = createTool();
+    const extra = createStorageExtra(config);
 
     const input: Input = {
       filename: 'bullets-only-pagination-test.pdf',
@@ -252,7 +256,7 @@ describe('Fine-grained pagination', () => {
       },
     };
 
-    const result = await tool.handler(input);
+    const result = await tool.handler(input, extra);
 
     assert.ok(result.structuredContent, 'should have structuredContent');
     const output = result.structuredContent?.result as Output;
@@ -263,7 +267,8 @@ describe('Fine-grained pagination', () => {
 
   it('handles education entries with courses', async () => {
     const config = createTestConfig();
-    const tool = createPdfResume({ serverConfig: config });
+    const tool = createTool();
+    const extra = createStorageExtra(config);
 
     const input: Input = {
       filename: 'education-pagination-test.pdf',
@@ -301,7 +306,7 @@ describe('Fine-grained pagination', () => {
       },
     };
 
-    const result = await tool.handler(input);
+    const result = await tool.handler(input, extra);
 
     assert.ok(result.structuredContent, 'should have structuredContent');
     const output = result.structuredContent?.result as Output;

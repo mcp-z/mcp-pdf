@@ -6,8 +6,9 @@ import assert from 'assert';
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import PDFDocument from 'pdfkit';
-import createPdfImageTool from '../../../../src/mcp/tools/pdf-image.ts';
+import createTool from '../../../../src/mcp/tools/pdf-image.ts';
 import type { ServerConfig } from '../../../../src/types.ts';
+import { createStorageExtra } from '../../../lib/create-extra.ts';
 
 // Use .tmp/ in package root per QUALITY.md rule T8
 const testOutputDir = join(process.cwd(), '.tmp', 'pdf-image-tests');
@@ -27,7 +28,8 @@ function createTestConfig(): ServerConfig {
 
 describe('pdf-image tool', () => {
   const config = createTestConfig();
-  const tool = createPdfImageTool({ serverConfig: config });
+  const tool = createTool();
+  const extra = createStorageExtra(config);
 
   before((done) => {
     mkdirSync(testStorageDir, { recursive: true });
@@ -58,9 +60,12 @@ describe('pdf-image tool', () => {
   });
 
   it('renders single page by default', async () => {
-    const result = await tool.handler({
-      pdfPath: testPdfPath,
-    });
+    const result = await tool.handler(
+      {
+        pdfPath: testPdfPath,
+      },
+      extra
+    );
 
     const output = result.structuredContent as { images: Array<{ pageNumber: number }>; totalPages: number };
     assert.strictEqual(output.totalPages, 1, 'Should render 1 page by default');
@@ -68,10 +73,13 @@ describe('pdf-image tool', () => {
   });
 
   it('renders specific single page', async () => {
-    const result = await tool.handler({
-      pdfPath: testPdfPath,
-      pages: 2,
-    });
+    const result = await tool.handler(
+      {
+        pdfPath: testPdfPath,
+        pages: 2,
+      },
+      extra
+    );
 
     const output = result.structuredContent as { images: Array<{ pageNumber: number }>; totalPages: number };
     assert.strictEqual(output.totalPages, 1);
@@ -79,10 +87,13 @@ describe('pdf-image tool', () => {
   });
 
   it('renders multiple specific pages', async () => {
-    const result = await tool.handler({
-      pdfPath: testPdfPath,
-      pages: [1, 3],
-    });
+    const result = await tool.handler(
+      {
+        pdfPath: testPdfPath,
+        pages: [1, 3],
+      },
+      extra
+    );
 
     const output = result.structuredContent as { images: Array<{ pageNumber: number }>; totalPages: number };
     assert.strictEqual(output.totalPages, 2);
@@ -91,25 +102,34 @@ describe('pdf-image tool', () => {
   });
 
   it('renders all pages', async () => {
-    const result = await tool.handler({
-      pdfPath: testPdfPath,
-      pages: 'all',
-    });
+    const result = await tool.handler(
+      {
+        pdfPath: testPdfPath,
+        pages: 'all',
+      },
+      extra
+    );
 
     const output = result.structuredContent as { images: Array<{ pageNumber: number }>; totalPages: number };
     assert.strictEqual(output.totalPages, 3, 'Should render all 3 pages');
   });
 
   it('respects viewportScale', async () => {
-    const smallResult = await tool.handler({
-      pdfPath: testPdfPath,
-      viewportScale: 0.25,
-    });
+    const smallResult = await tool.handler(
+      {
+        pdfPath: testPdfPath,
+        viewportScale: 0.25,
+      },
+      extra
+    );
 
-    const largeResult = await tool.handler({
-      pdfPath: testPdfPath,
-      viewportScale: 1.0,
-    });
+    const largeResult = await tool.handler(
+      {
+        pdfPath: testPdfPath,
+        viewportScale: 1.0,
+      },
+      extra
+    );
 
     const smallOutput = smallResult.structuredContent as { images: Array<{ width: number; fileSizeBytes: number }> };
     const largeOutput = largeResult.structuredContent as { images: Array<{ width: number; fileSizeBytes: number }> };
@@ -119,9 +139,12 @@ describe('pdf-image tool', () => {
 
   it('throws error for non-existent PDF', async () => {
     try {
-      await tool.handler({
-        pdfPath: '/nonexistent/file.pdf',
-      });
+      await tool.handler(
+        {
+          pdfPath: '/nonexistent/file.pdf',
+        },
+        extra
+      );
       assert.fail('Should have thrown an error');
     } catch (error) {
       assert.ok(error instanceof Error);
