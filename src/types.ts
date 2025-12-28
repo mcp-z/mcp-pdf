@@ -1,6 +1,6 @@
-import type { BaseServerConfig } from '@mcpeasy/server';
+import type { BaseServerConfig, Logger as ServerLogger } from '@mcpeasy/server';
 
-export type Logger = Pick<Console, 'info' | 'error' | 'warn' | 'debug'>;
+export type Logger = ServerLogger;
 
 /**
  * PDF server configuration interface
