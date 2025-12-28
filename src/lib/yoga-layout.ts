@@ -10,16 +10,14 @@
 
 import type { Align, Justify, Node as YogaNode } from 'yoga-layout';
 
-// Lazy-loaded Yoga module for CJS compatibility
-let yogaModule: typeof import('yoga-layout') | null = null;
-
 /**
  * Get the Yoga module (lazy-loaded for CJS compatibility)
  */
+
+// Lazy-loaded Yoga module for CJS compatibility
+let yogaModule: typeof import('yoga-layout') | null = null;
 async function getYoga(): Promise<typeof import('yoga-layout')> {
-  if (!yogaModule) {
-    yogaModule = await import('yoga-layout');
-  }
+  if (!yogaModule) yogaModule = await import('yoga-layout');
   return yogaModule;
 }
 
