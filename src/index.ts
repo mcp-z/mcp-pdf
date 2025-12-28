@@ -8,19 +8,19 @@ export { buildConfig, parseConfig } from './config.ts';
 export { type CharacterValidationResult, hasEmoji, needsUnicodeFont, validateTextForFont } from './lib/fonts.ts';
 export { createMcpComponents } from './setup/components.ts';
 export { createHTTPServer } from './setup/http.ts';
-export { createDefaultRuntime, createLogger } from './setup/runtime.ts';
+export { createDefaultRuntime, createLogger, createLoggingLayer } from './setup/runtime.ts';
 export { createStdioServer } from './setup/stdio.ts';
-export type { CommonRuntime, DomainModules, MiddlewareFactory, RuntimeDeps, RuntimeOverrides, ServerConfig } from './types.ts';
+export * from './types.ts';
 
 export async function startServer(config: ServerConfig): Promise<void> {
-  const result = config.transport.type === 'stdio' ? await createStdioServer(config) : await createHTTPServer(config);
+  const { logger, close } = config.transport.type === 'stdio' ? await createStdioServer(config) : await createHTTPServer(config);
 
   process.on('SIGINT', async () => {
-    await result.close();
+    await close();
     process.exit(0);
   });
 
-  result.logger.info(`Server started with ${config.transport.type} transport`);
+  logger.info(`Server started with ${config.transport.type} transport`);
   await new Promise(() => {});
 }
 
