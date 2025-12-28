@@ -3,8 +3,9 @@ import { createHTTPServer } from './setup/http.ts';
 import { createStdioServer } from './setup/stdio.ts';
 import type { ServerConfig } from './types.ts';
 
-export { type CharacterValidationResult, hasEmoji, needsUnicodeFont, validateTextForFont } from './lib/fonts.ts';
+export * as fonts from './lib/fonts.ts';
 export * as mcp from './mcp/index.ts';
+export * as schemas from './schemas/index.ts';
 export * as setup from './setup/index.ts';
 export * from './types.ts';
 
