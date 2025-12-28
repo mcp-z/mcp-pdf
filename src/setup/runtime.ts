@@ -22,7 +22,7 @@ export interface CommonRuntime {
   deps: RuntimeDeps;
   middlewareFactories: MiddlewareFactory[];
   createDomainModules: (deps: RuntimeDeps) => DomainModules;
-  cleanup: () => Promise<void>;
+  close: () => Promise<void>;
 }
 
 export interface RuntimeOverrides {
@@ -45,12 +45,12 @@ export async function createDefaultRuntime(config: ServerConfig, overrides?: Run
   const createDomainModules = overrides?.createDomainModules ?? (() => createMcpComponents(config));
   const middlewareFactories = overrides?.middlewareFactories ?? [];
 
-  const cleanup = async () => {};
+  const close = async () => {};
 
   return {
     deps,
     middlewareFactories,
     createDomainModules,
-    cleanup,
+    close,
   };
 }
