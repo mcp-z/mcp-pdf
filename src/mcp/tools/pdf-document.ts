@@ -18,45 +18,15 @@ import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE, getDefaultMargins, t
 import { registerEmojiFont } from '../../lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts, validateTextForFont } from '../../lib/fonts.ts';
 import { resolveImageDimensions } from '../../lib/image-dimensions.ts';
-import { extractTextOptions, type PDFOutput, pdfOutputSchema, resolvePageSize, textBaseSchema } from '../../lib/pdf-core.ts';
+import { extractTextOptions, type PDFOutput, pdfOutputSchema, resolvePageSize } from '../../lib/pdf-core.ts';
 import { renderTextWithEmoji } from '../../lib/pdf-helpers.ts';
+import { flowingContentItemSchema } from '../../schemas/content.ts';
 import type { StorageExtra } from '../../types.ts';
 
 // ============================================================================
-// Schemas
+// Tool-specific schemas and types
 // ============================================================================
-
-// Flowing content items - no position properties, content flows naturally
-const flowingContentItemSchema = z.union([
-  textBaseSchema.extend({ type: z.literal('text') }),
-  textBaseSchema.extend({ type: z.literal('heading') }),
-  z.object({
-    type: z.literal('image'),
-    imagePath: z.string().describe('Path to image file'),
-    width: z.number().optional().describe('Image width in points (default: natural width, max: page width)'),
-    height: z.number().optional().describe('Image height in points (default: natural height or aspect-ratio scaled)'),
-    align: z.enum(['left', 'center', 'right']).optional().describe('Image alignment (default: left)'),
-  }),
-  z.object({
-    type: z.literal('divider'),
-    color: z.string().optional().describe('Divider color (default: #cccccc)'),
-    thickness: z.number().optional().describe('Divider thickness in points (default: 1)'),
-    marginTop: z.number().optional().describe('Space above divider in points (default: 10)'),
-    marginBottom: z.number().optional().describe('Space below divider in points (default: 10)'),
-  }),
-  z.object({
-    type: z.literal('spacer'),
-    height: z.number().describe('Vertical space in points'),
-  }),
-  z
-    .object({
-      type: z.literal('pageBreak'),
-    })
-    .describe('Force a page break'),
-]);
-
-// Exported for potential external use
-export type FlowingContentItem = z.infer<typeof flowingContentItemSchema>;
+// Note: Reusable schemas are now imported from ../../schemas/content.ts
 
 const inputSchema = z.object({
   filename: z.string().optional().describe('Optional logical filename (metadata only). Storage uses UUID. Defaults to "document.pdf".'),
