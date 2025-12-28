@@ -18,7 +18,7 @@ export async function createStdioServer(config: ServerConfig, overrides?: Runtim
   logger.info(`Starting ${config.name} MCP server (stdio)`);
   const transport = await setupStdioTransport(mcpServer);
   logger.info('stdio transport ready');
-  const cleanupTransport = async () => {
+  const cleanup = async () => {
     logger.info('Shutting down stdio transport...');
     await transport.close();
   };
@@ -27,7 +27,7 @@ export async function createStdioServer(config: ServerConfig, overrides?: Runtim
     mcpServer,
     logger,
     cleanup: async () => {
-      await cleanupTransport();
+      await cleanup();
       await runtime.cleanup();
     },
   };

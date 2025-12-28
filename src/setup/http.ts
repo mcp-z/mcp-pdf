@@ -35,7 +35,7 @@ export async function createHTTPServer(config: ServerConfig, overrides?: Runtime
   logger.info(`Starting ${config.name} MCP server (http)`);
   const httpServer = await setupHttpTransport(mcpServer, { logger, app, port });
   logger.info('http transport ready');
-  const cleanupTransport = async () => {
+  const cleanup = async () => {
     logger.info('Shutting down HTTP transport...');
     httpServer.closeAllConnections();
     await new Promise<void>((resolve) => {
@@ -48,7 +48,7 @@ export async function createHTTPServer(config: ServerConfig, overrides?: Runtime
     mcpServer,
     logger,
     cleanup: async () => {
-      await cleanupTransport();
+      await cleanup();
       await runtime.cleanup();
     },
   };
