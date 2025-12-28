@@ -22,9 +22,9 @@ describe('PDF Server Dual-Mode Exports', () => {
     assert.strictEqual(typeof server.default, 'function', 'Should export default main function for bin script');
 
     // PDF-specific exports
-    assert.strictEqual(typeof server.hasEmoji, 'function', 'Should export hasEmoji function');
-    assert.strictEqual(typeof server.needsUnicodeFont, 'function', 'Should export needsUnicodeFont function');
-    assert.strictEqual(typeof server.validateTextForFont, 'function', 'Should export validateTextForFont function');
+    assert.strictEqual(typeof server.fonts.hasEmoji, 'function', 'Should export hasEmoji function');
+    assert.strictEqual(typeof server.fonts.needsUnicodeFont, 'function', 'Should export needsUnicodeFont function');
+    assert.strictEqual(typeof server.fonts.validateTextForFont, 'function', 'Should export validateTextForFont function');
   });
 
   it('should have working dual-mode __filename pattern', () => {
