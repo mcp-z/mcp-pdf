@@ -1,4 +1,4 @@
-import { composeMiddleware, createFileServingRouter, registerPrompts, registerResources, registerTools, setupHttpTransport } from '@mcpeasy/server';
+import { composeMiddleware, connectHttp, createFileServingRouter, registerPrompts, registerResources, registerTools } from '@mcpeasy/server';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import cors from 'cors';
 import express from 'express';
@@ -33,23 +33,16 @@ export async function createHTTPServer(config: ServerConfig, overrides?: Runtime
   app.use('/files', fileRouter);
 
   logger.info(`Starting ${config.name} MCP server (http)`);
-  const httpServer = await setupHttpTransport(mcpServer, { logger, app, port });
+  const { close, httpServer } = await connectHttp(mcpServer, { logger, app, port });
   logger.info('http transport ready');
-  const cleanup = async () => {
-    logger.info('Shutting down HTTP transport...');
-    httpServer.closeAllConnections();
-    await new Promise<void>((resolve) => {
-      httpServer.close(() => resolve());
-    });
-  };
 
   return {
     httpServer,
     mcpServer,
     logger,
-    cleanup: async () => {
-      await cleanup();
-      await runtime.cleanup();
+    close: async () => {
+      await close();
+      await runtime.close();
     },
   };
 }

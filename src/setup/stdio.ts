@@ -1,4 +1,4 @@
-import { composeMiddleware, registerPrompts, registerResources, registerTools, setupStdioTransport } from '@mcpeasy/server';
+import { composeMiddleware, connectStdio, registerPrompts, registerResources, registerTools } from '@mcpeasy/server';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ServerConfig } from '../types.ts';
 import { createDefaultRuntime, type RuntimeOverrides } from './runtime.ts';
@@ -16,19 +16,15 @@ export async function createStdioServer(config: ServerConfig, overrides?: Runtim
   registerPrompts(mcpServer, composed.prompts);
 
   logger.info(`Starting ${config.name} MCP server (stdio)`);
-  const transport = await setupStdioTransport(mcpServer);
+  const { close } = await connectStdio(mcpServer, { logger });
   logger.info('stdio transport ready');
-  const cleanup = async () => {
-    logger.info('Shutting down stdio transport...');
-    await transport.close();
-  };
 
   return {
     mcpServer,
     logger,
-    cleanup: async () => {
-      await cleanup();
-      await runtime.cleanup();
+    close: async () => {
+      await close();
+      await runtime.close();
     },
   };
 }
