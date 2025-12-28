@@ -2,8 +2,8 @@ import { composeMiddleware, connectHttp, createFileServingRouter, registerPrompt
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import cors from 'cors';
 import express from 'express';
-import type { ServerConfig } from '../types.ts';
-import { createDefaultRuntime, type RuntimeOverrides } from './runtime.ts';
+import type { RuntimeOverrides, ServerConfig } from '../types.ts';
+import { createDefaultRuntime } from './runtime.ts';
 
 export async function createHTTPServer(config: ServerConfig, overrides?: RuntimeOverrides) {
   const runtime = await createDefaultRuntime(config, overrides);

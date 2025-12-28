@@ -1,7 +1,7 @@
 import { composeMiddleware, connectStdio, registerPrompts, registerResources, registerTools } from '@mcpeasy/server';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { ServerConfig } from '../types.ts';
-import { createDefaultRuntime, type RuntimeOverrides } from './runtime.ts';
+import type { RuntimeOverrides, ServerConfig } from '../types.ts';
+import { createDefaultRuntime } from './runtime.ts';
 
 export async function createStdioServer(config: ServerConfig, overrides?: RuntimeOverrides) {
   const runtime = await createDefaultRuntime(config, overrides);
