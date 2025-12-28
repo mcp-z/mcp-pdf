@@ -1,8 +1,9 @@
 import assert from 'assert';
 import { existsSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
-import createPdfResume, { type Input, type Output } from '../../../../src/mcp/tools/pdf-resume.ts';
+import createTool, { type Input, type Output } from '../../../../src/mcp/tools/pdf-resume.ts';
 import type { ServerConfig } from '../../../../src/types.ts';
+import { createStorageExtra } from '../../../lib/create-extra.ts';
 
 // Use .tmp/ in package root per QUALITY.md rule T8
 const testOutputDir = join(process.cwd(), '.tmp', 'two-column-layout-tests');
@@ -34,7 +35,8 @@ describe('pdf-resume two-column layout', () => {
 
   it('creates two-column resume with left sidebar', async () => {
     const config = createTestConfig();
-    const tool = createPdfResume({ serverConfig: config });
+    const tool = createTool();
+    const extra = createStorageExtra(config);
 
     const input: Input = {
       filename: 'two-column-resume.pdf',
@@ -86,7 +88,7 @@ describe('pdf-resume two-column layout', () => {
       },
     };
 
-    const result = await tool.handler(input);
+    const result = await tool.handler(input, extra);
 
     assert.ok(result.structuredContent, 'should have structuredContent');
     const output = result.structuredContent?.result as Output;
@@ -98,7 +100,8 @@ describe('pdf-resume two-column layout', () => {
 
   it('validates sections exist in layout columns', async () => {
     const config = createTestConfig();
-    const tool = createPdfResume({ serverConfig: config });
+    const tool = createTool();
+    const extra = createStorageExtra(config);
 
     const input: Input = {
       resume: {
@@ -115,7 +118,7 @@ describe('pdf-resume two-column layout', () => {
     };
 
     try {
-      await tool.handler(input);
+      await tool.handler(input, extra);
       assert.fail('should have thrown validation error');
     } catch (error) {
       assert.ok(error instanceof Error);
@@ -125,7 +128,8 @@ describe('pdf-resume two-column layout', () => {
 
   it('rejects duplicate sections across columns', async () => {
     const config = createTestConfig();
-    const tool = createPdfResume({ serverConfig: config });
+    const tool = createTool();
+    const extra = createStorageExtra(config);
 
     const input: Input = {
       resume: {
@@ -146,7 +150,7 @@ describe('pdf-resume two-column layout', () => {
     };
 
     try {
-      await tool.handler(input);
+      await tool.handler(input, extra);
       assert.fail('should have thrown validation error');
     } catch (error) {
       assert.ok(error instanceof Error);
@@ -156,7 +160,8 @@ describe('pdf-resume two-column layout', () => {
 
   it('creates two-column layout with percentage widths', async () => {
     const config = createTestConfig();
-    const tool = createPdfResume({ serverConfig: config });
+    const tool = createTool();
+    const extra = createStorageExtra(config);
 
     const input: Input = {
       filename: 'two-column-percentage.pdf',
@@ -204,7 +209,7 @@ describe('pdf-resume two-column layout', () => {
       },
     };
 
-    const result = await tool.handler(input);
+    const result = await tool.handler(input, extra);
 
     assert.ok(result.structuredContent, 'should have structuredContent');
     const output = result.structuredContent?.result as Output;
@@ -215,7 +220,8 @@ describe('pdf-resume two-column layout', () => {
 
   it('creates two-column layout with point widths', async () => {
     const config = createTestConfig();
-    const tool = createPdfResume({ serverConfig: config });
+    const tool = createTool();
+    const extra = createStorageExtra(config);
 
     const input: Input = {
       filename: 'two-column-points.pdf',
@@ -251,7 +257,7 @@ describe('pdf-resume two-column layout', () => {
       },
     };
 
-    const result = await tool.handler(input);
+    const result = await tool.handler(input, extra);
 
     assert.ok(result.structuredContent, 'should have structuredContent');
     const output = result.structuredContent?.result as Output;
@@ -262,7 +268,8 @@ describe('pdf-resume two-column layout', () => {
 
   it('defaults to single-column when layout not specified', async () => {
     const config = createTestConfig();
-    const tool = createPdfResume({ serverConfig: config });
+    const tool = createTool();
+    const extra = createStorageExtra(config);
 
     const input: Input = {
       filename: 'single-column-default.pdf',
@@ -282,7 +289,7 @@ describe('pdf-resume two-column layout', () => {
       // No layout specified - should default to single-column
     };
 
-    const result = await tool.handler(input);
+    const result = await tool.handler(input, extra);
 
     assert.ok(result.structuredContent, 'should have structuredContent');
     const output = result.structuredContent?.result as Output;

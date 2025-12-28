@@ -17,8 +17,14 @@ export interface ServerConfig extends BaseServerConfig {
   version: string;
 }
 
-export interface ToolOptions {
-  serverConfig: ServerConfig;
+export interface StorageContext {
+  storageDir: string;
+  baseUrl?: string;
+  transport: BaseServerConfig['transport'];
+}
+
+export interface StorageExtra {
+  storageContext: StorageContext;
 }
 
 /** Runtime dependencies exposed to middleware/factories. */
@@ -41,11 +47,11 @@ export type MiddlewareFactory = (deps: RuntimeDeps) => MiddlewareLayer;
 export interface CommonRuntime {
   deps: RuntimeDeps;
   middlewareFactories: MiddlewareFactory[];
-  createDomainModules: (deps: RuntimeDeps) => DomainModules;
+  createDomainModules: () => DomainModules;
   close: () => Promise<void>;
 }
 
 export interface RuntimeOverrides {
   middlewareFactories?: MiddlewareFactory[];
-  createDomainModules?: (deps: RuntimeDeps) => DomainModules;
+  createDomainModules?: () => DomainModules;
 }

@@ -3,23 +3,10 @@
  */
 
 import assert from 'assert';
-import createTextMeasureTool from '../../../../src/mcp/tools/text-measure.ts';
-import type { ServerConfig } from '../../../../src/types.ts';
-
-function createTestConfig(): ServerConfig {
-  return {
-    name: 'server-pdf-test',
-    version: '1.0.0',
-    logLevel: 'silent',
-    baseDir: process.cwd(),
-    storageDir: process.cwd(),
-    transport: { type: 'stdio' },
-  };
-}
+import createTool from '../../../../src/mcp/tools/text-measure.ts';
 
 describe('text-measure tool', () => {
-  const config = createTestConfig();
-  const tool = createTextMeasureTool({ serverConfig: config });
+  const tool = createTool();
 
   it('measures single text item', async () => {
     const result = await tool.handler({
