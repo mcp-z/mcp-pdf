@@ -23,7 +23,7 @@ export async function startServer(config: ServerConfig): Promise<void> {
   const result = config.transport.type === 'stdio' ? await createStdioServer(config) : await createHTTPServer(config);
 
   process.on('SIGINT', async () => {
-    await result.cleanup();
+    await result.close();
     process.exit(0);
   });
 
