@@ -13,18 +13,18 @@ describe('PDF Server Dual-Mode Exports', () => {
     const serverPath = path.resolve(__dirname, '../../../dist/cjs/index.js');
 
     // This will throw if there are any import/export issues
-    const pdfServer = require(serverPath);
+    const server = require(serverPath);
 
     // Verify expected exports
-    assert.ok(pdfServer, 'PDF server module should export something');
-    assert.strictEqual(typeof pdfServer.createStdioServer, 'function', 'Should export createStdioServer function');
-    assert.strictEqual(typeof pdfServer.createHTTPServer, 'function', 'Should export createHTTPServer function');
-    assert.strictEqual(typeof pdfServer.default, 'function', 'Should export default main function for bin script');
+    assert.ok(server, 'PDF server module should export something');
+    assert.strictEqual(typeof server.setup.createStdioServer, 'function', 'Should export createStdioServer function');
+    assert.strictEqual(typeof server.setup.createHTTPServer, 'function', 'Should export createHTTPServer function');
+    assert.strictEqual(typeof server.default, 'function', 'Should export default main function for bin script');
 
     // PDF-specific exports
-    assert.strictEqual(typeof pdfServer.hasEmoji, 'function', 'Should export hasEmoji function');
-    assert.strictEqual(typeof pdfServer.needsUnicodeFont, 'function', 'Should export needsUnicodeFont function');
-    assert.strictEqual(typeof pdfServer.validateTextForFont, 'function', 'Should export validateTextForFont function');
+    assert.strictEqual(typeof server.hasEmoji, 'function', 'Should export hasEmoji function');
+    assert.strictEqual(typeof server.needsUnicodeFont, 'function', 'Should export needsUnicodeFont function');
+    assert.strictEqual(typeof server.validateTextForFont, 'function', 'Should export validateTextForFont function');
   });
 
   it('should have working dual-mode __filename pattern', () => {
