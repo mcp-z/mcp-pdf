@@ -17,7 +17,8 @@ describe('PDF Server Dual-Mode Exports', () => {
 
     // Verify expected exports
     assert.ok(pdfServer, 'PDF server module should export something');
-    assert.strictEqual(typeof pdfServer.createServer, 'function', 'Should export createServer function');
+    assert.strictEqual(typeof pdfServer.createStdioServer, 'function', 'Should export createStdioServer function');
+    assert.strictEqual(typeof pdfServer.createHTTPServer, 'function', 'Should export createHTTPServer function');
     assert.strictEqual(typeof pdfServer.default, 'function', 'Should export default main function for bin script');
 
     // PDF-specific exports
