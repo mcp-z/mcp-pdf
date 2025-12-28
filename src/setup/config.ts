@@ -5,9 +5,52 @@ import { homedir } from 'os';
 import * as path from 'path';
 import * as url from 'url';
 import { parseArgs } from 'util';
-import type { ServerConfig } from './types.ts';
+import type { ServerConfig } from '../types.ts';
 
 const pkg = JSON.parse(fs.readFileSync(path.join(moduleRoot(url.fileURLToPath(import.meta.url)), 'package.json'), 'utf-8'));
+
+const HELP_TEXT = `
+Usage: server-pdf [options]
+
+MCP server for PDF document generation and processing.
+
+Options:
+  --version              Show version number
+  --help                 Show this help message
+  --base-url=<url>       Base URL for HTTP file serving
+  --log-level=<level>    Logging level (default: info)
+  --storage-dir=<path>   Directory for file storage (default: .mcp-z/files)
+
+Environment Variables:
+  BASE_URL               Base URL for HTTP file serving (optional)
+  LOG_LEVEL              Default logging level (optional)
+  STORAGE_DIR            Storage directory (optional)
+
+Examples:
+  server-pdf                           # Use default settings
+  server-pdf --port=3000               # HTTP transport on port 3000
+  server-pdf --storage-dir=./pdfs      # Custom storage directory
+  LOG_LEVEL=debug server-pdf           # Set log level via env var
+`.trim();
+
+/**
+ * Handle --version and --help flags before config parsing.
+ * These should work without requiring any configuration.
+ */
+export function handleVersionHelp(args: string[]): { handled: boolean; output?: string } {
+  const { values } = parseArgs({
+    args,
+    options: {
+      version: { type: 'boolean' },
+      help: { type: 'boolean' },
+    },
+    strict: false,
+  });
+
+  if (values.version) return { handled: true, output: pkg.version };
+  if (values.help) return { handled: true, output: HELP_TEXT };
+  return { handled: false };
+}
 
 /**
  * Parse PDF server configuration from CLI arguments and environment.
@@ -21,6 +64,7 @@ export function parseConfig(args: string[], env: Record<string, string | undefin
     options: {
       'base-url': { type: 'string' },
       'log-level': { type: 'string' },
+      'storage-dir': { type: 'string' },
     },
     strict: false, // Allow other arguments
     allowPositionals: true,
@@ -59,6 +103,6 @@ export function parseConfig(args: string[], env: Record<string, string | undefin
  * Build production configuration from process globals.
  * Entry point for production server.
  */
-export function buildConfig(): ServerConfig {
+export function createConfig(): ServerConfig {
   return parseConfig(process.argv, process.env);
 }

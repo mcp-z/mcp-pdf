@@ -3,8 +3,8 @@ import { createLoggingMiddleware } from '@mcpeasy/server';
 import * as fs from 'fs';
 import * as path from 'path';
 import pino from 'pino';
+import * as mcp from '../mcp/index.ts';
 import type { CommonRuntime, RuntimeDeps, RuntimeOverrides, ServerConfig, StorageContext } from '../types.ts';
-import { createMcpComponents } from './components.ts';
 
 export function createLogger(config: ServerConfig): Logger {
   const hasStdio = config.transport.type === 'stdio';
@@ -55,7 +55,14 @@ export async function createDefaultRuntime(config: ServerConfig, overrides?: Run
   const logger = createLogger(config);
   const deps: RuntimeDeps = { config, logger };
 
-  const createDomainModules = overrides?.createDomainModules ?? (() => createMcpComponents());
+  const createDomainModules =
+    overrides?.createDomainModules ??
+    (() => ({
+      tools: Object.values(mcp.toolFactories).map((factory) => factory()),
+      // resources: Object.values(mcp.resourceFactories).map((factory) => factory()),
+      resources: [],
+      prompts: Object.values(mcp.promptFactories).map((factory) => factory()),
+    }));
   const middlewareFactories = overrides?.middlewareFactories ?? [() => createLoggingLayer(logger), () => createStorageLayer({ storageDir: config.storageDir, baseUrl: config.baseUrl, transport: config.transport })];
 
   return {

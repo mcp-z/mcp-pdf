@@ -1,15 +1,11 @@
-import { buildConfig } from './config.ts';
+import { createConfig, handleVersionHelp } from './setup/config.ts';
 import { createHTTPServer } from './setup/http.ts';
 import { createStdioServer } from './setup/stdio.ts';
 import type { ServerConfig } from './types.ts';
 
-export { composeMiddleware, createFileServingRouter } from '@mcpeasy/server';
-export { buildConfig, parseConfig } from './config.ts';
 export { type CharacterValidationResult, hasEmoji, needsUnicodeFont, validateTextForFont } from './lib/fonts.ts';
-export { createMcpComponents } from './setup/components.ts';
-export { createHTTPServer } from './setup/http.ts';
-export { createDefaultRuntime, createLogger, createLoggingLayer } from './setup/runtime.ts';
-export { createStdioServer } from './setup/stdio.ts';
+export * as mcp from './mcp/index.ts';
+export * as setup from './setup/index.ts';
 export * from './types.ts';
 
 export async function startServer(config: ServerConfig): Promise<void> {
@@ -25,7 +21,15 @@ export async function startServer(config: ServerConfig): Promise<void> {
 }
 
 export default async function main(): Promise<void> {
-  const config = buildConfig();
+  // Check for help/version flags FIRST, before config parsing
+  const versionHelpResult = handleVersionHelp(process.argv);
+  if (versionHelpResult.handled) {
+    console.log(versionHelpResult.output);
+    process.exit(0);
+  }
+
+  // Only parse config if no help/version flags
+  const config = createConfig();
   await startServer(config);
 }
 
