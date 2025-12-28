@@ -13,7 +13,6 @@ import { DEFAULT_TEXT_FONT_SIZE } from '../../constants.ts';
 import { measureTextHeight, measureTextWidth } from '../../lib/content-measure.ts';
 import { registerEmojiFont } from '../../lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts } from '../../lib/fonts.ts';
-import type { ToolOptions } from '../../types.ts';
 
 // ============================================================================
 // Schemas
@@ -62,7 +61,7 @@ Width is measured as single-line natural width. Height accounts for text wrappin
 export type Input = z.infer<typeof inputSchema>;
 export type Output = z.infer<typeof outputSchema>;
 
-export default function createTool(_toolOptions: ToolOptions) {
+export default function createTool() {
   async function handler(args: Input): Promise<CallToolResult> {
     const { items, font } = args;
 

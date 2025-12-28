@@ -14,7 +14,7 @@ import { existsSync } from 'fs';
 import { basename } from 'path';
 import { pdfToPng } from 'pdf-to-png-converter';
 import { z } from 'zod';
-import type { ToolOptions } from '../../types.ts';
+import type { StorageExtra } from '../../types.ts';
 
 // ============================================================================
 // Schemas
@@ -70,10 +70,10 @@ Lower scales produce smaller files, reducing context usage when sharing images.`
 export type Input = z.infer<typeof inputSchema>;
 export type Output = z.infer<typeof outputSchema>;
 
-export default function createTool(toolOptions: ToolOptions) {
-  const { serverConfig } = toolOptions;
-
-  async function handler(args: Input): Promise<CallToolResult> {
+export default function createTool() {
+  async function handler(args: Input, extra: StorageExtra): Promise<CallToolResult> {
+    const { storageContext } = extra;
+    const { storageDir, baseUrl, transport } = storageContext;
     const { pdfPath, pages = 1, viewportScale = 0.5 } = args;
 
     try {
@@ -114,13 +114,12 @@ export default function createTool(toolOptions: ToolOptions) {
         const outputFilename = `${pdfBasename}-p${pageNum}.png`;
 
         // Write to storage
-        const { storedName } = await writeFile(pngBuffer, outputFilename, { storageDir: serverConfig.storageDir });
+        const { storedName } = await writeFile(pngBuffer, outputFilename, { storageDir });
 
         // Generate URI
-        const { transport } = serverConfig;
         const uri = getFileUri(storedName, transport, {
-          storageDir: serverConfig.storageDir,
-          ...(serverConfig.baseUrl && { baseUrl: serverConfig.baseUrl }),
+          storageDir,
+          ...(baseUrl && { baseUrl }),
           endpoint: '/files',
         });
 

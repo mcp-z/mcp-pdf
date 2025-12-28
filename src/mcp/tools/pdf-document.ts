@@ -20,7 +20,7 @@ import { hasEmoji, setupFonts, validateTextForFont } from '../../lib/fonts.ts';
 import { resolveImageDimensions } from '../../lib/image-dimensions.ts';
 import { extractTextOptions, type PDFOutput, pdfOutputSchema, resolvePageSize, textBaseSchema } from '../../lib/pdf-core.ts';
 import { renderTextWithEmoji } from '../../lib/pdf-helpers.ts';
-import type { ToolOptions } from '../../types.ts';
+import type { StorageExtra } from '../../types.ts';
 
 // ============================================================================
 // Schemas
@@ -117,18 +117,10 @@ Default margins: Varies by page size (e.g., 72pt/1" for Letter, ~56pt for A4).`,
 
 export type Input = z.infer<typeof inputSchema>;
 
-export default function createTool(toolOptions: ToolOptions) {
-  const { serverConfig } = toolOptions;
-  const { transport } = serverConfig;
-
-  // Validate configuration at startup
-  if (transport && transport.type === 'http') {
-    if (!serverConfig?.baseUrl && !transport.port) {
-      throw new Error('pdf-document: HTTP/WS transport requires either baseUrl in server config or port in transport config.');
-    }
-  }
-
-  async function handler(args: Input): Promise<CallToolResult> {
+export default function createTool() {
+  async function handler(args: Input, extra: StorageExtra): Promise<CallToolResult> {
+    const { storageContext } = extra;
+    const { storageDir, baseUrl, transport } = storageContext;
     const { filename = 'document.pdf', title, author, font, pageSetup, content } = args;
 
     try {
@@ -291,12 +283,12 @@ export default function createTool(toolOptions: ToolOptions) {
       const pdfBuffer = await pdfPromise;
 
       // Write file
-      const { storedName } = await writeFile(pdfBuffer, filename, { storageDir: serverConfig.storageDir });
+      const { storedName } = await writeFile(pdfBuffer, filename, { storageDir });
 
       // Generate URI
       const fileUri = getFileUri(storedName, transport, {
-        storageDir: serverConfig.storageDir,
-        ...(serverConfig.baseUrl && { baseUrl: serverConfig.baseUrl }),
+        storageDir,
+        ...(baseUrl && { baseUrl }),
         endpoint: '/files',
       });
 

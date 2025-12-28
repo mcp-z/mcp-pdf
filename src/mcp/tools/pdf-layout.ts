@@ -19,7 +19,7 @@ import { resolveImageDimensions } from '../../lib/image-dimensions.ts';
 import { createPDFDocument, extractTextOptions, type PDFOutput, pdfOutputSchema, textBaseSchema, validateContentText } from '../../lib/pdf-core.ts';
 import { renderTextWithEmoji } from '../../lib/pdf-helpers.ts';
 import { calculateLayout, type LayoutContent, type LayoutNode } from '../../lib/yoga-layout.ts';
-import type { ToolOptions } from '../../types.ts';
+import type { StorageExtra } from '../../types.ts';
 
 // ============================================================================
 // Schemas
@@ -228,18 +228,10 @@ Default margins: 0 (full canvas access for precise positioning).`,
 export type Input = z.infer<typeof inputSchema>;
 export type Output = PDFOutput & { margins: Margins };
 
-export default function createTool(toolOptions: ToolOptions) {
-  const { serverConfig } = toolOptions;
-  const { transport } = serverConfig;
-
-  // Validate configuration at startup
-  if (transport && transport.type === 'http') {
-    if (!serverConfig?.baseUrl && !transport.port) {
-      throw new Error('pdf-layout: HTTP/WS transport requires either baseUrl in server config or port in transport config.');
-    }
-  }
-
-  async function handler(args: Input): Promise<CallToolResult> {
+export default function createTool() {
+  async function handler(args: Input, extra: StorageExtra): Promise<CallToolResult> {
+    const { storageContext } = extra;
+    const { storageDir, baseUrl, transport } = storageContext;
     const { filename = 'document.pdf', title, author, font, layout, pageSetup, content } = args;
     const overflowBehavior = layout?.overflow ?? 'auto';
 
@@ -517,12 +509,12 @@ export default function createTool(toolOptions: ToolOptions) {
       const pdfBuffer = await pdfPromise;
 
       // Write file
-      const { storedName } = await writeFile(pdfBuffer, filename, { storageDir: serverConfig.storageDir });
+      const { storedName } = await writeFile(pdfBuffer, filename, { storageDir });
 
       // Generate URI
       const fileUri = getFileUri(storedName, transport, {
-        storageDir: serverConfig.storageDir,
-        ...(serverConfig.baseUrl && { baseUrl: serverConfig.baseUrl }),
+        storageDir,
+        ...(baseUrl && { baseUrl }),
         endpoint: '/files',
       });
 

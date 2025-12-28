@@ -1,8 +1,9 @@
 import assert from 'assert';
 import { existsSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
-import createPdfResume, { type Input, type Output } from '../../../../src/mcp/tools/pdf-resume.ts';
+import createTool, { type Input, type Output } from '../../../../src/mcp/tools/pdf-resume.ts';
 import type { ServerConfig } from '../../../../src/types.ts';
+import { createStorageExtra } from '../../../lib/create-extra.ts';
 
 // Use .tmp/ in package root per QUALITY.md rule T8
 const testOutputDir = join(process.cwd(), '.tmp', 'pdf-resume-tests');
@@ -37,7 +38,8 @@ describe('pdf-resume tool', () => {
 
   it('creates resume PDF from JSON Resume format', async () => {
     const config = createTestConfig();
-    const tool = createPdfResume({ serverConfig: config });
+    const tool = createTool();
+    const extra = createStorageExtra(config);
 
     assert.equal(tool.name, 'pdf-resume', 'tool name should match');
 
@@ -67,7 +69,7 @@ describe('pdf-resume tool', () => {
       },
     };
 
-    const result = await tool.handler(input);
+    const result = await tool.handler(input, extra);
 
     assert.ok(result.structuredContent, 'should have structuredContent');
     const output = result.structuredContent?.result as Output;
@@ -78,7 +80,8 @@ describe('pdf-resume tool', () => {
 
   it('creates resume with custom styling', async () => {
     const config = createTestConfig();
-    const tool = createPdfResume({ serverConfig: config });
+    const tool = createTool();
+    const extra = createStorageExtra(config);
 
     const input: Input = {
       resume: {
@@ -98,14 +101,15 @@ describe('pdf-resume tool', () => {
       },
     };
 
-    const result = await tool.handler(input);
+    const result = await tool.handler(input, extra);
 
     assert.ok(result.structuredContent, 'should have structuredContent');
   });
 
   it('handles resume with all sections', async () => {
     const config = createTestConfig();
-    const tool = createPdfResume({ serverConfig: config });
+    const tool = createTool();
+    const extra = createStorageExtra(config);
 
     const input: Input = {
       resume: {
@@ -134,7 +138,7 @@ describe('pdf-resume tool', () => {
       },
     };
 
-    const result = await tool.handler(input);
+    const result = await tool.handler(input, extra);
 
     assert.ok(result.structuredContent, 'should have structuredContent');
   });

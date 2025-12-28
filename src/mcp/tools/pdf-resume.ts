@@ -18,7 +18,7 @@ import { z } from 'zod';
 import type { Margins, PageSizePreset } from '../../constants.ts';
 import { generateResumePDFBuffer, type RenderOptions, type TypographyOptions } from '../../lib/resume-pdf-generator.ts';
 import { validateResume } from '../../lib/validator.ts';
-import type { ToolOptions } from '../../types.ts';
+import type { StorageExtra } from '../../types.ts';
 
 // Use loose Zod schema for MCP input, AJV validates strictly
 const resumeInputSchema = z.record(z.string(), z.any()).describe('Resume data in JSON Resume format');
@@ -179,18 +179,10 @@ function getResumeDefaultMargins(_pageSize: PageSizePreset = 'LETTER'): Margins 
   return { top: 50, bottom: 50, left: 54, right: 54 };
 }
 
-export default function createTool(toolOptions: ToolOptions) {
-  const { serverConfig } = toolOptions;
-  const { transport } = serverConfig;
-
-  // Validate configuration at startup - fail fast if HTTP/WS transport without baseUrl or port
-  if (transport && transport.type === 'http') {
-    if (!serverConfig?.baseUrl && !transport.port) {
-      throw new Error('pdf-resume: HTTP/WS transport requires either baseUrl in server config or port in transport config. This is a server configuration error - please provide --base-url or --port.');
-    }
-  }
-
-  async function handler(args: Input): Promise<CallToolResult> {
+export default function createTool() {
+  async function handler(args: Input, extra: StorageExtra): Promise<CallToolResult> {
+    const { storageContext } = extra;
+    const { storageDir, baseUrl, transport } = storageContext;
     const { filename = 'resume.pdf', resume, font, pageSize, backgroundColor, sections, layout, styling } = args;
 
     try {
@@ -387,13 +379,13 @@ export default function createTool(toolOptions: ToolOptions) {
 
       // Write file with ID prefix
       const { storedName } = await writeFile(pdfBuffer, filename, {
-        storageDir: serverConfig.storageDir,
+        storageDir,
       });
 
       // Generate URI based on transport type
       const fileUri = getFileUri(storedName, transport, {
-        storageDir: serverConfig.storageDir,
-        ...(serverConfig.baseUrl && { baseUrl: serverConfig.baseUrl }),
+        storageDir,
+        ...(baseUrl && { baseUrl }),
         endpoint: '/files',
       });
 
