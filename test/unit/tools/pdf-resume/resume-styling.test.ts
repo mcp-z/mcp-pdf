@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { generateResumePDFBuffer, type RenderOptions, type ResumeSchema } from '../../../../src/lib/resume-pdf-generator.ts';
+import { generateResumePDFBuffer, type RenderOptions, type ResumeSchema } from '../../../../src/lib/resume-pdf-generator.js';
 
 const sampleResume: ResumeSchema = {
   basics: {

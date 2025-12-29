@@ -1,9 +1,9 @@
 import assert from 'assert';
 import { mkdirSync } from 'fs';
 import { join } from 'path';
-import createTool, { type Input, type Output } from '../../../../src/mcp/tools/pdf-resume.ts';
-import type { ServerConfig } from '../../../../src/types.ts';
-import { createStorageExtra } from '../../../lib/create-extra.ts';
+import createTool, { type Input, type Output } from '../../../../src/mcp/tools/pdf-resume.js';
+import type { ServerConfig } from '../../../../src/types.js';
+import { createStorageExtra } from '../../../lib/create-extra.js';
 
 // Use .tmp/ in package root per QUALITY.md rule T8
 const testOutputDir = join(process.cwd(), '.tmp', 'fine-grained-pagination-tests');
@@ -14,7 +14,7 @@ const testStorageDir = join(testOutputDir, 'storage');
  */
 function createTestConfig(): ServerConfig {
   return {
-    name: 'server-pdf-test',
+    name: 'mcp-pdf-test',
     version: '1.0.0',
     logLevel: 'silent',
     baseDir: testOutputDir,

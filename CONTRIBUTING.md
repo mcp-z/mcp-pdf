@@ -1,4 +1,4 @@
-# Contributing to @mcpeasy/server-pdf
+# Contributing to @mcp-z/mcp-pdf
 
 ## Before Starting
 

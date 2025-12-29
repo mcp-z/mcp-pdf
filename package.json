@@ -1,6 +1,6 @@
 {
-  "name": "@mcpeasy/server-pdf",
-  "version": "0.2.63",
+  "name": "@mcp-z/mcp-pdf",
+  "version": "1.2.4",
   "description": "MCP server for creative PDF generation with full emoji, Unicode, and offline support",
   "keywords": [
     "pdf",
@@ -22,13 +22,13 @@
     "ai agent",
     "claude"
   ],
-  "homepage": "https://github.com/mcp-z/server-pdf#readme",
+  "homepage": "https://github.com/mcp-z/mcp-pdf#readme",
   "bugs": {
-    "url": "https://github.com/mcp-z/server-pdf/issues"
+    "url": "https://github.com/mcp-z/mcp-pdf/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mcp-z/server-pdf.git"
+    "url": "git+https://github.com/mcp-z/mcp-pdf.git"
   },
   "license": "MIT",
   "author": "Kevin Malakoff <kmalakoff.info@gmail.com>",
@@ -62,23 +62,23 @@
     "version": "tsds version"
   },
   "dependencies": {
-    "@mcpeasy/server": "^1.0.1",
-    "@modelcontextprotocol/sdk": "^1.24.3",
+    "@mcp-z/server": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.0.0",
     "@napi-rs/canvas": "^0.1.84",
-    "ajv": "^8.17.1",
-    "ajv-formats": "^3.0.1",
-    "cors": "^2.8.5",
-    "emoji-regex": "^10.6.0",
-    "express": "^5.2.1",
-    "fontkit": "^2.0.4",
-    "image-size": "^2.0.2",
-    "liquidjs": "^10.24.0",
-    "module-root-sync": "^2.0.2",
-    "pdf-to-png-converter": "^3.11.0",
+    "ajv": "^8.0.0",
+    "ajv-formats": "^3.0.0",
+    "cors": "^2.0.0",
+    "emoji-regex": "^10.0.0",
+    "express": "^5.0.0",
+    "fontkit": "^2.0.0",
+    "image-size": "^2.0.0",
+    "liquidjs": "^10.0.0",
+    "module-root-sync": "^2.0.0",
+    "pdf-to-png-converter": "^3.0.0",
     "pdfkit": "^0.17.2",
-    "pino": "^10.1.0",
-    "yoga-layout": "^3.2.1",
-    "zod": "^4.1.13"
+    "pino": "^10.0.0",
+    "yoga-layout": "^3.0.1",
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
@@ -96,7 +96,7 @@
   "engines": {
     "node": ">=20"
   },
-  "mcpName": "io.github.mcp-z/server-pdf",
+  "mcpName": "io.github.mcp-z/mcp-pdf",
   "tsds": {
     "source": "src/index.ts"
   }

@@ -1,4 +1,4 @@
-import type { ServerConfig, StorageContext, StorageExtra } from '../../src/types.ts';
+import type { ServerConfig, StorageContext, StorageExtra } from '../../src/types.js';
 
 export function createStorageContext(config: Pick<ServerConfig, 'storageDir' | 'baseUrl' | 'transport'>): StorageContext {
   return {

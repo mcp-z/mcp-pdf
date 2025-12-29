@@ -6,13 +6,13 @@
  */
 
 import type PDFKit from 'pdfkit';
-import type { FieldTemplates, GroupElement, LayoutElement } from '../ir/types.ts';
-import type { TypographyOptions } from '../types/typography.ts';
-import type { HeightMeasurer, LayoutContent, LayoutNode } from '../yoga-layout.ts';
-import { calculateLayout } from '../yoga-layout.ts';
-import { createMeasureContext, measureElement } from './measure.ts';
-import { DEFAULT_PAGE_CONFIG } from './paginate.ts';
-import type { PageConfig, ResumeLayoutNode } from './types.ts';
+import type { FieldTemplates, GroupElement, LayoutElement } from '../ir/types.js';
+import type { TypographyOptions } from '../types/typography.js';
+import type { HeightMeasurer, LayoutContent, LayoutNode } from '../yoga-layout.js';
+import { calculateLayout } from '../yoga-layout.js';
+import { createMeasureContext, measureElement } from './measure.js';
+import { DEFAULT_PAGE_CONFIG } from './paginate.js';
+import type { PageConfig, ResumeLayoutNode } from './types.js';
 
 // =============================================================================
 // IR to Yoga Transformation

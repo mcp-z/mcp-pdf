@@ -1,338 +1,77 @@
-# @mcpeasy/server-pdf
+# @mcp-z/mcp-pdf
 
-[![npm](https://img.shields.io/npm/v/@mcpeasy/server-pdf.svg)](https://www.npmjs.com/package/@mcpeasy/server-pdf)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node](https://img.shields.io/node/v/@mcpeasy/server-pdf.svg)](https://nodejs.org)
-[![npm downloads](https://img.shields.io/npm/dm/@mcpeasy/server-pdf.svg)](https://www.npmjs.com/package/@mcpeasy/server-pdf)
+Docs: https://mcp-z.github.io/mcp-pdf
+PDF generation MCP server for documents, layouts, and image export.
 
-MCP server for creative PDF generation with full emoji, Unicode, and offline support
+## Common uses
 
-## Why This Exists
+- Generate PDFs from text or layouts
+- Render PDF pages as images
+- Measure text before layout
 
-PDFs shouldn't be boring. This server gives AI agents the power to create professional documents and creative projects with full emoji (😀 🎉 🚀), Unicode (你好 مرحبا Привет), and direct PDFKit access.
+## Transports
 
-From practical invoices and resumes to creative artwork—if it's a PDF, you can build it.
+MCP supports stdio and HTTP.
 
-## Features
-
-- **Full Emoji & Unicode** - Color emoji as inline images, complete international text support
-- **Offline Ready** - Works without internet after first install, perfect for local LLMs
-- **Creative Freedom** - Colors, shapes, positioning—build anything from invoices to art
-- **Two Specialized Tools** - Advanced layouts with flexbox, or JSON Resume format
-- **Zero Dependencies** - Pure JavaScript, no brew install, no system configuration
-- **Smart Context Management** - Returns resource URIs instead of embedding PDFs in context
-
-## Installation
-
-### Option 1: Global Install (Recommended)
-
-```bash
-# npm
-npm install -g @mcpeasy/server-pdf
-
-# yarn
-yarn global add @mcpeasy/server-pdf
-
-# pnpm
-pnpm add -g @mcpeasy/server-pdf
-```
-
-Then add to your `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "pdf": {
-      "command": "server-pdf"
-    }
-  }
-}
-```
-
-### Option 2: Direct Usage (No Install)
-
-```bash
-npx -y @mcpeasy/server-pdf
-```
-
-Config:
-
+**Stdio**
 ```json
 {
   "mcpServers": {
     "pdf": {
       "command": "npx",
-      "args": ["-y", "@mcpeasy/server-pdf"]
+      "args": ["-y", "@mcp-z/mcp-pdf"]
     }
   }
 }
 ```
 
-**Note:** On first install, emoji font (~15MB) downloads automatically. After that, works completely offline.
-
-## Configuration Reference
-
-See [server.json](./server.json) for the complete list of:
-- Environment variables
-- CLI arguments
-- Default values
-
-The `server.json` file follows the official [MCP Server Schema](https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json).
-
-### Example Configuration
-
+**HTTP**
 ```json
 {
   "mcpServers": {
-    "server-pdf": {
-      "command": "npx",
-      "args": ["-y", "server-pdf"],
-      "env": {
-        "STORAGE_DIR": "~/.server-pdf"
+    "pdf": {
+      "type": "http",
+      "url": "http://localhost:9010/mcp",
+      "start": {
+        "command": "npx",
+        "args": ["-y", "@mcp-z/mcp-pdf", "--port=9010"]
       }
     }
   }
 }
 ```
 
----
+`start` is an extension used by `npx @mcp-z/cli up` to launch HTTP servers for you.
 
-## Quick Start
+## How to use
 
-Once installed, create your first PDF:
+```bash
+# List tools
+mcp-z inspect --servers pdf --tools
 
-```typescript
-// Ask Claude:
-"Create a PDF with the text 'Hello World!'"
-
-// Claude will use the pdf-create tool
-// Result: server-pdf://abc123 (resource URI)
-
-// View the PDF:
-"Show me that PDF"
-
-// Claude retrieves the PDF content via the resource URI
+# Create a simple PDF
+mcp-z call pdf pdf-document '{"content":["Hello from MCP"]}'
 ```
 
-✅ Your PDF is at `~/.server-pdf/` ready to use!
+## Available tools
 
----
-
-## Where to Find This Server
-
-Published on multiple MCP registries and package managers:
-
-- **[npm](https://www.npmjs.com/package/@mcpeasy/server-pdf)** - `@mcpeasy/server-pdf`
-- **[MCP Official Registry](https://modelcontextprotocol.io/registry)** - `io.github.kmalakoff/server-pdf`
-- **[Smithery](https://smithery.ai/server/@mcpeasy/server-pdf)** - One-click install via Smithery CLI
-- **[Awesome MCP Servers](https://mcpservers.org/)** - Community curated list
-- **[Cline Marketplace](https://github.com/cline/mcp-marketplace)** - Built-in to Cline IDE (coming soon)
-- **[GitHub Repository](https://github.com/mcp-z/server-pdf)** - Source code and issues
-
----
-
-## Works Everywhere
-
-Runs anywhere Node.js >=16 runs. No Python, no Cairo, no Homebrew—just npm install and go. Once installed, works completely offline with cached fonts.
-
-## How It Works
-
-### Resource URIs (No Context Bloat)
-
-When you create a PDF, the server returns a resource URI instead of embedding the PDF content:
-
-```
-Create PDF → Returns: server-pdf://uuid (just the URI, not the PDF)
-```
-
-This keeps PDFs out of the LLM's context until explicitly needed. PDFs are only loaded when you specifically request them via their resource URI.
-
-### Security Model
-
-This server writes PDFs to a sandboxed directory to prevent path traversal attacks:
-
-- **Default location**: `~/.server-pdf/`
-- **Custom location**: Set `STORAGE_DIR` environment variable
-- **Filename sanitization**: Blocks `..`, `/`, and unsafe characters
-- **No path parameters**: Tools accept only filenames, not full paths
-- **Server isolation**: Never writes outside its storage directory
-
-All generated PDFs are written to the configured storage directory with sanitized filenames.
-
-### Storage Directory
-
-PDFs are stored in `~/.server-pdf` by default. This works everywhere - local, containers, remote servers.
-
-Most users should just use the default. No configuration needed.
-
----
-
-## What You Can Create
-
-- **Professional** - Resumes, invoices, reports, certificates
-- **Creative** - Flyers, posters, artistic documents, themed designs
-- **Practical** - Letters, notices, forms, documentation
-- **Experimental** - Bob Ross paintings, space themes, progressive effects
-- **Anything** - If it's a PDF, you can build it
-
-## Examples
-
-### 1. Simple Text Document
-
-Start simple with plain text:
-
-```typescript
-pdf-create({
-  filename: "letter.pdf",
-  title: "Customer Thank You",
-  content: [
-    { type: "text", text: "Dear Customer," },
-    { type: "text", text: "Thank you for your business.", moveDown: 1 },
-    { type: "text", text: "Best regards,\nACME Corp" }
-  ]
-})
-```
-
-### 2. Styled Document with Colors
-
-Add visual style with colors and formatting:
-
-```typescript
-pdf-create({
-  filename: "notice.pdf",
-  content: [
-    {
-      type: "heading",
-      text: "Community Notice",
-      fontSize: 24,
-      color: "#2C5F8D",
-      align: "center"
-    },
-    {
-      type: "text",
-      text: "Pool maintenance scheduled for this weekend.",
-      fontSize: 12,
-      moveDown: 2
-    },
-    {
-      type: "text",
-      text: "Questions? Contact the front desk.",
-      color: "#666666"
-    }
-  ]
-})
-```
-
-### 3. Certificate with Shapes
-
-Combine shapes and text for visual impact:
-
-```typescript
-pdf-create({
-  filename: "certificate.pdf",
-  pageSetup: {
-    backgroundColor: "#FFF8DC"
-  },
-  content: [
-    // Gold border
-    {
-      type: "rect",
-      x: 50,
-      y: 50,
-      width: 512,
-      height: 692,
-      strokeColor: "#DAA520",
-      lineWidth: 3
-    },
-    // Title
-    {
-      type: "heading",
-      text: "Certificate of Achievement",
-      fontSize: 32,
-      color: "#DAA520",
-      align: "center",
-      y: 200
-    },
-    // Recipient
-    {
-      type: "text",
-      text: "Presented to",
-      fontSize: 14,
-      align: "center",
-      moveDown: 2
-    },
-    {
-      type: "heading",
-      text: "Alex Quantum",
-      fontSize: 28,
-      color: "#003366",
-      align: "center"
-    }
-  ]
-})
-```
-
-### 4. Professional Resume
-
-Handle complex structured data with JSON Resume:
-
-```typescript
-pdf-create-resume({
-  filename: "john-doe-resume.pdf",
-  resume: {
-    basics: {
-      name: "John Doe",
-      label: "Software Engineer",
-      email: "john@example.com",
-      phone: "(555) 123-4567",
-      summary: "Experienced software engineer with 5+ years building scalable web applications.",
-      location: {
-        city: "San Francisco",
-        region: "CA"
-      }
-    },
-    work: [
-      {
-        name: "Tech Corp",
-        position: "Senior Software Engineer",
-        startDate: "2021-03",
-        highlights: [
-          "Built real-time notification system",
-          "Reduced API response time by 60%",
-          "Mentored 5 junior engineers"
-        ]
-      }
-    ],
-    skills: [
-      {
-        name: "Languages",
-        keywords: ["TypeScript", "JavaScript", "Python"]
-      }
-    ]
-  }
-})
-```
-
-## Creative Possibilities
-
-Beyond standard documents, this tool creates artistic PDFs through layered shapes, gradients, and effects. Examples include Bob Ross-style landscape paintings, space-themed documents with stars and cosmic effects, and visually striking community notices.
-
-The `pdf-create` tool provides direct access to PDFKit's capabilities for combining shapes, colors, positioning, and text into virtually anything.
-
-## Available Tools
-
-### `pdf-create-resume`
+### pdf-resume
 
 Generate professional resumes from JSON Resume format.
 
-**Parameters:**
+Parameters:
+
 - `filename` (string, optional) - Filename for the PDF (defaults to "resume.pdf")
-- `resume` (object, required) - [JSON Resume schema](https://jsonresume.org/schema)
+- `resume` (object, required) - JSON Resume schema
 - `sections` (object, optional) - Section ordering and field templates
 - `layout` (object, optional) - Spatial arrangement (single-column or two-column)
 - `styling` (object, optional) - Typography and spacing options
+- `font` (string, optional) - Custom font
+- `pageSize` (string, optional) - Page size (default: "LETTER")
+- `backgroundColor` (string, optional) - Page background color
 
-**Resume Schema Sections:**
+Resume schema sections:
+
 - `basics` - Name, contact, summary, location
 - `work` - Work experience with highlights
 - `education` - Degrees and institutions
@@ -340,525 +79,432 @@ Generate professional resumes from JSON Resume format.
 - `skills` - Skills grouped by category
 - `awards`, `certificates`, `languages`, `volunteer`, `publications`, `interests`, `references`
 
-See the resume example above for structure.
-
-#### Section Configuration
+#### Section configuration
 
 Control which sections appear and in what order using `sections.sections`:
 
-```typescript
-pdf-create-resume({
+```ts
+await client.callTool('pdf-resume', {
   resume: { /* JSON Resume data */ },
   sections: {
     sections: [
-      { source: 'basics', render: 'header' },      // Name + contact line
+      { source: 'basics', render: 'header' },
       { source: 'basics.summary', title: 'Summary' },
       { source: 'work', title: 'Experience' },
       { source: 'skills', title: 'Skills' },
-      { source: 'education', title: 'Education' },
+      { source: 'education', title: 'Education' }
     ]
   }
-})
+});
 ```
 
-**Section Config Properties:**
+Section config properties:
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `source` | string | **Required.** Path to data in resume schema (e.g., `'basics'`, `'work'`, `'meta.customField'`) |
-| `render` | string | Built-in renderer. Auto-inferred if omitted. Only needed for `'header'` (never auto-inferred) or to force a specific renderer. **Not needed if using `template`.** |
-| `title` | string | Section heading (omit for no title) |
-| `template` | string | LiquidJS template for custom rendering. **Use instead of `render`** for full control. Receives source data as context. |
+- `source` (string, required) - Path to data in resume schema (e.g., `basics`, `work`, `meta.customField`)
+- `render` (string, optional) - Built-in renderer. Use `header` explicitly or to force a renderer
+- `title` (string, optional) - Section heading (omit for no title)
+- `template` (string, optional) - LiquidJS template for custom rendering
 
-**Available Renderers:**
+Available renderers:
 
-| Renderer | Auto-inferred when | Use for |
-|----------|-------------------|---------|
-| `header` | Never (must be explicit) | Name + contact line from `basics` |
-| `entry-list` | Array with position/institution/organization | Work, education, volunteer, projects |
-| `keyword-list` | Array with `keywords` field | Skills, interests |
-| `language-list` | Array with `language` field | Languages |
-| `credential-list` | Array with awarder/issuer/publisher | Awards, certificates, publications |
-| `reference-list` | Array with `reference` field | References |
-| `text` | String or string array | Summary, custom text |
+- `header` - Name + contact line from basics (never auto-inferred)
+- `entry-list` - Arrays with position/institution/organization
+- `keyword-list` - Arrays with `keywords`
+- `language-list` - Arrays with `language`
+- `credential-list` - Arrays with awarder/issuer/publisher
+- `reference-list` - Arrays with `reference`
+- `text` - String or string array
 
-**Example: Custom Section Order with Meta Fields**
+Example: custom section order with meta fields
 
-```typescript
-pdf-create-resume({
+```ts
+await client.callTool('pdf-resume', {
   resume: {
     basics: { name: 'Jane Doe', email: 'jane@example.com' },
     work: [{ /* ... */ }],
-    meta: {
-      valueProp: 'Full-stack engineer with 10+ years experience...'
-    }
+    meta: { valueProp: 'Full-stack engineer with 10+ years experience...' }
   },
   sections: {
     sections: [
       { source: 'basics', render: 'header' },
-      { source: 'meta.valueProp', title: 'Value Proposition' },  // Custom meta field
-      { source: 'work', title: 'Experience' },
+      { source: 'meta.valueProp', title: 'Value Proposition' },
+      { source: 'work', title: 'Experience' }
     ]
   }
-})
+});
 ```
 
-#### Field Templates
+#### Field templates
 
-Field templates use [LiquidJS](https://liquidjs.com/) syntax to customize how individual fields are rendered. This allows complete control over date formats, location display, and other field-level formatting.
+Field templates use LiquidJS syntax to customize how fields are rendered.
 
-**Available Field Templates:**
+Available field templates:
 
-| Template | Description | Default |
-|----------|-------------|---------|
-| `location` | Location display | `{{ city }}{% if region %}, {{ region }}{% endif %}` |
-| `dateRange` | Date range format | `{{ start \| date: 'MMM YYYY' }} – {{ end \| date: 'MMM YYYY' \| default: 'Present' }}` |
-| `degree` | Education degree | `{{ studyType }}{% if area %}, {{ area }}{% endif %}` |
-| `credential` | Certificates/awards | `{{ title \| default: name }}{% if awarder %}, {{ awarder }}{% endif %}` |
-| `language` | Language proficiency | `{{ language }}{% if fluency %} ({{ fluency }}){% endif %}` |
-| `skill` | Skill keywords | `{{ name }}: {{ keywords \| join: ', ' }}` |
-| `contactLine` | Contact info line | `{{ items \| join: ' \| ' }}` |
+- `location` - `{{ city }}{% if region %}, {{ region }}{% endif %}`
+- `dateRange` - `{{ start | date: 'MMM YYYY' }} - {{ end | date: 'MMM YYYY' | default: 'Present' }}`
+- `degree` - `{{ studyType }}{% if area %}, {{ area }}{% endif %}`
+- `credential` - `{{ title | default: name }}{% if awarder %}, {{ awarder }}{% endif %}`
+- `language` - `{{ language }}{% if fluency %} ({{ fluency }}){% endif %}`
+- `skill` - `{{ name }}: {{ keywords | join: ', ' }}`
+- `contactLine` - `{{ items | join: ' | ' }}`
 
-**Date Format Tokens:**
+Date format tokens:
 
-The `date` filter supports these tokens (NOT strftime syntax):
+- `YYYY`, `YY`, `MMMM`, `MMM`, `MM`, `M`, `DD`, `D`
 
-| Token | Output | Example |
-|-------|--------|---------|
-| `YYYY` | 4-digit year | 2024 |
-| `YY` | 2-digit year | 24 |
-| `MMMM` | Full month name | January |
-| `MMM` | Short month name | Jan |
-| `MM` | 2-digit month | 01 |
-| `M` | 1-digit month | 1 |
-| `DD` | 2-digit day | 05 |
-| `D` | 1-digit day | 5 |
+Available filters:
 
-**Available Filters:**
+- `date` - Format a date string
+- `default` - Fallback for empty values
+- `tenure` - Calculate duration
+- `join` - Join array elements
 
-| Filter | Description | Example |
-|--------|-------------|---------|
-| `date` | Format a date string | `{{ start \| date: 'MMM YYYY' }}` |
-| `default` | Fallback for empty values | `{{ end \| default: 'Present' }}` |
-| `tenure` | Calculate duration | `{{ start \| tenure: end }}` |
-| `join` | Join array elements | `{{ keywords \| join: ', ' }}` |
+Example: French resume
 
-**Example: French Resume**
-
-```typescript
-pdf-create-resume({
-  filename: "cv-francais.pdf",
+```ts
+await client.callTool('pdf-resume', {
+  filename: 'cv-francais.pdf',
   resume: { /* JSON Resume data */ },
   sections: {
     fieldTemplates: {
-      dateRange: "{{ start | date: 'MM/YYYY' }} – {{ end | date: 'MM/YYYY' | default: 'Présent' }}",
-      location: "{{ city }}"
+      dateRange: "{{ start | date: 'MM/YYYY' }} - {{ end | date: 'MM/YYYY' | default: 'Present' }}",
+      location: '{{ city }}'
     }
   }
-})
+});
 ```
 
-**Example: Verbose Date Format**
+Example: verbose date format
 
-```typescript
-pdf-create-resume({
-  filename: "resume.pdf",
+```ts
+await client.callTool('pdf-resume', {
+  filename: 'resume.pdf',
   resume: { /* JSON Resume data */ },
   sections: {
     fieldTemplates: {
       dateRange: "{{ start | date: 'MMMM YYYY' }} to {{ end | date: 'MMMM YYYY' | default: 'Present' }}"
     }
   }
-})
-// Output: "January 2020 to December 2023"
+});
 ```
 
-### Two-Column Resume Layout
+#### Two-column resume layout
 
-Create professional two-column resumes with a sidebar:
-
-```typescript
-pdf-create-resume({
-  filename: "two-column-resume.pdf",
+```ts
+await client.callTool('pdf-resume', {
+  filename: 'two-column-resume.pdf',
   resume: {
     basics: {
-      name: "Jane Doe",
-      label: "Product Designer",
-      email: "jane@example.com"
+      name: 'Jane Doe',
+      label: 'Product Designer',
+      email: 'jane@example.com'
     },
     work: [{
-      name: "Design Studio",
-      position: "Lead Designer",
-      startDate: "2019-03",
-      highlights: ["Redesigned product UI", "Increased conversion by 25%"]
+      name: 'Design Studio',
+      position: 'Lead Designer',
+      startDate: '2019-03',
+      highlights: ['Redesigned product UI', 'Increased conversion by 25%']
     }],
     skills: [
-      { name: "Design", keywords: ["Figma", "Sketch", "Adobe XD"] },
-      { name: "Frontend", keywords: ["HTML", "CSS", "React"] }
+      { name: 'Design', keywords: ['Figma', 'Sketch', 'Adobe XD'] },
+      { name: 'Frontend', keywords: ['HTML', 'CSS', 'React'] }
     ],
     languages: [
-      { language: "English", fluency: "Native" },
-      { language: "Spanish", fluency: "Intermediate" }
+      { language: 'English', fluency: 'Native' },
+      { language: 'Spanish', fluency: 'Intermediate' }
     ]
   },
   layout: {
-    style: "two-column",
+    style: 'two-column',
     gap: 30,
     columns: {
-      left: {
-        width: "30%",
-        sections: ["skills", "languages"]
-      },
-      right: {
-        width: "70%",
-        sections: ["work"]
-      }
+      left: { width: '30%', sections: ['skills', 'languages'] },
+      right: { width: '70%', sections: ['work'] }
     }
   }
-})
+});
 ```
 
-**Layout Options:**
+Layout options:
+
 - `style` - "single-column" (default) or "two-column"
 - `gap` - Space between columns in points (default: 30)
-- `columns.left.width` - Left column width as percentage ("30%") or points (150)
+- `columns.left.width` - Left column width (percentage or points)
 - `columns.left.sections` - Section source paths for left column
 - `columns.right.width` - Right column width
 - `columns.right.sections` - Section source paths for right column
 
-Sections not assigned to a column default to the right column. The header always spans the full width at the top.
+### pdf-layout
 
----
+Create a PDF with precise positioning and Yoga flexbox layout.
 
-### `pdf-create`
+Parameters:
 
-Advanced PDF creation with full layout control.
-
-**Parameters:**
 - `filename` (string, optional) - Filename for the PDF (defaults to "document.pdf")
 - `title` (string, optional) - Document metadata
 - `author` (string, optional) - Document metadata
 - `pageSetup` (object, optional) - Page configuration
 - `content` (array, required) - Content items
+- `layout` (object, optional) - Layout options
 
-**Page Setup:**
-```typescript
+Page setup:
+
+```ts
 pageSetup: {
-  size: [612, 792],  // [width, height] in points (default: Letter)
+  size: [612, 792],
   margins: { top: 72, bottom: 72, left: 72, right: 72 },
-  backgroundColor: "#FFFFFF"
+  backgroundColor: '#FFFFFF'
 }
 ```
 
-**Content Types:**
+Content types:
 
-**Text & Headings:**
-```typescript
+Text and headings:
+
+```ts
 {
-  type: "text",  // or "heading"
-  text: "Content here",
+  type: 'text',
+  text: 'Content here',
   fontSize: 12,
   bold: true,
-  color: "#000000",
-  align: "left",  // "left", "center", "right", "justify"
-  x: 100,  // optional positioning
+  color: '#000000',
+  align: 'left',
+  x: 100,
   y: 200,
-  oblique: 15,  // italic slant in degrees
+  oblique: 15,
   characterSpacing: 1,
-  moveDown: 1,  // spacing after (line heights)
+  moveDown: 1,
   underline: true,
   strike: true
 }
 ```
 
-**Shapes:**
-```typescript
-// Rectangle
-{
-  type: "rect",
-  x: 50,
-  y: 50,
-  width: 200,
-  height: 100,
-  fillColor: "#FF0000",
-  strokeColor: "#000000",
-  lineWidth: 2
-}
+Shapes:
 
-// Circle
-{
-  type: "circle",
-  x: 300,  // center X
-  y: 400,  // center Y
-  radius: 50,
-  fillColor: "#00FF00",
-  strokeColor: "#000000",
-  lineWidth: 1
-}
-
-// Line
-{
-  type: "line",
-  x1: 100,
-  y1: 100,
-  x2: 500,
-  y2: 100,
-  strokeColor: "#0000FF",
-  lineWidth: 2
-}
+```ts
+{ type: 'rect', x: 50, y: 50, width: 200, height: 100, fillColor: '#FF0000', strokeColor: '#000000', lineWidth: 2 }
+{ type: 'circle', x: 300, y: 400, radius: 50, fillColor: '#00FF00', strokeColor: '#000000', lineWidth: 1 }
+{ type: 'line', x1: 100, y1: 100, x2: 500, y2: 100, strokeColor: '#0000FF', lineWidth: 2 }
 ```
 
-**Images & Pages:**
-```typescript
-// Image
-{
-  type: "image",
-  imagePath: "/path/to/image.png",
-  width: 200,
-  height: 150,
-  x: 100,  // optional positioning
-  y: 200
-}
+Images and pages:
 
-// Page Break
-{
-  type: "pageBreak"
-}
+```ts
+{ type: 'image', imagePath: '/path/to/image.png', width: 200, height: 150, x: 100, y: 200 }
+{ type: 'pageBreak' }
 ```
 
----
+#### Flexbox layout engine
 
-## Flexbox Layout Engine
+Use `type: 'group'` to create flexbox containers:
 
-The `pdf-create` tool includes a flexbox layout engine powered by [Yoga](https://www.yogalayout.dev/) (Facebook's layout engine used in React Native). This allows you to create complex multi-column layouts without manual coordinate math.
-
-### Groups: Flexbox Containers
-
-Use `type: "group"` to create flexbox containers:
-
-```typescript
+```ts
 {
-  type: "group",
-
-  // Flexbox properties
-  direction: "row",      // "column" (default) or "row"
-  gap: 20,               // Space between children (points)
-  flex: 1,               // Flex grow factor
-  justify: "center",     // Main axis: "start", "center", "end", "space-between", "space-around"
-  alignItems: "center",  // Cross axis: "start", "center", "end", "stretch"
-
-  // Self-positioning
-  align: "center",       // Center this group in its parent
-
-  // Size
-  width: 300,            // Points or percentage ("50%")
+  type: 'group',
+  direction: 'row',
+  gap: 20,
+  flex: 1,
+  justify: 'center',
+  alignItems: 'center',
+  align: 'center',
+  width: 300,
   height: 200,
-
-  // Visual
-  padding: 15,           // Or { top, right, bottom, left }
-  background: "#f5f5f5",
-  border: { color: "#333", width: 1 },
-
-  // Nested content
+  padding: 15,
+  background: '#f5f5f5',
+  border: { color: '#333', width: 1 },
   children: [
-    { type: "text", text: "Child 1" },
-    { type: "text", text: "Child 2" }
+    { type: 'text', text: 'Child 1' },
+    { type: 'text', text: 'Child 2' }
   ]
 }
 ```
 
-### Common Layout Patterns
+Common layout patterns:
 
-**Two Equal Columns:**
-```typescript
+Two equal columns:
+
+```ts
 {
-  type: "group",
-  direction: "row",
+  type: 'group',
+  direction: 'row',
   gap: 20,
   children: [
-    { type: "group", flex: 1, children: [{ type: "text", text: "Left" }] },
-    { type: "group", flex: 1, children: [{ type: "text", text: "Right" }] }
+    { type: 'group', flex: 1, children: [{ type: 'text', text: 'Left' }] },
+    { type: 'group', flex: 1, children: [{ type: 'text', text: 'Right' }] }
   ]
 }
 ```
 
-**Three Columns with Proportions (1:2:1):**
-```typescript
+Three columns with proportions (1:2:1):
+
+```ts
 {
-  type: "group",
-  direction: "row",
+  type: 'group',
+  direction: 'row',
   gap: 15,
   children: [
-    { type: "group", flex: 1, children: [...] },  // 25%
-    { type: "group", flex: 2, children: [...] },  // 50%
-    { type: "group", flex: 1, children: [...] }   // 25%
+    { type: 'group', flex: 1, children: [/* ... */] },
+    { type: 'group', flex: 2, children: [/* ... */] },
+    { type: 'group', flex: 1, children: [/* ... */] }
   ]
 }
 ```
 
-**Centered Card:**
-```typescript
+Centered card:
+
+```ts
 {
-  type: "group",
+  type: 'group',
   width: 300,
-  align: "center",  // Centers horizontally on page
-  border: { color: "#333", width: 2 },
+  align: 'center',
+  border: { color: '#333', width: 2 },
   padding: 20,
   children: [
-    { type: "heading", text: "Card Title", align: "center" },
-    { type: "text", text: "Card content here" }
+    { type: 'heading', text: 'Card Title', align: 'center' },
+    { type: 'text', text: 'Card content here' }
   ]
 }
 ```
 
-**Space Between Items:**
-```typescript
+Space between items:
+
+```ts
 {
-  type: "group",
-  direction: "row",
-  justify: "space-between",
+  type: 'group',
+  direction: 'row',
+  justify: 'space-between',
   children: [
-    { type: "text", text: "Left" },
-    { type: "text", text: "Right" }
+    { type: 'text', text: 'Left' },
+    { type: 'text', text: 'Right' }
   ]
 }
 ```
 
-### Mixed Positioning
+Mixed positioning:
 
-You can mix flexbox groups with absolute-positioned elements:
-
-```typescript
-pdf-create({
-  layout: { mode: "fixed" },
+```ts
+await client.callTool('pdf-layout', {
+  layout: { overflow: 'auto' },
   content: [
-    // Absolute positioned header
-    { type: "heading", text: "TITLE", x: 54, y: 50 },
-
-    // Flexbox group at specific position
+    { type: 'heading', text: 'TITLE', x: 54, y: 50 },
     {
-      type: "group",
-      direction: "row",
+      type: 'group',
+      direction: 'row',
       gap: 20,
       x: 54,
       y: 100,
       children: [
-        { type: "group", flex: 1, children: [...] },
-        { type: "group", flex: 1, children: [...] }
+        { type: 'group', flex: 1, children: [/* ... */] },
+        { type: 'group', flex: 1, children: [/* ... */] }
       ]
     },
-
-    // Absolute positioned footer
-    { type: "text", text: "Footer", x: 54, y: 700 }
+    { type: 'text', text: 'Footer', x: 54, y: 700 }
   ]
-})
+});
 ```
 
-### Complete Flyer Example
+Complete flyer example:
 
-```typescript
-pdf-create({
-  layout: { mode: "fixed" },
-  pageSetup: { backgroundColor: "#fffef5" },
+```ts
+await client.callTool('pdf-layout', {
+  pageSetup: { backgroundColor: '#fffef5' },
   content: [
-    // Header
+    { type: 'heading', text: 'SUMMER FESTIVAL 2024', align: 'center', fontSize: 28, y: 50 },
+    { type: 'text', text: 'July 15-17 | Central Park', align: 'center', y: 90 },
     {
-      type: "heading",
-      text: "SUMMER FESTIVAL 2024",
-      align: "center",
-      fontSize: 28,
-      y: 50
-    },
-    {
-      type: "text",
-      text: "July 15-17 | Central Park",
-      align: "center",
-      y: 90
-    },
-    // Two-column content
-    {
-      type: "group",
-      direction: "row",
+      type: 'group',
+      direction: 'row',
       gap: 20,
       x: 54,
       y: 130,
       children: [
         {
-          type: "group",
+          type: 'group',
           flex: 1,
-          border: { color: "#2196f3", width: 2 },
+          border: { color: '#2196f3', width: 2 },
           padding: 15,
           children: [
-            { type: "heading", text: "MUSIC", align: "center", fontSize: 18 },
-            { type: "text", text: "Live bands all weekend" },
-            { type: "text", text: "- Main Stage" },
-            { type: "text", text: "- Acoustic Tent" }
+            { type: 'heading', text: 'MUSIC', align: 'center', fontSize: 18 },
+            { type: 'text', text: 'Live bands all weekend' },
+            { type: 'text', text: '- Main Stage' },
+            { type: 'text', text: '- Acoustic Tent' }
           ]
         },
         {
-          type: "group",
+          type: 'group',
           flex: 1,
-          border: { color: "#4caf50", width: 2 },
+          border: { color: '#4caf50', width: 2 },
           padding: 15,
           children: [
-            { type: "heading", text: "FOOD", align: "center", fontSize: 18 },
-            { type: "text", text: "50+ local vendors" },
-            { type: "text", text: "- Food Court" },
-            { type: "text", text: "- Craft Beers" }
+            { type: 'heading', text: 'FOOD', align: 'center', fontSize: 18 },
+            { type: 'text', text: '50+ local vendors' },
+            { type: 'text', text: '- Food Court' },
+            { type: 'text', text: '- Craft Beers' }
           ]
         }
       ]
     },
-    // Centered ticket box
     {
-      type: "group",
+      type: 'group',
       width: 300,
-      align: "center",
+      align: 'center',
       y: 400,
-      border: { color: "#ff9800", width: 2 },
+      border: { color: '#ff9800', width: 2 },
       padding: 15,
-      background: "#fff8e1",
+      background: '#fff8e1',
       children: [
-        { type: "heading", text: "TICKETS", align: "center", fontSize: 16 },
-        { type: "text", text: "Early Bird: $25", align: "center" },
-        { type: "text", text: "At Door: $35", align: "center" }
+        { type: 'heading', text: 'TICKETS', align: 'center', fontSize: 16 },
+        { type: 'text', text: 'Early Bird: $25', align: 'center' },
+        { type: 'text', text: 'At Door: $35', align: 'center' }
       ]
     }
   ]
-})
+});
 ```
 
----
+#### Emoji and Unicode support
 
-## Emoji & Unicode Support
-
-**Color Emoji** - True color emoji render as inline PNG images. Emoji like 😀 🎉 🚀 👋 appear in full color. The emoji font (NotoColorEmoji.ttf) downloads automatically on install.
+Color emoji render as inline images. Unicode text is supported across major scripts.
 
 ```json
 {
   "basics": {
-    "name": "John Doe 👨‍💻",
-    "summary": "Developer 💻 passionate about clean code ✨"
+    "name": "John Doe",
+    "summary": "Developer passionate about clean code"
   }
 }
 ```
 
-**Unicode** - Complete international text support including Chinese (你好), Japanese (こんにちは), Korean (안녕하세요), Arabic (مرحبا), Cyrillic (Привет), Hebrew, Thai, Greek (Ξ Δ Ω), and geometric symbols (△ ○ ◆).
+### pdf-document
+
+Create a flowing PDF document with automatic pagination.
+
+### pdf-image
+
+Render PDF pages to PNG images for previews or export.
+
+### text-measure
+
+Measure text width and height before layout.
+
+## Tools
+
+1. pdf-document
+2. pdf-image
+3. pdf-layout
+4. pdf-resume
+5. text-measure
+
+## External resources
+
+None.
+
+## Prompts
+
+1. resource-fetching
 
 ## Resources
 
-- [PDFKit Documentation](http://pdfkit.org/) - Full PDFKit API reference
-- [JSON Resume Schema](https://jsonresume.org/schema) - Resume format documentation
-- [JSON Resume Editor](https://jsonresume.org/getting-started/) - Online resume builder
-
-## Requirements
-
-Node.js >= 16
-
-## Contributing
-
-Interested in contributing? See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing, and release workflow.
-
-## License
-
-MIT
+- PDFKit Documentation
+- JSON Resume Schema
+- JSON Resume Editor

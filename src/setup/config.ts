@@ -1,16 +1,16 @@
-import { parseConfig as parseTransportConfig } from '@mcpeasy/server';
+import { parseConfig as parseTransportConfig } from '@mcp-z/server';
 import * as fs from 'fs';
 import moduleRoot from 'module-root-sync';
 import { homedir } from 'os';
 import * as path from 'path';
 import * as url from 'url';
 import { parseArgs } from 'util';
-import type { ServerConfig } from '../types.ts';
+import type { ServerConfig } from '../types.js';
 
 const pkg = JSON.parse(fs.readFileSync(path.join(moduleRoot(url.fileURLToPath(import.meta.url)), 'package.json'), 'utf-8'));
 
 const HELP_TEXT = `
-Usage: server-pdf [options]
+Usage: mcp-pdf [options]
 
 MCP server for PDF document generation and processing.
 
@@ -27,10 +27,10 @@ Environment Variables:
   STORAGE_DIR            Storage directory (optional)
 
 Examples:
-  server-pdf                           # Use default settings
-  server-pdf --port=3000               # HTTP transport on port 3000
-  server-pdf --storage-dir=./pdfs      # Custom storage directory
-  LOG_LEVEL=debug server-pdf           # Set log level via env var
+  mcp-pdf                           # Use default settings
+  mcp-pdf --port=3000               # HTTP transport on port 3000
+  mcp-pdf --storage-dir=./pdfs      # Custom storage directory
+  LOG_LEVEL=debug mcp-pdf           # Set log level via env var
 `.trim();
 
 /**

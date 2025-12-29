@@ -4,7 +4,7 @@
  */
 
 import { z } from 'zod';
-import { textBaseSchema } from '../lib/pdf-core.ts';
+import { textBaseSchema } from '../lib/pdf-core.js';
 
 // Flowing content items - no position properties, content flows naturally
 export const flowingContentItemSchema = z.union([

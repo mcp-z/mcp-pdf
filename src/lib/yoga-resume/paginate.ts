@@ -6,9 +6,9 @@
  * for each page.
  */
 
-import { DEFAULT_PAGE_SIZE, RESUME_DEFAULT_MARGINS } from '../../constants.ts';
-import type { GroupElement, LayoutElement } from '../ir/types.ts';
-import type { Page, PageConfig, PageNode, ResumeLayoutNode } from './types.ts';
+import { DEFAULT_PAGE_SIZE, RESUME_DEFAULT_MARGINS } from '../../constants.js';
+import type { GroupElement, LayoutElement } from '../ir/types.js';
+import type { Page, PageConfig, PageNode, ResumeLayoutNode } from './types.js';
 
 /**
  * Default page configuration (US Letter with resume margins).

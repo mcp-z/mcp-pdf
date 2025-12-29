@@ -1,9 +1,9 @@
-import { composeMiddleware, connectHttp, createFileServingRouter, registerPrompts, registerResources, registerTools } from '@mcpeasy/server';
+import { composeMiddleware, connectHttp, createFileServingRouter, registerPrompts, registerResources, registerTools } from '@mcp-z/server';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import cors from 'cors';
 import express from 'express';
-import type { RuntimeOverrides, ServerConfig } from '../types.ts';
-import { createDefaultRuntime } from './runtime.ts';
+import type { RuntimeOverrides, ServerConfig } from '../types.js';
+import { createDefaultRuntime } from './runtime.js';
 
 export async function createHTTPServer(config: ServerConfig, overrides?: RuntimeOverrides) {
   const runtime = await createDefaultRuntime(config, overrides);

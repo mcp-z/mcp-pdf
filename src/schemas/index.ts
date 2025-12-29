@@ -1,3 +1,3 @@
-export * from './content.ts';
-export * from './layout.ts';
-export * from './resume.ts';
+export * from './content.js';
+export * from './layout.js';
+export * from './resume.js';

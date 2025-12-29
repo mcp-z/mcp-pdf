@@ -10,18 +10,18 @@
  * Default margins: 0 (full canvas access for precise positioning)
  */
 
-import { getFileUri, type ToolModule, writeFile } from '@mcpeasy/server';
+import { getFileUri, type ToolModule, writeFile } from '@mcp-z/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE, type Margins, type PageSizePreset } from '../../constants.ts';
-import { createWidthMeasurer, measureTextHeight } from '../../lib/content-measure.ts';
-import { resolveImageDimensions } from '../../lib/image-dimensions.ts';
-import { createPDFDocument, extractTextOptions, type PDFOutput, pdfOutputSchema, validateContentText } from '../../lib/pdf-core.ts';
-import { renderTextWithEmoji } from '../../lib/pdf-helpers.ts';
-import { calculateLayout, type LayoutContent, type LayoutNode } from '../../lib/yoga-layout.ts';
-import type { BaseContentItem } from '../../schemas/content.ts';
-import { type ContentItem, contentItemSchema, type GroupItem, layoutSchema } from '../../schemas/layout.ts';
-import type { StorageExtra } from '../../types.ts';
+import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE, type Margins, type PageSizePreset } from '../../constants.js';
+import { createWidthMeasurer, measureTextHeight } from '../../lib/content-measure.js';
+import { resolveImageDimensions } from '../../lib/image-dimensions.js';
+import { createPDFDocument, extractTextOptions, type PDFOutput, pdfOutputSchema, validateContentText } from '../../lib/pdf-core.js';
+import { renderTextWithEmoji } from '../../lib/pdf-helpers.js';
+import { calculateLayout, type LayoutContent, type LayoutNode } from '../../lib/yoga-layout.js';
+import type { BaseContentItem } from '../../schemas/content.js';
+import { type ContentItem, contentItemSchema, type GroupItem, layoutSchema } from '../../schemas/layout.js';
+import type { StorageExtra } from '../../types.js';
 
 // ============================================================================
 // Tool-specific schemas and types

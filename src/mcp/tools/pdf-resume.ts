@@ -12,14 +12,14 @@
  * - Automatic section rendering based on data shape
  */
 
-import { getFileUri, type ToolModule, writeFile } from '@mcpeasy/server';
+import { getFileUri, type ToolModule, writeFile } from '@mcp-z/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import type { Margins, PageSizePreset } from '../../constants.ts';
-import { generateResumePDFBuffer, type RenderOptions, type TypographyOptions } from '../../lib/resume-pdf-generator.ts';
-import { validateResume } from '../../lib/validator.ts';
-import { resumeLayoutSchema, sectionsConfigSchema, stylingSchema } from '../../schemas/resume.ts';
-import type { StorageExtra } from '../../types.ts';
+import type { Margins, PageSizePreset } from '../../constants.js';
+import { generateResumePDFBuffer, type RenderOptions, type TypographyOptions } from '../../lib/resume-pdf-generator.js';
+import { validateResume } from '../../lib/validator.js';
+import { resumeLayoutSchema, sectionsConfigSchema, stylingSchema } from '../../schemas/resume.js';
+import type { StorageExtra } from '../../types.js';
 
 // Use loose Zod schema for MCP input, AJV validates strictly
 const resumeInputSchema = z.record(z.string(), z.any()).describe('Resume data in JSON Resume format');

@@ -1,4 +1,4 @@
-import type { PromptModule } from '@mcpeasy/server';
+import type { PromptModule } from '@mcp-z/server';
 
 export default function createPrompt() {
   const config = {

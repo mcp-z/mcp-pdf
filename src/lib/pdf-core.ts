@@ -6,9 +6,9 @@
 
 import PDFDocument from 'pdfkit';
 import { z } from 'zod';
-import { DEFAULT_PAGE_SIZE, PAGE_SIZES, type PageSize, type PageSizePreset } from '../constants.ts';
-import { registerEmojiFont } from './emoji-renderer.ts';
-import { hasEmoji, setupFonts } from './fonts.ts';
+import { DEFAULT_PAGE_SIZE, PAGE_SIZES, type PageSize, type PageSizePreset } from '../constants.js';
+import { registerEmojiFont } from './emoji-renderer.js';
+import { hasEmoji, setupFonts } from './fonts.js';
 
 // ============================================================================
 // Schemas - Shared content schemas used across tools
@@ -178,7 +178,7 @@ export async function createPDFDocument(options: PDFDocumentOptions, font: strin
 // Text Options Extraction
 // ============================================================================
 
-import type { PDFTextOptions } from './pdf-helpers.ts';
+import type { PDFTextOptions } from './pdf-helpers.js';
 
 /**
  * Extract PDFKit text options from a text/heading content item.
@@ -207,7 +207,7 @@ export function extractTextOptions(item: TextBaseItem): PDFTextOptions {
 // Content Validation
 // ============================================================================
 
-import { validateTextForFont } from './fonts.ts';
+import { validateTextForFont } from './fonts.js';
 
 /**
  * Validate text content against font capabilities.

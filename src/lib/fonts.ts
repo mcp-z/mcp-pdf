@@ -93,7 +93,7 @@ export function getSystemFont(): string | null {
  */
 async function downloadToTemp(url: string): Promise<string | null> {
   try {
-    const tempDir = join(tmpdir(), 'server-pdf-fonts');
+    const tempDir = join(tmpdir(), 'mcp-pdf-fonts');
     await mkdir(tempDir, { recursive: true });
 
     // Extract filename from URL or generate one

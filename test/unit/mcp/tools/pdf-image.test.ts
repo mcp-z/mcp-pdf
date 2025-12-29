@@ -6,9 +6,9 @@ import assert from 'assert';
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import PDFDocument from 'pdfkit';
-import createTool from '../../../../src/mcp/tools/pdf-image.ts';
-import type { ServerConfig } from '../../../../src/types.ts';
-import { createStorageExtra } from '../../../lib/create-extra.ts';
+import createTool from '../../../../src/mcp/tools/pdf-image.js';
+import type { ServerConfig } from '../../../../src/types.js';
+import { createStorageExtra } from '../../../lib/create-extra.js';
 
 // Use .tmp/ in package root per QUALITY.md rule T8
 const testOutputDir = join(process.cwd(), '.tmp', 'pdf-image-tests');
@@ -17,7 +17,7 @@ const testPdfPath = join(testOutputDir, 'test-document.pdf');
 
 function createTestConfig(): ServerConfig {
   return {
-    name: 'server-pdf-test',
+    name: 'mcp-pdf-test',
     version: '1.0.0',
     logLevel: 'silent',
     baseDir: testOutputDir,

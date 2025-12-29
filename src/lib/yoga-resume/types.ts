@@ -6,8 +6,8 @@
  * and then rendered at exact computed positions.
  */
 
-import type { FieldTemplates, LayoutElement } from '../ir/types.ts';
-import type { FontConfig, TypographyOptions } from '../types/typography.ts';
+import type { FieldTemplates, LayoutElement } from '../ir/types.js';
+import type { FontConfig, TypographyOptions } from '../types/typography.js';
 
 // =============================================================================
 // Render Context
