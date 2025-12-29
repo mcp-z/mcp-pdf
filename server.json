@@ -1,14 +1,15 @@
 {
-  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.mcp-z/mcp-pdf",
   "description": "MCP server for creative PDF generation with full emoji, Unicode, and offline support",
-  "version": "1.2.4",
+  "version": "2.0.0",
   "title": "PDF Generator",
   "websiteUrl": "https://github.com/mcp-z/mcp-pdf#readme",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@mcp-z/mcp-pdf",
+      "version": "2.0.0",
       "transport": {
         "type": "stdio"
       },
@@ -30,9 +31,16 @@
           "default": "~/.mcp-z/mcp-pdf/files"
         },
         {
+          "name": "PORT",
+          "description": "HTTP server port (overrides --port)",
+          "placeholder": "3000",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
           "name": "BASE_URL",
           "description": "Base URL for file serving (optional, used for HTTP transport)",
-          "placeholder": "http://{HOST}:{PORT}",
+          "placeholder": "http://localhost:{PORT}",
           "isRequired": false,
           "isSecret": false
         },
@@ -69,6 +77,7 @@
     {
       "registryType": "npm",
       "identifier": "@mcp-z/mcp-pdf",
+      "version": "2.0.0",
       "transport": {
         "type": "streamable-http",
         "url": "http://localhost:{PORT}/mcp"
@@ -91,9 +100,16 @@
           "default": "~/.mcp-z/mcp-pdf/files"
         },
         {
+          "name": "PORT",
+          "description": "HTTP server port (overrides --port)",
+          "placeholder": "3000",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
           "name": "BASE_URL",
           "description": "Base URL for file serving (optional, defaults to http://localhost:{PORT})",
-          "placeholder": "http://{HOST}:{PORT}",
+          "placeholder": "http://localhost:{PORT}",
           "isRequired": false,
           "isSecret": false
         },
