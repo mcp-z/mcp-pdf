@@ -1,5 +1,5 @@
 import type PDFKit from 'pdfkit';
-import { WRAP_EPSILON } from '../constants.js';
+import { WRAP_EPSILON } from '../constants.ts';
 import { measureEmoji, renderEmojiToBuffer, splitTextAndEmoji } from './emoji-renderer.js';
 import { hasEmoji } from './fonts.js';
 

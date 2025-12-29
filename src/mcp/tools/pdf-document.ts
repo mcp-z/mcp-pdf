@@ -14,7 +14,7 @@ import { getFileUri, type ToolModule, writeFile } from '@mcp-z/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import PDFDocument from 'pdfkit';
 import { z } from 'zod';
-import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE, getDefaultMargins, type Margins, type PageSizePreset } from '../../constants.js';
+import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE, getDefaultMargins, type Margins, type PageSizePreset } from '../../constants.ts';
 import { registerEmojiFont } from '../../lib/emoji-renderer.js';
 import { hasEmoji, setupFonts, validateTextForFont } from '../../lib/fonts.js';
 import { resolveImageDimensions } from '../../lib/image-dimensions.js';
