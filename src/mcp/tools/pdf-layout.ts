@@ -13,7 +13,7 @@
 import { getFileUri, type ToolModule, writeFile } from '@mcp-z/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE, type Margins, type PageSizePreset } from '../../constants.js';
+import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE, type Margins, type PageSizePreset } from '../../constants.ts';
 import { createWidthMeasurer, measureTextHeight } from '../../lib/content-measure.js';
 import { resolveImageDimensions } from '../../lib/image-dimensions.js';
 import { createPDFDocument, extractTextOptions, type PDFOutput, pdfOutputSchema, validateContentText } from '../../lib/pdf-core.js';

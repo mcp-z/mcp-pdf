@@ -6,7 +6,7 @@
 
 import PDFDocument from 'pdfkit';
 import { z } from 'zod';
-import { DEFAULT_PAGE_SIZE, PAGE_SIZES, type PageSize, type PageSizePreset } from '../constants.js';
+import { DEFAULT_PAGE_SIZE, PAGE_SIZES, type PageSize, type PageSizePreset } from '../constants.ts';
 import { registerEmojiFont } from './emoji-renderer.js';
 import { hasEmoji, setupFonts } from './fonts.js';
 
