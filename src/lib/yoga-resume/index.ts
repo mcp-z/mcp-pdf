@@ -9,13 +9,13 @@
  * - Position-based rendering
  */
 
-export type { TwoColumnLayoutConfig } from './ir-to-yoga.ts';
+export type { TwoColumnLayoutConfig } from './ir-to-yoga.js';
 // IR to Yoga transformation
 export {
   calculateResumeLayout,
   calculateTwoColumnLayout,
   transformToYogaNodes,
-} from './ir-to-yoga.ts';
+} from './ir-to-yoga.js';
 
 // Measurement
 export {
@@ -31,7 +31,7 @@ export {
   measureReferenceList,
   measureSectionTitle,
   measureText,
-} from './measure.ts';
+} from './measure.js';
 
 // Pagination
 export {
@@ -44,7 +44,7 @@ export {
   paginateLayout,
   paginateLayoutWithAtomicGroups,
   wouldCausePageBreak,
-} from './paginate.ts';
+} from './paginate.js';
 // Rendering
 export {
   createRenderContext,
@@ -61,7 +61,7 @@ export {
   renderSectionTitle,
   renderSummaryHighlights,
   renderText,
-} from './render.ts';
+} from './render.js';
 // Types
 export type {
   ComputedPosition,
@@ -74,5 +74,5 @@ export type {
   ResumeLayoutNode,
   SingleColumnConfig,
   TwoColumnConfig,
-} from './types.ts';
-export { isTwoColumnConfig } from './types.ts';
+} from './types.js';
+export { isTwoColumnConfig } from './types.js';

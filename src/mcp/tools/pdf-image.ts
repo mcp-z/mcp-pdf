@@ -8,13 +8,13 @@
  * Full scale (1.0) provides detailed view but larger file size.
  */
 
-import { getFileUri, type ToolModule, writeFile } from '@mcpeasy/server';
+import { getFileUri, type ToolModule, writeFile } from '@mcp-z/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { existsSync } from 'fs';
 import { basename } from 'path';
 import { pdfToPng } from 'pdf-to-png-converter';
 import { z } from 'zod';
-import type { StorageExtra } from '../../types.ts';
+import type { StorageExtra } from '../../types.js';
 
 // ============================================================================
 // Schemas

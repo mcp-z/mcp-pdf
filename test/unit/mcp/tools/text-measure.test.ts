@@ -3,7 +3,7 @@
  */
 
 import assert from 'assert';
-import createTool from '../../../../src/mcp/tools/text-measure.ts';
+import createTool from '../../../../src/mcp/tools/text-measure.js';
 
 describe('text-measure tool', () => {
   const tool = createTool();

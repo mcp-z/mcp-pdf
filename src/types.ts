@@ -1,4 +1,4 @@
-import type { BaseServerConfig, MiddlewareLayer, PromptModule, ResourceModule, Logger as ServerLogger, ToolModule } from '@mcpeasy/server';
+import type { BaseServerConfig, MiddlewareLayer, PromptModule, ResourceModule, Logger as ServerLogger, ToolModule } from '@mcp-z/server';
 
 export type Logger = ServerLogger;
 
@@ -60,4 +60,4 @@ export interface RuntimeOverrides {
 // Reusable Content Types
 // ============================================================================
 
-export type { ContentItem, FlowingContentItem, GroupItem } from './schemas/index.ts';
+export type { ContentItem, FlowingContentItem, GroupItem } from './schemas/index.js';
