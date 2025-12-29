@@ -6,11 +6,13 @@ import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 import { readFileSync } from 'fs';
 import moduleRoot from 'module-root-sync';
+import * as path from 'path';
 import { join } from 'path';
+import * as url from 'url';
 
-// Get package root directory (works in both src and dist)
-// Use keyExists: 'name' to skip stub package.json files (e.g., dist/esm/package.json with only "type")
-const packageRoot = moduleRoot(import.meta.filename);
+// Import ajv-formats (CommonJS module - use createRequire for ESM compatibility)
+const __dirname = path.dirname(typeof __filename !== 'undefined' ? __filename : url.fileURLToPath(import.meta.url));
+const packageRoot = moduleRoot(__dirname);
 
 const ajv = new Ajv({
   allErrors: true,

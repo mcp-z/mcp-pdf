@@ -15,7 +15,7 @@
 import { getFileUri, type ToolModule, writeFile } from '@mcp-z/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import type { Margins, PageSizePreset } from '../../constants.js';
+import type { Margins, PageSizePreset } from '../../constants.ts';
 import { generateResumePDFBuffer, type RenderOptions, type TypographyOptions } from '../../lib/resume-pdf-generator.js';
 import { validateResume } from '../../lib/validator.js';
 import { resumeLayoutSchema, sectionsConfigSchema, stylingSchema } from '../../schemas/resume.js';
