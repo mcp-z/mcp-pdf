@@ -6,8 +6,8 @@
  */
 
 import type PDFKit from 'pdfkit';
-import { measureTextHeight } from '../content-measure.ts';
-import { renderField } from '../formatting.ts';
+import { measureTextHeight } from '../content-measure.js';
+import { renderField } from '../formatting.js';
 import type {
   CompanyHeaderElement,
   CredentialData,
@@ -26,9 +26,9 @@ import type {
   ReferenceListElement,
   SectionTitleElement,
   TextElement,
-} from '../ir/types.ts';
-import type { TypographyOptions } from '../types/typography.ts';
-import { calculateEntryColumnWidths, type MeasureContext } from './types.ts';
+} from '../ir/types.js';
+import type { TypographyOptions } from '../types/typography.js';
+import { calculateEntryColumnWidths, type MeasureContext } from './types.js';
 
 // =============================================================================
 // Helper Functions

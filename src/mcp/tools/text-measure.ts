@@ -5,14 +5,14 @@
  * Returns exact dimensions based on font, size, and text content.
  */
 
-import type { ToolModule } from '@mcpeasy/server';
+import type { ToolModule } from '@mcp-z/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import PDFDocument from 'pdfkit';
 import { z } from 'zod';
-import { DEFAULT_TEXT_FONT_SIZE } from '../../constants.ts';
-import { measureTextHeight, measureTextWidth } from '../../lib/content-measure.ts';
-import { registerEmojiFont } from '../../lib/emoji-renderer.ts';
-import { hasEmoji, setupFonts } from '../../lib/fonts.ts';
+import { DEFAULT_TEXT_FONT_SIZE } from '../../constants.js';
+import { measureTextHeight, measureTextWidth } from '../../lib/content-measure.js';
+import { registerEmojiFont } from '../../lib/emoji-renderer.js';
+import { hasEmoji, setupFonts } from '../../lib/fonts.js';
 
 // ============================================================================
 // Schemas

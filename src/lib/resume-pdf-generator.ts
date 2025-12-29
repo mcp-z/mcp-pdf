@@ -4,16 +4,16 @@
 
 import PDFDocument from 'pdfkit';
 // Import generated type from JSON Schema
-import type { ResumeSchema } from '../../assets/resume.d.ts';
-import { DEFAULT_PAGE_SIZE, type Margins, PAGE_SIZES, type PageSizePreset, RESUME_DEFAULT_MARGINS } from '../constants.ts';
-import { registerEmojiFont } from './emoji-renderer.ts';
-import { hasEmoji, isPDFStandardFont, needsUnicodeFont, resolveFont } from './fonts.ts';
-import { isTwoColumnLayout, transformToResumeLayout } from './ir/layout-transform.ts';
-import { DEFAULT_SECTIONS, transformToLayout } from './ir/transform.ts';
-import type { FieldTemplates, SectionsConfig } from './ir/types.ts';
-import type { TypographyOptions } from './types/typography.ts';
-import { DEFAULT_TYPOGRAPHY } from './types/typography.ts';
-import { calculateResumeLayout, calculateTwoColumnLayout, createRenderContext, type PageConfig, paginateLayoutWithAtomicGroups, renderPage } from './yoga-resume/index.ts';
+import type { ResumeSchema } from '../../assets/resume.js';
+import { DEFAULT_PAGE_SIZE, type Margins, PAGE_SIZES, type PageSizePreset, RESUME_DEFAULT_MARGINS } from '../constants.js';
+import { registerEmojiFont } from './emoji-renderer.js';
+import { hasEmoji, isPDFStandardFont, needsUnicodeFont, resolveFont } from './fonts.js';
+import { isTwoColumnLayout, transformToResumeLayout } from './ir/layout-transform.js';
+import { DEFAULT_SECTIONS, transformToLayout } from './ir/transform.js';
+import type { FieldTemplates, SectionsConfig } from './ir/types.js';
+import type { TypographyOptions } from './types/typography.js';
+import { DEFAULT_TYPOGRAPHY } from './types/typography.js';
+import { calculateResumeLayout, calculateTwoColumnLayout, createRenderContext, type PageConfig, paginateLayoutWithAtomicGroups, renderPage } from './yoga-resume/index.js';
 
 // Re-export types for external use
 export type { ResumeSchema };
@@ -330,7 +330,7 @@ export async function generateResumePDFBuffer(resume: ResumeSchema, options: Ren
   });
 }
 
-export { DEFAULT_SECTIONS } from './ir/transform.ts';
-export type { FieldTemplates, SectionsConfig } from './ir/types.ts';
-export type { TypographyOptions } from './types/typography.ts';
-export { DEFAULT_TYPOGRAPHY } from './types/typography.ts';
+export { DEFAULT_SECTIONS } from './ir/transform.js';
+export type { FieldTemplates, SectionsConfig } from './ir/types.js';
+export type { TypographyOptions } from './types/typography.js';
+export { DEFAULT_TYPOGRAPHY } from './types/typography.js';

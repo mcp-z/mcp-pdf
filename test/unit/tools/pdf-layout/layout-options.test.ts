@@ -3,8 +3,8 @@ import { createWriteStream, existsSync, readFileSync } from 'fs';
 import { mkdir } from 'fs/promises';
 import { join } from 'path';
 import PDFDocument from 'pdfkit';
-import { setupFonts } from '../../../../src/lib/fonts.ts';
-import { renderTextWithEmoji } from '../../../../src/lib/pdf-helpers.ts';
+import { setupFonts } from '../../../../src/lib/fonts.js';
+import { renderTextWithEmoji } from '../../../../src/lib/pdf-helpers.js';
 
 // Use .tmp/ in package root per QUALITY.md rule T8
 const testOutputDir = join(process.cwd(), '.tmp', 'layout-tests');
