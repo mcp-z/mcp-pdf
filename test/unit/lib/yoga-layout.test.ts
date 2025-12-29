@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { calculateGroupLayout, calculateLayout, type HeightMeasurer, type LayoutContent } from '../../../src/lib/yoga-layout.ts';
+import { calculateGroupLayout, calculateLayout, type HeightMeasurer, type LayoutContent } from '../../../src/lib/yoga-layout.js';
 
 // Simple height measurer - returns fixed height for testing
 const fixedHeightMeasurer: HeightMeasurer = () => 20;

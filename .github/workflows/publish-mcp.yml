@@ -1,103 +1,19 @@
-name: Update MCP Registries
-
+name: Publish MCP Server
 on:
-  workflow_dispatch: {}
   push:
-    tags: [ 'v*' ]
-
-permissions:
-  id-token: write
-  contents: read
+    tags: ['v*'] # Triggers when you push a version tag
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # Required for OIDC authentication
+      contents: read
     steps:
-      - uses: actions/checkout@v5
-
-      - name: Read package.json metadata
-        id: pkg
-        shell: bash
+      - uses: actions/checkout@v4
+      - name: Install mcp-publisher
+        run: brew install mcp-publisher # Or use curl to download the binary
+      - name: Login and Publish
         run: |
-          sudo apt-get update && sudo apt-get install -y jq
-          NAME=$(jq -r '.name' package.json)
-          VER=$(jq -r '.version' package.json)
-          if [[ -z "$NAME" || "$NAME" == "null" || -z "$VER" || "$VER" == "null" ]]; then
-            echo "package.json must contain { name, version }"; exit 1
-          fi
-          echo "name=$NAME" >> "$GITHUB_OUTPUT"
-          echo "version=$VER" >> "$GITHUB_OUTPUT"
-          echo "Resolved package: $NAME@$VER"
-
-      - name: Check npm registry for that version
-        id: npmlive
-        shell: bash
-        run: |
-          PKG="${{ steps.pkg.outputs.name }}"
-          VER="${{ steps.pkg.outputs.version }}"
-          echo "Checking npm for $PKG@$VER ..."
-          EXIST=$(npm view "$PKG@$VER" version 2>/dev/null || true)
-          if [[ "$EXIST" == "$VER" ]]; then
-            echo "npm has $PKG@$VER ✅"
-            echo "npm_ok=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "npm does NOT yet have $PKG@$VER. Skipping MCP publish (success). ✅"
-            echo "npm_ok=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Install mcp-publisher (Linux/macOS)
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          OS=$(uname -s | tr '[:upper:]' '[:lower:]')              # linux|darwin
-          ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/') # amd64|arm64
-
-          # Try Homebrew first (fast & cached in GH runners)
-          if command -v brew >/dev/null 2>&1; then
-            brew update >/dev/null
-            brew install mcp-publisher || brew upgrade mcp-publisher || true
-          fi
-
-          if ! command -v mcp-publisher >/dev/null 2>&1; then
-            echo "Falling back to direct download of mcp-publisher for ${OS}_${ARCH} ..."
-            URL="https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_${OS}_${ARCH}.tar.gz"
-            echo "Fetching $URL"
-            curl -fSL "$URL" -o mcp-publisher.tar.gz
-            file mcp-publisher.tar.gz
-            tar xzf mcp-publisher.tar.gz mcp-publisher
-            chmod +x mcp-publisher
-            sudo mv mcp-publisher /usr/local/bin/mcp-publisher
-            rm -f mcp-publisher.tar.gz
-          fi
-
-          echo "mcp-publisher version:"
-          mcp-publisher --version
-
-      - name: Build effective server manifest (inject npm version)
-        if: steps.npmlive.outputs.npm_ok == 'true'
-        shell: bash
-        run: |
-          VER="${{ steps.pkg.outputs.version }}"
-          jq --arg v "$VER" '
-            .version = $v
-            | .packages = (.packages // []) | .packages |= map(.version = $v)
-          ' .github/server.json > server.json
-          echo "Effective manifest:"
-          cat server.json
-
-      - name: Login to MCP Registry
-        if: steps.npmlive.outputs.npm_ok == 'true'
-        shell: bash
-        run: |
-          echo "Authenticating with MCP registry using GitHub OIDC..."
           mcp-publisher login github-oidc
-
-      - name: Publish to MCP Registry
-        if: steps.npmlive.outputs.npm_ok == 'true'
-        shell: bash
-        env:
-          MCP_REGISTRY_URL: https://registry.modelcontextprotocol.io
-        run: |
-          echo "Publishing version ${{ steps.pkg.outputs.version }} to MCP registry..."
           mcp-publisher publish

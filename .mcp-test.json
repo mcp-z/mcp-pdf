@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "pdf": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["src/index.ts"]
-    }
-  }
-}

@@ -6,7 +6,7 @@
  */
 
 import type PDFKit from 'pdfkit';
-import { renderField } from '../formatting.ts';
+import { renderField } from '../formatting.js';
 import type {
   CompanyHeaderElement,
   CredentialData,
@@ -25,10 +25,10 @@ import type {
   SectionTitleElement,
   SummaryHighlightsElement,
   TextElement,
-} from '../ir/types.ts';
-import { renderTextWithEmoji } from '../pdf-helpers.ts';
-import type { TypographyOptions } from '../types/typography.ts';
-import { type ComputedPosition, calculateEntryColumnWidths, type Page, type PageNode, type RenderContext } from './types.ts';
+} from '../ir/types.js';
+import { renderTextWithEmoji } from '../pdf-helpers.js';
+import type { TypographyOptions } from '../types/typography.js';
+import { type ComputedPosition, calculateEntryColumnWidths, type Page, type PageNode, type RenderContext } from './types.js';
 
 // =============================================================================
 // Helper Functions

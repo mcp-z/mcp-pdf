@@ -1,10 +1,10 @@
-import type { Logger, MiddlewareLayer } from '@mcpeasy/server';
-import { createLoggingMiddleware } from '@mcpeasy/server';
+import type { Logger, MiddlewareLayer } from '@mcp-z/server';
+import { createLoggingMiddleware } from '@mcp-z/server';
 import * as fs from 'fs';
 import * as path from 'path';
 import pino from 'pino';
-import * as mcp from '../mcp/index.ts';
-import type { CommonRuntime, RuntimeDeps, RuntimeOverrides, ServerConfig, StorageContext } from '../types.ts';
+import * as mcp from '../mcp/index.js';
+import type { CommonRuntime, RuntimeDeps, RuntimeOverrides, ServerConfig, StorageContext } from '../types.js';
 
 export function createLogger(config: ServerConfig): Logger {
   const hasStdio = config.transport.type === 'stdio';
