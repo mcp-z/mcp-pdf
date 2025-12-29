@@ -5,7 +5,7 @@
 import PDFDocument from 'pdfkit';
 // Import generated type from JSON Schema
 import type { ResumeSchema } from '../../assets/resume.js';
-import { DEFAULT_PAGE_SIZE, type Margins, PAGE_SIZES, type PageSizePreset, RESUME_DEFAULT_MARGINS } from '../constants.js';
+import { DEFAULT_PAGE_SIZE, type Margins, PAGE_SIZES, type PageSizePreset, RESUME_DEFAULT_MARGINS } from '../constants.ts';
 import { registerEmojiFont } from './emoji-renderer.js';
 import { hasEmoji, isPDFStandardFont, needsUnicodeFont, resolveFont } from './fonts.js';
 import { isTwoColumnLayout, transformToResumeLayout } from './ir/layout-transform.js';

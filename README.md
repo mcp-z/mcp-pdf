@@ -43,6 +43,10 @@ MCP supports stdio and HTTP.
 
 `start` is an extension used by `npx @mcp-z/cli up` to launch HTTP servers for you.
 
+## Authentication
+
+No OAuth or API keys required.
+
 ## How to use
 
 ```bash

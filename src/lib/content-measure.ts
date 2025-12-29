@@ -1,5 +1,5 @@
 import type PDFKit from 'pdfkit';
-import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE, WRAP_EPSILON } from '../constants.js';
+import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE, WRAP_EPSILON } from '../constants.ts';
 import { measureEmoji, splitTextAndEmoji } from './emoji-renderer.js';
 import { hasEmoji } from './fonts.js';
 import type { PDFTextOptions } from './pdf-helpers.js';
