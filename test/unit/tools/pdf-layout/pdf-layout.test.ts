@@ -1,9 +1,9 @@
 import assert from 'assert';
 import { existsSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
-import createTool, { type Input, type Output } from '../../../../src/mcp/tools/pdf-layout.js';
-import type { ServerConfig } from '../../../../src/types.js';
-import { createStorageExtra } from '../../../lib/create-extra.js';
+import createTool, { type Input, type Output } from '../../../../src/mcp/tools/pdf-layout.ts';
+import type { ServerConfig } from '../../../../src/types.ts';
+import { createExtra } from '../../../lib/create-extra.ts';
 
 // Use .tmp/ in package root per QUALITY.md rule T8
 const testOutputDir = join(process.cwd(), '.tmp', 'pdf-layout-tests');
@@ -39,7 +39,7 @@ describe('pdf-layout tool', () => {
   it('creates PDF with text content', async () => {
     const config = createTestConfig();
     const tool = createTool();
-    const extra = createStorageExtra(config);
+    const extra = createExtra(config);
 
     assert.equal(tool.name, 'pdf-layout', 'tool name should match');
 
@@ -64,7 +64,7 @@ describe('pdf-layout tool', () => {
   it('creates PDF with shapes', async () => {
     const config = createTestConfig();
     const tool = createTool();
-    const extra = createStorageExtra(config);
+    const extra = createExtra(config);
 
     const input: Input = {
       filename: 'shapes.pdf',
@@ -85,7 +85,7 @@ describe('pdf-layout tool', () => {
   it('creates PDF with page setup', async () => {
     const config = createTestConfig();
     const tool = createTool();
-    const extra = createStorageExtra(config);
+    const extra = createExtra(config);
 
     const input: Input = {
       filename: 'custom-page.pdf',

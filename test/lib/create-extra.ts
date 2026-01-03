@@ -1,4 +1,25 @@
-import type { ServerConfig, StorageContext, StorageExtra } from '../../src/types.js';
+import type { AnySchema, SchemaOutput } from '@modelcontextprotocol/sdk/server/zod-compat.js';
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import pino from 'pino';
+import type { ServerConfig, StorageContext, StorageExtra } from '../../src/types.ts';
+
+/**
+ * Typed handler signature for test files
+ * Use with tool's Input type: `let handler: TypedHandler<Input>;`
+ */
+export type TypedHandler<I, E = StorageExtra> = (input: I, extra: E) => Promise<CallToolResult>;
+
+/**
+ * Base Extra interface for MCP server context
+ * (matches EnrichedExtra from servers with auth)
+ */
+export interface BaseExtra {
+  signal: AbortSignal;
+  requestId: string;
+  sendNotification: (notification: unknown) => Promise<void>;
+  sendRequest: <U extends AnySchema>(request: unknown) => Promise<SchemaOutput<U>>;
+  logger: pino.Logger;
+}
 
 export function createStorageContext(config: Pick<ServerConfig, 'storageDir' | 'baseUrl' | 'transport'>): StorageContext {
   return {
@@ -8,6 +29,23 @@ export function createStorageContext(config: Pick<ServerConfig, 'storageDir' | '
   };
 }
 
-export function createStorageExtra(config: Pick<ServerConfig, 'storageDir' | 'baseUrl' | 'transport'>): StorageExtra {
-  return { storageContext: createStorageContext(config) };
+/**
+ * Create Extra for testing (with or without storage context)
+ *
+ * In production, the middleware automatically creates and passes this object.
+ * In tests, we call handlers directly, so we need to provide it ourselves.
+ */
+export function createExtra(): BaseExtra;
+export function createExtra(storageContext: StorageContext): BaseExtra & StorageExtra;
+export function createExtra(storageContext?: StorageContext): BaseExtra {
+  const extra: BaseExtra & Partial<StorageExtra> = {
+    signal: new AbortController().signal,
+    requestId: 'test-request-id',
+    sendNotification: async () => {},
+    sendRequest: async <U extends AnySchema>() => ({}) as SchemaOutput<U>,
+    logger: pino({ level: 'silent' }),
+    ...(storageContext ? { storageContext } : {}),
+  };
+
+  return extra as BaseExtra;
 }

@@ -3,8 +3,8 @@ import { createWriteStream, existsSync, readFileSync } from 'fs';
 import { mkdir } from 'fs/promises';
 import { join } from 'path';
 import PDFDocument from 'pdfkit';
-import { setupFonts } from '../../../../src/lib/fonts.js';
-import { renderTextWithEmoji } from '../../../../src/lib/pdf-helpers.js';
+import { setupFonts } from '../../../../src/lib/fonts.ts';
+import { renderTextWithEmoji } from '../../../../src/lib/pdf-helpers.ts';
 
 // Use .tmp/ in package root per QUALITY.md rule T8
 const testOutputDir = join(process.cwd(), '.tmp', 'layout-tests');
@@ -18,7 +18,7 @@ describe('Layout Options for pdf-layout', () => {
     const stream = createWriteStream(outputPath);
     doc.pipe(stream);
 
-    const fonts = await setupFonts(doc);
+    const fonts = await setupFonts(doc, undefined);
     const { regular: regularFont } = fonts;
 
     renderTextWithEmoji(doc, 'Left aligned (default)', 12, regularFont, false);
@@ -46,7 +46,7 @@ describe('Layout Options for pdf-layout', () => {
     const stream = createWriteStream(outputPath);
     doc.pipe(stream);
 
-    const fonts = await setupFonts(doc);
+    const fonts = await setupFonts(doc, undefined);
     const { regular: regularFont } = fonts;
 
     renderTextWithEmoji(doc, 'Line 1', 12, regularFont, false);
@@ -76,7 +76,7 @@ describe('Layout Options for pdf-layout', () => {
     const stream = createWriteStream(outputPath);
     doc.pipe(stream);
 
-    const fonts = await setupFonts(doc);
+    const fonts = await setupFonts(doc, undefined);
     const { regular: regularFont } = fonts;
 
     renderTextWithEmoji(doc, 'Normal text', 12, regularFont, false);
@@ -104,7 +104,7 @@ describe('Layout Options for pdf-layout', () => {
     const stream = createWriteStream(outputPath);
     doc.pipe(stream);
 
-    const fonts = await setupFonts(doc);
+    const fonts = await setupFonts(doc, undefined);
     const { regular: regularFont } = fonts;
 
     renderTextWithEmoji(doc, 'No indent', 12, regularFont, false);

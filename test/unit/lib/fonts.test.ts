@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
 // Import functions from source with proper TypeScript types
-import { getSystemFont, hasEmoji, needsUnicodeFont, PDF_STANDARD_FONTS, resolveFont } from '../../../src/lib/fonts.js';
+import { getSystemFont, hasEmoji, needsUnicodeFont, PDF_STANDARD_FONTS, resolveFont } from '../../../src/lib/fonts.ts';
 
 // Use .tmp/ in package root per QUALITY.md rule T8
 const testOutputDir = join(process.cwd(), '.tmp', 'fonts-tests');
@@ -249,9 +249,8 @@ describe('resolveFont', (): void => {
       assert.ok(existsSync(result), 'Downloaded font should exist');
     });
 
-    it('returns null for invalid URL', async (): Promise<void> => {
-      const result: string | null = await resolveFont('https://invalid.example.com/font.ttf');
-      assert.strictEqual(result, null);
+    it('throws error for invalid URL', async (): Promise<void> => {
+      await assert.rejects(async () => await resolveFont('https://invalid.example.com/font.ttf'), /fetch failed|ENOTFOUND/, 'Should throw error for invalid URL');
     });
   });
 

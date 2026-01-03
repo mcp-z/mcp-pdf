@@ -14,7 +14,7 @@ import { existsSync } from 'fs';
 import { basename } from 'path';
 import { pdfToPng } from 'pdf-to-png-converter';
 import { z } from 'zod';
-import type { StorageExtra } from '../../types.js';
+import type { StorageExtra } from '../../types.ts';
 
 // ============================================================================
 // Schemas

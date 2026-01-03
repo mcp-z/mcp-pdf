@@ -2,7 +2,7 @@ import assert from 'assert';
 import { createWriteStream, existsSync, mkdirSync, readFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import PDFDocument from 'pdfkit';
-import { needsUnicodeFont, setupFonts } from '../../../src/lib/fonts.js';
+import { needsUnicodeFont, setupFonts } from '../../../src/lib/fonts.ts';
 
 let testOutputDir: string;
 

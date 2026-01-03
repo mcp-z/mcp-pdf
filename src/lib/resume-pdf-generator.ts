@@ -4,16 +4,17 @@
 
 import PDFDocument from 'pdfkit';
 // Import generated type from JSON Schema
-import type { ResumeSchema } from '../../assets/resume.js';
+import type { ResumeSchema } from '../../assets/resume.ts';
 import { DEFAULT_PAGE_SIZE, type Margins, PAGE_SIZES, type PageSizePreset, RESUME_DEFAULT_MARGINS } from '../constants.ts';
-import { registerEmojiFont } from './emoji-renderer.js';
-import { hasEmoji, isPDFStandardFont, needsUnicodeFont, resolveFont } from './fonts.js';
-import { isTwoColumnLayout, transformToResumeLayout } from './ir/layout-transform.js';
-import { DEFAULT_SECTIONS, transformToLayout } from './ir/transform.js';
-import type { FieldTemplates, SectionsConfig } from './ir/types.js';
-import type { TypographyOptions } from './types/typography.js';
-import { DEFAULT_TYPOGRAPHY } from './types/typography.js';
-import { calculateResumeLayout, calculateTwoColumnLayout, createRenderContext, type PageConfig, paginateLayoutWithAtomicGroups, renderPage } from './yoga-resume/index.js';
+import type { Logger } from '../types.ts';
+import { registerEmojiFont } from './emoji-renderer.ts';
+import { hasEmoji, isPDFStandardFont, needsUnicodeFont, resolveFont } from './fonts.ts';
+import { isTwoColumnLayout, transformToResumeLayout } from './ir/layout-transform.ts';
+import { DEFAULT_SECTIONS, transformToLayout } from './ir/transform.ts';
+import type { FieldTemplates, SectionsConfig } from './ir/types.ts';
+import type { TypographyOptions } from './types/typography.ts';
+import { DEFAULT_TYPOGRAPHY } from './types/typography.ts';
+import { calculateResumeLayout, calculateTwoColumnLayout, createRenderContext, type PageConfig, paginateLayoutWithAtomicGroups, renderPage } from './yoga-resume/index.ts';
 
 // Re-export types for external use
 export type { ResumeSchema };
@@ -67,15 +68,15 @@ export interface RenderOptions {
 
 /**
  * Setup fonts for the PDF document
- * Returns a FontConfig compatible with TypographyOptions
+ * Returns a FontConfig compatible with TypographyOptions (includes italic variants)
+ * Falls back to Helvetica if font resolution or registration fails
  */
-async function setupFonts(doc: InstanceType<typeof PDFDocument>, fontSpec?: string): Promise<{ regular: string; bold: string; italic: string; boldItalic: string }> {
+async function setupFonts(doc: InstanceType<typeof PDFDocument>, fontSpec: string | undefined): Promise<{ regular: string; bold: string; italic: string; boldItalic: string }> {
   const spec = fontSpec || 'auto';
   const resolvedFont = await resolveFont(spec);
 
   // Fall back to Helvetica if resolution failed
   if (!resolvedFont) {
-    console.warn(`Could not resolve font "${spec}", falling back to Helvetica`);
     return {
       regular: 'Helvetica',
       bold: 'Helvetica-Bold',
@@ -129,8 +130,8 @@ async function setupFonts(doc: InstanceType<typeof PDFDocument>, fontSpec?: stri
       italic: 'CustomFont',
       boldItalic: 'CustomFont',
     };
-  } catch (err) {
-    console.warn(`Failed to register font "${resolvedFont}":`, err);
+  } catch {
+    // Fall back to Helvetica on registration failure
     return {
       regular: 'Helvetica',
       bold: 'Helvetica-Bold',
@@ -173,7 +174,7 @@ function mergeTypography(defaults: TypographyOptions, overrides?: Partial<Typogr
 /**
  * Renders a resume to PDF buffer using the transform → render pipeline
  */
-export async function generateResumePDFBuffer(resume: ResumeSchema, options: RenderOptions = {}): Promise<Buffer> {
+export async function generateResumePDFBuffer(resume: ResumeSchema, options: RenderOptions, logger: Logger): Promise<Buffer> {
   // Check if content has Unicode characters or emoji
   const resumeText = JSON.stringify(resume);
   const containsUnicode = needsUnicodeFont(resumeText);
@@ -185,14 +186,14 @@ export async function generateResumePDFBuffer(resume: ResumeSchema, options: Ren
 
   // Warn about emoji if font not available
   if (containsEmoji && !emojiAvailable) {
-    console.warn('⚠️  EMOJI DETECTED but emoji font not available.\n' + '   Run: npm install (to download Noto Color Emoji)\n' + '   Emojis will be skipped in the PDF.');
+    logger.warn('⚠️  EMOJI DETECTED but emoji font not available.\n' + '   Run: npm install (to download Noto Color Emoji)\n' + '   Emojis will be skipped in the PDF.');
   } else if (containsEmoji && emojiAvailable) {
-    console.log('✅ Emoji support enabled - rendering emojis as inline images');
+    logger.info('✅ Emoji support enabled - rendering emojis as inline images');
   }
 
   // Warn if Unicode detected with default font
   if (containsUnicode && isDefaultFont && !containsEmoji) {
-    console.warn("⚠️  Unicode characters detected. If they don't render properly, " + 'provide a Unicode font URL. Find fonts at https://fontsource.org');
+    logger.warn("⚠️  Unicode characters detected. If they don't render properly, " + 'provide a Unicode font URL. Find fonts at https://fontsource.org');
   }
 
   // Build sections config with field templates
@@ -330,7 +331,7 @@ export async function generateResumePDFBuffer(resume: ResumeSchema, options: Ren
   });
 }
 
-export { DEFAULT_SECTIONS } from './ir/transform.js';
-export type { FieldTemplates, SectionsConfig } from './ir/types.js';
-export type { TypographyOptions } from './types/typography.js';
-export { DEFAULT_TYPOGRAPHY } from './types/typography.js';
+export { DEFAULT_SECTIONS } from './ir/transform.ts';
+export type { FieldTemplates, SectionsConfig } from './ir/types.ts';
+export type { TypographyOptions } from './types/typography.ts';
+export { DEFAULT_TYPOGRAPHY } from './types/typography.ts';
