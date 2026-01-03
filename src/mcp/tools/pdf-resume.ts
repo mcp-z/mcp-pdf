@@ -16,10 +16,10 @@ import { getFileUri, type ToolModule, writeFile } from '@mcp-z/server';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import type { Margins, PageSizePreset } from '../../constants.ts';
-import { generateResumePDFBuffer, type RenderOptions, type TypographyOptions } from '../../lib/resume-pdf-generator.js';
-import { validateResume } from '../../lib/validator.js';
-import { resumeLayoutSchema, sectionsConfigSchema, stylingSchema } from '../../schemas/resume.js';
-import type { StorageExtra } from '../../types.js';
+import { generateResumePDFBuffer, type RenderOptions, type TypographyOptions } from '../../lib/resume-pdf-generator.ts';
+import { validateResume } from '../../lib/validator.ts';
+import { resumeLayoutSchema, sectionsConfigSchema, stylingSchema } from '../../schemas/resume.ts';
+import type { StorageExtra } from '../../types.ts';
 
 // Use loose Zod schema for MCP input, AJV validates strictly
 const resumeInputSchema = z.record(z.string(), z.any()).describe('Resume data in JSON Resume format');
@@ -75,7 +75,7 @@ function getResumeDefaultMargins(_pageSize: PageSizePreset = 'LETTER'): Margins 
 
 export default function createTool() {
   async function handler(args: Input, extra: StorageExtra): Promise<CallToolResult> {
-    const { storageContext } = extra;
+    const { storageContext, logger } = extra;
     const { storageDir, baseUrl, transport } = storageContext;
     const { filename = 'resume.pdf', resume, font, pageSize, backgroundColor, sections, layout, styling } = args;
 
@@ -269,7 +269,7 @@ export default function createTool() {
       }
 
       // Generate PDF
-      const pdfBuffer = await generateResumePDFBuffer(resume, renderOptions);
+      const pdfBuffer = await generateResumePDFBuffer(resume, renderOptions, logger);
 
       // Write file with ID prefix
       const { storedName } = await writeFile(pdfBuffer, filename, {

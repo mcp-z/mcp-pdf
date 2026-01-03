@@ -7,8 +7,8 @@
 import PDFDocument from 'pdfkit';
 import { z } from 'zod';
 import { DEFAULT_PAGE_SIZE, PAGE_SIZES, type PageSize, type PageSizePreset } from '../constants.ts';
-import { registerEmojiFont } from './emoji-renderer.js';
-import { hasEmoji, setupFonts } from './fonts.js';
+import { registerEmojiFont } from './emoji-renderer.ts';
+import { hasEmoji, setupFonts } from './fonts.ts';
 
 // ============================================================================
 // Schemas - Shared content schemas used across tools
@@ -178,7 +178,7 @@ export async function createPDFDocument(options: PDFDocumentOptions, font: strin
 // Text Options Extraction
 // ============================================================================
 
-import type { PDFTextOptions } from './pdf-helpers.js';
+import type { PDFTextOptions } from './pdf-helpers.ts';
 
 /**
  * Extract PDFKit text options from a text/heading content item.
@@ -207,7 +207,7 @@ export function extractTextOptions(item: TextBaseItem): PDFTextOptions {
 // Content Validation
 // ============================================================================
 
-import { validateTextForFont } from './fonts.js';
+import { validateTextForFont } from './fonts.ts';
 
 /**
  * Validate text content against font capabilities.
@@ -221,7 +221,7 @@ export function validateContentText<T extends { type: string; text?: string; bol
   for (const item of items) {
     if ((item.type === 'text' || item.type === 'heading') && item.text) {
       const fnt = item.bold ? boldFont : regularFont;
-      const validation = validateTextForFont(item.text, fnt);
+      const validation = validateTextForFont(item.text, fnt, undefined);
       if (validation.hasUnsupportedCharacters) {
         warnings.push(...validation.warnings);
       }

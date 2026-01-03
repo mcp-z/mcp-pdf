@@ -10,9 +10,9 @@ import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/
 import PDFDocument from 'pdfkit';
 import { z } from 'zod';
 import { DEFAULT_TEXT_FONT_SIZE } from '../../constants.ts';
-import { measureTextHeight, measureTextWidth } from '../../lib/content-measure.js';
-import { registerEmojiFont } from '../../lib/emoji-renderer.js';
-import { hasEmoji, setupFonts } from '../../lib/fonts.js';
+import { measureTextHeight, measureTextWidth } from '../../lib/content-measure.ts';
+import { registerEmojiFont } from '../../lib/emoji-renderer.ts';
+import { hasEmoji, setupFonts } from '../../lib/fonts.ts';
 
 // ============================================================================
 // Schemas

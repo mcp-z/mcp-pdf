@@ -1,6 +1,6 @@
 import assert from 'assert';
-import { isSingleColumnLayout, isTwoColumnLayout, transformToResumeLayout } from '../../../../src/lib/ir/layout-transform.js';
-import type { LayoutElement, SectionConfig } from '../../../../src/lib/ir/types.js';
+import { isSingleColumnLayout, isTwoColumnLayout, transformToResumeLayout } from '../../../../src/lib/ir/layout-transform.ts';
+import type { LayoutElement, SectionConfig } from '../../../../src/lib/ir/types.ts';
 
 describe('layout-transform', () => {
   describe('transformToResumeLayout', () => {

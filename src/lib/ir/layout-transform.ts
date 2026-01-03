@@ -8,8 +8,8 @@
  * For two-column: Wraps elements in column groups based on section assignment
  */
 
-import type { ColumnConfig, LayoutConfig } from '../resume-pdf-generator.js';
-import type { DividerConfig, LayoutElement, SectionConfig } from './types.js';
+import type { ColumnConfig, LayoutConfig } from '../resume-pdf-generator.ts';
+import type { DividerConfig, LayoutElement, SectionConfig } from './types.ts';
 
 /**
  * Column layout with assigned IR elements

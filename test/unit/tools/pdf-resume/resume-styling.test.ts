@@ -1,5 +1,14 @@
 import assert from 'assert';
-import { generateResumePDFBuffer, type RenderOptions, type ResumeSchema } from '../../../../src/lib/resume-pdf-generator.js';
+import { generateResumePDFBuffer, type RenderOptions, type ResumeSchema } from '../../../../src/lib/resume-pdf-generator.ts';
+import type { Logger } from '../../../../src/types.ts';
+
+// Silent logger for tests
+const silentLogger: Logger = {
+  debug: () => {},
+  info: () => {},
+  warn: () => {},
+  error: () => {},
+};
 
 const sampleResume: ResumeSchema = {
   basics: {
@@ -30,7 +39,7 @@ const sampleResume: ResumeSchema = {
 
 describe('Resume Styling Options', () => {
   it('generates resume with default styling', async () => {
-    const pdfBuffer = await generateResumePDFBuffer(sampleResume);
+    const pdfBuffer = await generateResumePDFBuffer(sampleResume, {}, silentLogger);
 
     assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
     assert.ok(pdfBuffer.length > 0, 'PDF should have content');
@@ -50,7 +59,7 @@ describe('Resume Styling Options', () => {
       } as RenderOptions['typography'],
     };
 
-    const pdfBuffer = await generateResumePDFBuffer(sampleResume, options);
+    const pdfBuffer = await generateResumePDFBuffer(sampleResume, options, silentLogger);
 
     assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
     assert.ok(pdfBuffer.length > 0, 'PDF should have content');
@@ -74,7 +83,7 @@ describe('Resume Styling Options', () => {
       } as RenderOptions['typography'],
     };
 
-    const pdfBuffer = await generateResumePDFBuffer(sampleResume, options);
+    const pdfBuffer = await generateResumePDFBuffer(sampleResume, options, silentLogger);
 
     assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
     assert.ok(pdfBuffer.length > 0, 'PDF should have content');
@@ -86,7 +95,7 @@ describe('Resume Styling Options', () => {
     // This test verifies the resume generates successfully with defaults
     const options: RenderOptions = {};
 
-    const pdfBuffer = await generateResumePDFBuffer(sampleResume, options);
+    const pdfBuffer = await generateResumePDFBuffer(sampleResume, options, silentLogger);
 
     assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
     assert.ok(pdfBuffer.length > 0, 'PDF should have content');
@@ -113,7 +122,7 @@ describe('Resume Styling Options', () => {
       } as RenderOptions['typography'],
     };
 
-    const pdfBuffer = await generateResumePDFBuffer(sampleResume, options);
+    const pdfBuffer = await generateResumePDFBuffer(sampleResume, options, silentLogger);
 
     assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
     assert.ok(pdfBuffer.length > 0, 'PDF should have content');
