@@ -1,5 +1,14 @@
 import assert from 'assert';
-import { generateResumePDFBuffer, type ResumeSchema } from '../../../../src/lib/resume-pdf-generator.js';
+import { generateResumePDFBuffer, type ResumeSchema } from '../../../../src/lib/resume-pdf-generator.ts';
+import type { Logger } from '../../../../src/types.ts';
+
+// Silent logger for tests
+const silentLogger: Logger = {
+  debug: () => {},
+  info: () => {},
+  warn: () => {},
+  error: () => {},
+};
 
 describe('Emoji Integration in PDFs', () => {
   it('renders resume with emoji in name', async () => {
@@ -11,7 +20,7 @@ describe('Emoji Integration in PDFs', () => {
       },
     };
 
-    const pdfBuffer = await generateResumePDFBuffer(resume);
+    const pdfBuffer = await generateResumePDFBuffer(resume, {}, silentLogger);
 
     assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
     assert.ok(pdfBuffer.length > 0, 'PDF should have content');
@@ -35,7 +44,7 @@ describe('Emoji Integration in PDFs', () => {
       ],
     };
 
-    const pdfBuffer = await generateResumePDFBuffer(resume);
+    const pdfBuffer = await generateResumePDFBuffer(resume, {}, silentLogger);
 
     assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
     assert.ok(pdfBuffer.length > 0, 'PDF should have content');
@@ -56,7 +65,7 @@ describe('Emoji Integration in PDFs', () => {
       ],
     };
 
-    const pdfBuffer = await generateResumePDFBuffer(resume);
+    const pdfBuffer = await generateResumePDFBuffer(resume, {}, silentLogger);
 
     assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
     assert.ok(pdfBuffer.length > 0, 'PDF should have content');
@@ -93,7 +102,7 @@ describe('Emoji Integration in PDFs', () => {
       ],
     };
 
-    const pdfBuffer = await generateResumePDFBuffer(resume);
+    const pdfBuffer = await generateResumePDFBuffer(resume, {}, silentLogger);
 
     assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
     assert.ok(pdfBuffer.length > 0, 'PDF should have content');
@@ -114,7 +123,7 @@ describe('Emoji Integration in PDFs', () => {
       ],
     };
 
-    const pdfBuffer = await generateResumePDFBuffer(resume);
+    const pdfBuffer = await generateResumePDFBuffer(resume, {}, silentLogger);
 
     assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
     assert.ok(pdfBuffer.length > 0, 'PDF should have content');
@@ -136,7 +145,7 @@ describe('Emoji Integration in PDFs', () => {
       ],
     };
 
-    const pdfBuffer = await generateResumePDFBuffer(resume);
+    const pdfBuffer = await generateResumePDFBuffer(resume, {}, silentLogger);
 
     assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
     assert.ok(pdfBuffer.length > 0, 'PDF should have content');
@@ -159,7 +168,7 @@ describe('Emoji Integration in PDFs', () => {
       ],
     };
 
-    const pdfBuffer = await generateResumePDFBuffer(resume);
+    const pdfBuffer = await generateResumePDFBuffer(resume, {}, silentLogger);
 
     assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
     assert.ok(pdfBuffer.length > 0, 'PDF should have content');

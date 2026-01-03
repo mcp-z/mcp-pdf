@@ -1,11 +1,11 @@
-import { parseConfig as parseTransportConfig } from '@mcp-z/server';
+import { findConfigPath, parseConfig as parseTransportConfig } from '@mcp-z/server';
 import * as fs from 'fs';
 import moduleRoot from 'module-root-sync';
 import { homedir } from 'os';
 import * as path from 'path';
 import * as url from 'url';
 import { parseArgs } from 'util';
-import type { ServerConfig } from '../types.js';
+import type { ServerConfig } from '../types.ts';
 
 const pkg = JSON.parse(fs.readFileSync(path.join(moduleRoot(url.fileURLToPath(import.meta.url)), 'package.json'), 'utf-8'));
 
@@ -71,7 +71,13 @@ export function parseConfig(args: string[], env: Record<string, string | undefin
   });
 
   const name = pkg.name.replace(/^@[^/]+\//, '');
-  const rootDir = process.cwd() === '/' ? homedir() : process.cwd();
+  let rootDir = homedir();
+  try {
+    const configPath = findConfigPath({ config: '.mcp.json', cwd: process.cwd(), stopDir: homedir() });
+    rootDir = path.dirname(configPath);
+  } catch {
+    rootDir = homedir();
+  }
   const baseDir = path.join(rootDir, '.mcp-z');
   const cliBaseUrl = typeof values['base-url'] === 'string' ? values['base-url'] : undefined;
   const envBaseUrl = env.BASE_URL;
