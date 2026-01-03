@@ -1,1 +1,1 @@
-export { default as resourceFetching } from './resource-fetching.js';
+export { default as resourceFetching } from './resource-fetching.ts';

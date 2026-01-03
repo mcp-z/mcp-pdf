@@ -7,9 +7,9 @@
 import assert from 'assert';
 import { existsSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
-import createTool, { type Output } from '../../../../src/mcp/tools/pdf-layout.js';
-import type { ServerConfig } from '../../../../src/types.js';
-import { createStorageExtra } from '../../../lib/create-extra.js';
+import createTool, { type Output } from '../../../../src/mcp/tools/pdf-layout.ts';
+import type { ServerConfig } from '../../../../src/types.ts';
+import { createExtra } from '../../../lib/create-extra.ts';
 
 // Use .tmp/ in package root per QUALITY.md rule T8
 const testOutputDir = join(process.cwd(), '.tmp', 'flexbox-tests');
@@ -34,7 +34,7 @@ function createTestConfig(): ServerConfig {
 describe('Flexbox Layout Tests', () => {
   const config = createTestConfig();
   const tool = createTool();
-  const extra = createStorageExtra(config);
+  const extra = createExtra(config);
 
   before(() => {
     mkdirSync(testStorageDir, { recursive: true });

@@ -4,8 +4,8 @@
  */
 
 import { z } from 'zod';
-import type { BaseContentItem } from './content.js';
-import { baseContentItemSchema } from './content.js';
+import type { BaseContentItem } from './content.ts';
+import { baseContentItemSchema } from './content.ts';
 
 // Size schema - number or percentage string
 export const sizeSchema = z.union([z.number(), z.string().regex(/^\d+(\.\d+)?%$/)]);

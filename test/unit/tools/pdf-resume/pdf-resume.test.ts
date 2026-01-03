@@ -1,9 +1,9 @@
 import assert from 'assert';
 import { existsSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
-import createTool, { type Input, type Output } from '../../../../src/mcp/tools/pdf-resume.js';
-import type { ServerConfig } from '../../../../src/types.js';
-import { createStorageExtra } from '../../../lib/create-extra.js';
+import createTool, { type Input, type Output } from '../../../../src/mcp/tools/pdf-resume.ts';
+import type { ServerConfig } from '../../../../src/types.ts';
+import { createExtra } from '../../../lib/create-extra.ts';
 
 // Use .tmp/ in package root per QUALITY.md rule T8
 const testOutputDir = join(process.cwd(), '.tmp', 'pdf-resume-tests');
@@ -39,7 +39,7 @@ describe('pdf-resume tool', () => {
   it('creates resume PDF from JSON Resume format', async () => {
     const config = createTestConfig();
     const tool = createTool();
-    const extra = createStorageExtra(config);
+    const extra = createExtra(config);
 
     assert.equal(tool.name, 'pdf-resume', 'tool name should match');
 
@@ -81,7 +81,7 @@ describe('pdf-resume tool', () => {
   it('creates resume with custom styling', async () => {
     const config = createTestConfig();
     const tool = createTool();
-    const extra = createStorageExtra(config);
+    const extra = createExtra(config);
 
     const input: Input = {
       resume: {
@@ -109,7 +109,7 @@ describe('pdf-resume tool', () => {
   it('handles resume with all sections', async () => {
     const config = createTestConfig();
     const tool = createTool();
-    const extra = createStorageExtra(config);
+    const extra = createExtra(config);
 
     const input: Input = {
       resume: {

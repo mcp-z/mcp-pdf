@@ -1,9 +1,9 @@
 import type PDFKit from 'pdfkit';
 import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE, WRAP_EPSILON } from '../constants.ts';
-import { measureEmoji, splitTextAndEmoji } from './emoji-renderer.js';
-import { hasEmoji } from './fonts.js';
-import type { PDFTextOptions } from './pdf-helpers.js';
-import type { LayoutContent } from './yoga-layout.js';
+import { measureEmoji, splitTextAndEmoji } from './emoji-renderer.ts';
+import { hasEmoji } from './fonts.ts';
+import type { PDFTextOptions } from './pdf-helpers.ts';
+import type { LayoutContent } from './yoga-layout.ts';
 
 /**
  * Content measurement utilities for determining heights before rendering.

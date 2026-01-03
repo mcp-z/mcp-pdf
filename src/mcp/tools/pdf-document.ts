@@ -15,13 +15,13 @@ import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/
 import PDFDocument from 'pdfkit';
 import { z } from 'zod';
 import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE, getDefaultMargins, type Margins, type PageSizePreset } from '../../constants.ts';
-import { registerEmojiFont } from '../../lib/emoji-renderer.js';
-import { hasEmoji, setupFonts, validateTextForFont } from '../../lib/fonts.js';
-import { resolveImageDimensions } from '../../lib/image-dimensions.js';
-import { extractTextOptions, type PDFOutput, pdfOutputSchema, resolvePageSize } from '../../lib/pdf-core.js';
-import { renderTextWithEmoji } from '../../lib/pdf-helpers.js';
-import { flowingContentItemSchema } from '../../schemas/content.js';
-import type { StorageExtra } from '../../types.js';
+import { registerEmojiFont } from '../../lib/emoji-renderer.ts';
+import { hasEmoji, setupFonts, validateTextForFont } from '../../lib/fonts.ts';
+import { resolveImageDimensions } from '../../lib/image-dimensions.ts';
+import { extractTextOptions, type PDFOutput, pdfOutputSchema, resolvePageSize } from '../../lib/pdf-core.ts';
+import { renderTextWithEmoji } from '../../lib/pdf-helpers.ts';
+import { flowingContentItemSchema } from '../../schemas/content.ts';
+import type { StorageExtra } from '../../types.ts';
 
 // ============================================================================
 // Tool-specific schemas and types
@@ -146,7 +146,7 @@ export default function createTool() {
       for (const item of content) {
         if ((item.type === 'text' || item.type === 'heading') && item.text) {
           const fnt = item.bold ? boldFont : regularFont;
-          const validation = validateTextForFont(item.text, fnt);
+          const validation = validateTextForFont(item.text, fnt, undefined);
           if (validation.hasUnsupportedCharacters) {
             warnings.push(...validation.warnings);
           }

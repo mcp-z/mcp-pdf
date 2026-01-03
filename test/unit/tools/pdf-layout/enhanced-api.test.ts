@@ -1,8 +1,8 @@
 import assert from 'assert';
 import PDFDocument from 'pdfkit';
-import { registerEmojiFont } from '../../../../src/lib/emoji-renderer.js';
-import { hasEmoji, setupFonts } from '../../../../src/lib/fonts.js';
-import { type PDFTextOptions, renderTextWithEmoji } from '../../../../src/lib/pdf-helpers.js';
+import { registerEmojiFont } from '../../../../src/lib/emoji-renderer.ts';
+import { hasEmoji, setupFonts } from '../../../../src/lib/fonts.ts';
+import { type PDFTextOptions, renderTextWithEmoji } from '../../../../src/lib/pdf-helpers.ts';
 
 type ContentItem =
   | { type: 'text'; text: string; fontSize?: number; bold?: boolean; color?: string; left?: number; top?: number; width?: number; align?: string; oblique?: number | boolean; characterSpacing?: number; moveDown?: number }
@@ -58,7 +58,7 @@ async function createPdfWithEnhancements(options: {
   const emojiAvailable = containsEmoji ? registerEmojiFont() : false;
 
   // Setup fonts
-  const fonts = await setupFonts(doc);
+  const fonts = await setupFonts(doc, undefined);
   const { regular: regularFont, bold: boldFont } = fonts;
 
   // Helper to draw background on new pages

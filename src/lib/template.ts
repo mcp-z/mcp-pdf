@@ -46,9 +46,8 @@ export function registerHelper(name: string, fn: HelperFn): void {
 export function render(template: string, context: Record<string, unknown>): string {
   try {
     return engine.parseAndRenderSync(template, context);
-  } catch (error) {
+  } catch (_error) {
     // On error, return template as-is for debugging
-    console.error('Template render error:', error);
     return template;
   }
 }
@@ -61,8 +60,7 @@ export function compile(template: string): (context: Record<string, unknown>) =>
   return (context) => {
     try {
       return engine.renderSync(tpl, context);
-    } catch (error) {
-      console.error('Template render error:', error);
+    } catch (_error) {
       return template;
     }
   };

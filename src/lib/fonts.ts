@@ -88,46 +88,40 @@ export function getSystemFont(): string | null {
 
 /**
  * Download font from URL to temp directory
- * Returns path to downloaded font, or null on error
+ * Returns path to downloaded font
  * Caches downloads - if the file already exists, returns cached path
+ * Throws error if download fails
  */
-async function downloadToTemp(url: string): Promise<string | null> {
-  try {
-    const tempDir = join(tmpdir(), 'mcp-pdf-fonts');
-    await mkdir(tempDir, { recursive: true });
+async function downloadToTemp(url: string): Promise<string> {
+  const tempDir = join(tmpdir(), 'mcp-pdf-fonts');
+  await mkdir(tempDir, { recursive: true });
 
-    // Extract filename from URL or generate one
-    const urlPath = new URL(url).pathname;
-    const filename = urlPath.split('/').pop() || `font-${Date.now()}.woff2`;
-    const tempPath = join(tempDir, filename);
+  // Extract filename from URL or generate one
+  const urlPath = new URL(url).pathname;
+  const filename = urlPath.split('/').pop() || `font-${Date.now()}.woff2`;
+  const tempPath = join(tempDir, filename);
 
-    // Check if already cached
-    if (existsSync(tempPath)) {
-      console.log(`Using cached font: ${filename}`);
-      return tempPath;
-    }
-
-    // Download if not cached
-    console.log(`Downloading font: ${url}`);
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.warn(`Failed to download font from ${url}: ${response.statusText}`);
-      return null;
-    }
-
-    const buffer = await response.arrayBuffer();
-    await writeFile(tempPath, Buffer.from(buffer));
-    console.log(`Font cached: ${filename}`);
+  // Check if already cached
+  if (existsSync(tempPath)) {
     return tempPath;
-  } catch (err) {
-    console.warn(`Failed to download font from ${url}:`, err);
-    return null;
   }
+
+  // Download if not cached
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Font download failed (HTTP ${response.status}): ${response.statusText}`);
+  }
+
+  const buffer = await response.arrayBuffer();
+  await writeFile(tempPath, Buffer.from(buffer));
+  return tempPath;
 }
 
 /**
  * Resolve font specification to actual font path or name
  * Supports: PDF standard fonts, absolute paths, URLs, 'auto' detection
+ * Returns null if font cannot be resolved (caller should use fallback)
+ * Throws error if URL download fails
  */
 export async function resolveFont(fontSpec: string): Promise<string | null> {
   // 1. Check if it's a PDF standard font (built-in, no file needed)
@@ -145,7 +139,7 @@ export async function resolveFont(fontSpec: string): Promise<string | null> {
     return existsSync(fontSpec) ? fontSpec : null;
   }
 
-  // 4. URL (http/https)
+  // 4. URL (http/https) - throws on download failure
   if (fontSpec.startsWith('http://') || fontSpec.startsWith('https://')) {
     return await downloadToTemp(fontSpec);
   }
@@ -158,17 +152,17 @@ export async function resolveFont(fontSpec: string): Promise<string | null> {
  * Setup fonts for PDF document
  * Resolves font specification and registers with PDFKit
  * Returns FontConfig with regular/bold/oblique variants
+ * Falls back to Helvetica if font resolution or registration fails
  */
-export async function setupFonts(doc: PDFKit.PDFDocument, fontSpec?: string): Promise<FontConfig> {
+export async function setupFonts(doc: PDFKit.PDFDocument, fontSpec: string | undefined): Promise<FontConfig> {
   // Default to auto-detect if not specified
   const spec = fontSpec || 'auto';
 
-  // Resolve the font
+  // Resolve the font (may throw on URL download failure)
   const resolvedFont = await resolveFont(spec);
 
   // Fall back to Helvetica if resolution failed
   if (!resolvedFont) {
-    console.warn(`Could not resolve font "${spec}", falling back to Helvetica`);
     return {
       regular: 'Helvetica',
       bold: 'Helvetica-Bold',
@@ -218,9 +212,8 @@ export async function setupFonts(doc: PDFKit.PDFDocument, fontSpec?: string): Pr
       bold: 'CustomFont',
       oblique: 'CustomFont',
     };
-  } catch (err) {
-    console.warn(`Failed to register font "${resolvedFont}":`, err);
-    // Fall back to Helvetica
+  } catch (_err) {
+    // Fall back to Helvetica on registration failure
     return {
       regular: 'Helvetica',
       bold: 'Helvetica-Bold',
@@ -246,7 +239,7 @@ export interface CharacterValidationResult {
  * @param fontPath - Path to font file (required for custom fonts)
  * @returns Validation result with warnings
  */
-export function validateTextForFont(text: string, fontName: string, fontPath?: string): CharacterValidationResult {
+export function validateTextForFont(text: string, fontName: string, fontPath: string | undefined): CharacterValidationResult {
   const result: CharacterValidationResult = {
     hasUnsupportedCharacters: false,
     warnings: [],
@@ -288,7 +281,7 @@ export function validateTextForFont(text: string, fontName: string, fontPath?: s
       const font = 'fonts' in fontOrCollection ? fontOrCollection.fonts[0] : fontOrCollection;
 
       if (!font) {
-        console.warn(`Could not load font from "${fontPath}": font collection is empty`);
+        // Font collection is empty - can't validate
         return result;
       }
 
@@ -309,9 +302,8 @@ export function validateTextForFont(text: string, fontName: string, fontPath?: s
 
         result.warnings.push(`Characters ${chars}${more} are not supported by font ${fontName}. Consider using a different font or alternative characters.`);
       }
-    } catch (err) {
-      // If we can't load the font, we can't validate - remain silent
-      console.warn(`Could not validate font "${fontPath}":`, err);
+    } catch (_err) {
+      // If we can't load the font, we can't validate - remain silent (no false positives)
     }
   }
 

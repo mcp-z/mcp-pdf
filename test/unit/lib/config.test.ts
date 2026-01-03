@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { createConfig, parseConfig } from '../../../src/setup/config.js';
+import { createConfig, parseConfig } from '../../../src/setup/config.ts';
 
 describe('Config parsing', () => {
   describe('BASE_URL parsing', () => {

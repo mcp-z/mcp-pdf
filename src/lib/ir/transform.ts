@@ -6,8 +6,8 @@
  * can be rendered by type-specific handlers.
  */
 
-import type { ResumeSchema } from '../../../assets/resume.js';
-import { mergeFieldTemplates, registerFieldFilters } from '../formatting.js';
+import type { ResumeSchema } from '../../../assets/resume.ts';
+import { mergeFieldTemplates, registerFieldFilters } from '../formatting.ts';
 import type {
   CompanyHeaderElement,
   ContactItem,
@@ -35,8 +35,8 @@ import type {
   SummaryHighlightsElement,
   TemplateElement,
   TextElement,
-} from './types.js';
-import { isDividerConfig, isSectionConfig } from './types.js';
+} from './types.ts';
+import { isDividerConfig, isSectionConfig } from './types.ts';
 
 // =============================================================================
 // Typography Spacing Constants (should match measure.ts/render.ts)

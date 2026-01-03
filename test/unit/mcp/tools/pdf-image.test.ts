@@ -6,9 +6,9 @@ import assert from 'assert';
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import PDFDocument from 'pdfkit';
-import createTool from '../../../../src/mcp/tools/pdf-image.js';
-import type { ServerConfig } from '../../../../src/types.js';
-import { createStorageExtra } from '../../../lib/create-extra.js';
+import createTool from '../../../../src/mcp/tools/pdf-image.ts';
+import type { ServerConfig } from '../../../../src/types.ts';
+import { createExtra } from '../../../lib/create-extra.ts';
 
 // Use .tmp/ in package root per QUALITY.md rule T8
 const testOutputDir = join(process.cwd(), '.tmp', 'pdf-image-tests');
@@ -29,7 +29,7 @@ function createTestConfig(): ServerConfig {
 describe('pdf-image tool', () => {
   const config = createTestConfig();
   const tool = createTool();
-  const extra = createStorageExtra(config);
+  const extra = createExtra(config);
 
   before((done) => {
     mkdirSync(testStorageDir, { recursive: true });

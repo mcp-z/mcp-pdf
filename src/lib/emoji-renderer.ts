@@ -18,6 +18,7 @@ let emojiFontRegistered = false;
 /**
  * Register the emoji font with @napi-rs/canvas
  * This should be called once at application startup
+ * Returns false if font file not found or registration fails
  */
 export function registerEmojiFont(): boolean {
   if (emojiFontRegistered) {
@@ -25,8 +26,6 @@ export function registerEmojiFont(): boolean {
   }
 
   if (!existsSync(EMOJI_FONT_PATH)) {
-    console.warn('⚠️  Emoji font not found at:', EMOJI_FONT_PATH);
-    console.warn('   Run: npm install (to trigger postinstall script)');
     return false;
   }
 
@@ -34,8 +33,7 @@ export function registerEmojiFont(): boolean {
     GlobalFonts.registerFromPath(EMOJI_FONT_PATH, 'NotoColorEmoji');
     emojiFontRegistered = true;
     return true;
-  } catch (err) {
-    console.warn('⚠️  Failed to register emoji font:', err);
+  } catch {
     return false;
   }
 }
@@ -99,7 +97,7 @@ export function measureEmoji(emoji: string, fontSize: number): EmojiMetrics {
  *
  * @param emoji - The emoji character to render
  * @param size - The font size (canvas will be sized to fit)
- * @returns PNG buffer, or null if font not available
+ * @returns PNG buffer, or null if font not available or rendering fails
  */
 export function renderEmojiToBuffer(emoji: string, size: number): Buffer | null {
   if (!registerEmojiFont()) {
@@ -127,8 +125,7 @@ export function renderEmojiToBuffer(emoji: string, size: number): Buffer | null 
     ctx.fillText(emoji, canvasWidth / 2, canvasHeight / 2);
 
     return canvas.toBuffer('image/png');
-  } catch (err) {
-    console.warn(`⚠️  Failed to render emoji "${emoji}":`, err);
+  } catch {
     return null;
   }
 }

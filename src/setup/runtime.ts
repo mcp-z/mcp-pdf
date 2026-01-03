@@ -3,8 +3,8 @@ import { createLoggingMiddleware } from '@mcp-z/server';
 import * as fs from 'fs';
 import * as path from 'path';
 import pino from 'pino';
-import * as mcp from '../mcp/index.js';
-import type { CommonRuntime, RuntimeDeps, RuntimeOverrides, ServerConfig, StorageContext } from '../types.js';
+import * as mcp from '../mcp/index.ts';
+import type { CommonRuntime, RuntimeDeps, RuntimeOverrides, ServerConfig, StorageContext } from '../types.ts';
 
 export function createLogger(config: ServerConfig): Logger {
   const hasStdio = config.transport.type === 'stdio';

@@ -5,8 +5,8 @@
  * Handlers use these for field-level rendering while maintaining structural layout.
  */
 
-import type { FieldTemplates } from './ir/types.js';
-import { registerFilter, render } from './template.js';
+import type { FieldTemplates } from './ir/types.ts';
+import { registerFilter, render } from './template.ts';
 
 /**
  * Default field templates

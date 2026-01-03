@@ -25,6 +25,7 @@ export interface StorageContext {
 
 export interface StorageExtra {
   storageContext: StorageContext;
+  logger: Logger;
 }
 
 /** Runtime dependencies exposed to middleware/factories. */
@@ -60,4 +61,4 @@ export interface RuntimeOverrides {
 // Reusable Content Types
 // ============================================================================
 
-export type { ContentItem, FlowingContentItem, GroupItem } from './schemas/index.js';
+export type { ContentItem, FlowingContentItem, GroupItem } from './schemas/index.ts';
