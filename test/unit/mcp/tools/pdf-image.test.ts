@@ -21,7 +21,7 @@ function createTestConfig(): ServerConfig {
     version: '1.0.0',
     logLevel: 'silent',
     baseDir: testOutputDir,
-    storageDir: testStorageDir,
+    resourceStoreUri: `file://${testStorageDir}`,
     transport: { type: 'stdio' },
   };
 }
