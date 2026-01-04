@@ -76,7 +76,7 @@ function getResumeDefaultMargins(_pageSize: PageSizePreset = 'LETTER'): Margins 
 export default function createTool() {
   async function handler(args: Input, extra: StorageExtra): Promise<CallToolResult> {
     const { storageContext, logger } = extra;
-    const { storageDir, baseUrl, transport } = storageContext;
+    const { resourceStoreUri, baseUrl, transport } = storageContext;
     const { filename = 'resume.pdf', resume, font, pageSize, backgroundColor, sections, layout, styling } = args;
 
     try {
@@ -273,12 +273,12 @@ export default function createTool() {
 
       // Write file with ID prefix
       const { storedName } = await writeFile(pdfBuffer, filename, {
-        storageDir,
+        resourceStoreUri,
       });
 
       // Generate URI based on transport type
       const fileUri = getFileUri(storedName, transport, {
-        storageDir,
+        resourceStoreUri,
         ...(baseUrl && { baseUrl }),
         endpoint: '/files',
       });
