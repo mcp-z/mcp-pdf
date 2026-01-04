@@ -21,9 +21,9 @@ export interface BaseExtra {
   logger: pino.Logger;
 }
 
-export function createStorageContext(config: Pick<ServerConfig, 'storageDir' | 'baseUrl' | 'transport'>): StorageContext {
+export function createStorageContext(config: Pick<ServerConfig, 'resourceStoreUri' | 'baseUrl' | 'transport'>): StorageContext {
   return {
-    storageDir: config.storageDir,
+    resourceStoreUri: config.resourceStoreUri,
     baseUrl: config.baseUrl,
     transport: config.transport,
   };
