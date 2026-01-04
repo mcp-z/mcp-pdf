@@ -39,7 +39,7 @@
         },
         {
           "name": "BASE_URL",
-          "description": "Base URL for file serving (optional, used for HTTP transport)",
+          "description": "Base URL for HTTP transport (used for file links)",
           "placeholder": "http://localhost:{PORT}",
           "isRequired": false,
           "isSecret": false
@@ -65,7 +65,7 @@
         {
           "type": "named",
           "name": "--base-url",
-          "description": "Override base URL for file serving"
+          "description": "Override base URL for HTTP transport (used for file links)"
         },
         {
           "type": "named",
@@ -108,7 +108,7 @@
         },
         {
           "name": "BASE_URL",
-          "description": "Base URL for file serving (optional, defaults to http://localhost:{PORT})",
+          "description": "Base URL for HTTP transport (used for file links)",
           "placeholder": "http://localhost:{PORT}",
           "isRequired": false,
           "isSecret": false
@@ -140,7 +140,7 @@
         {
           "type": "named",
           "name": "--base-url",
-          "description": "Override base URL for file serving"
+          "description": "Override base URL for HTTP transport (used for file links)"
         },
         {
           "type": "named",

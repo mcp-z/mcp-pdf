@@ -58,12 +58,12 @@ export function handleVersionHelp(args: string[]): { handled: boolean; output?: 
 export function parseConfig(args: string[], env: Record<string, string | undefined>): ServerConfig {
   const transportConfig = parseTransportConfig(args, env);
 
-  // Parse application-level config (BASE_URL, LOG_LEVEL)
+  // Parse application-level config (LOG_LEVEL, STORAGE_DIR, BASE_URL)
   const { values } = parseArgs({
     args,
     options: {
-      'base-url': { type: 'string' },
       'log-level': { type: 'string' },
+      'base-url': { type: 'string' },
       'storage-dir': { type: 'string' },
     },
     strict: false, // Allow other arguments
