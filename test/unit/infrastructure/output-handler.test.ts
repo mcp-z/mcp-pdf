@@ -14,7 +14,7 @@ describe('output-handler', () => {
 
     it('writes PDF to specified directory with ID prefix', async () => {
       const buffer = Buffer.from('test pdf content');
-      const result = await writeFile(buffer, 'test.pdf', { storageDir: testDir });
+      const result = await writeFile(buffer, 'test.pdf', { resourceStoreUri: `file://${testDir}` });
 
       assert.ok(existsSync(result.fullPath));
       assert.ok(result.fullPath.startsWith(resolve(testDir)));
@@ -28,8 +28,8 @@ describe('output-handler', () => {
 
     it('generates unique ID for each file', async () => {
       const buffer = Buffer.from('test pdf content');
-      const result1 = await writeFile(buffer, 'test.pdf', { storageDir: testDir });
-      const result2 = await writeFile(buffer, 'test.pdf', { storageDir: testDir });
+      const result1 = await writeFile(buffer, 'test.pdf', { resourceStoreUri: `file://${testDir}` });
+      const result2 = await writeFile(buffer, 'test.pdf', { resourceStoreUri: `file://${testDir}` });
 
       // Should have different IDs
       assert.notStrictEqual(result1.storedName, result2.storedName);
@@ -44,7 +44,7 @@ describe('output-handler', () => {
       const newDir = join('.tmp', `mcp-pdf-new-${Date.now()}`);
 
       const buffer = Buffer.from('test pdf content');
-      const result = await writeFile(buffer, 'test.pdf', { storageDir: newDir });
+      const result = await writeFile(buffer, 'test.pdf', { resourceStoreUri: `file://${newDir}` });
 
       assert.ok(existsSync(newDir));
       assert.ok(existsSync(result.fullPath));

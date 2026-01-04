@@ -28,26 +28,29 @@ describe('Config parsing', () => {
     });
   });
 
-  describe('storageDir parsing', () => {
-    it('uses STORAGE_DIR env var', () => {
+  describe('resourceStoreUri parsing', () => {
+    it('uses RESOURCE_STORE_URI env var', () => {
       const config = parseConfig([], {
-        STORAGE_DIR: '/custom/path',
+        RESOURCE_STORE_URI: 'file:///custom/path',
       });
-      assert.ok(config.storageDir.endsWith('/custom/path'));
+      assert.ok(config.resourceStoreUri.startsWith('file://'));
+      assert.ok(config.resourceStoreUri.endsWith('/custom/path'));
     });
 
     it('defaults to ~/.mcp-z/pdf/files when not provided', () => {
       const config = createConfig();
-      assert.ok(config.storageDir.includes('.mcp-z'));
-      assert.ok(config.storageDir.includes('pdf'));
+      assert.ok(config.resourceStoreUri.startsWith('file://'));
+      assert.ok(config.resourceStoreUri.includes('.mcp-z'));
+      assert.ok(config.resourceStoreUri.includes('pdf'));
     });
 
     it('expands tilde in path', () => {
       const config = parseConfig([], {
-        STORAGE_DIR: '~/my-pdfs',
+        RESOURCE_STORE_URI: 'file://~/my-pdfs',
       });
-      assert.ok(!config.storageDir.startsWith('~'));
-      assert.ok(config.storageDir.includes('my-pdfs'));
+      assert.ok(!config.resourceStoreUri.startsWith('~'));
+      assert.ok(config.resourceStoreUri.includes('my-pdfs'));
+      assert.ok(config.resourceStoreUri.startsWith('file://'));
     });
   });
 

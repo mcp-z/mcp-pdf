@@ -19,17 +19,17 @@ Options:
   --help                 Show this help message
   --base-url=<url>       Base URL for HTTP file serving
   --log-level=<level>    Logging level (default: info)
-  --storage-dir=<path>   Directory for file storage (default: .mcp-z/files)
+  --resource-store-uri=<uri>    Resource store URI for file storage (default: file://~/.mcp-z/mcp-pdf/files)
 
 Environment Variables:
   BASE_URL               Base URL for HTTP file serving (optional)
   LOG_LEVEL              Default logging level (optional)
-  STORAGE_DIR            Storage directory (optional)
+  RESOURCE_STORE_URI            Resource store URI (optional, file://)
 
 Examples:
   mcp-pdf                           # Use default settings
   mcp-pdf --port=3000               # HTTP transport on port 3000
-  mcp-pdf --storage-dir=./pdfs      # Custom storage directory
+  mcp-pdf --resource-store-uri=file:///tmp/pdfs      # Custom resource store URI
   LOG_LEVEL=debug mcp-pdf           # Set log level via env var
 `.trim();
 
@@ -58,13 +58,13 @@ export function handleVersionHelp(args: string[]): { handled: boolean; output?: 
 export function parseConfig(args: string[], env: Record<string, string | undefined>): ServerConfig {
   const transportConfig = parseTransportConfig(args, env);
 
-  // Parse application-level config (LOG_LEVEL, STORAGE_DIR, BASE_URL)
+  // Parse application-level config (LOG_LEVEL, RESOURCE_STORE_URI, BASE_URL)
   const { values } = parseArgs({
     args,
     options: {
       'log-level': { type: 'string' },
       'base-url': { type: 'string' },
-      'storage-dir': { type: 'string' },
+      'resource-store-uri': { type: 'string' },
     },
     strict: false, // Allow other arguments
     allowPositionals: true,
@@ -88,15 +88,15 @@ export function parseConfig(args: string[], env: Record<string, string | undefin
   const logLevel = cliLogLevel ?? envLogLevel ?? 'info';
 
   // Parse file storage configuration
-  const cliStorageDir = typeof values['storage-dir'] === 'string' ? values['storage-dir'] : undefined;
-  const envStorageDir = env.STORAGE_DIR;
-  let storageDir = cliStorageDir ?? envStorageDir ?? path.join(baseDir, name, 'files');
-  if (storageDir.startsWith('~')) storageDir = storageDir.replace(/^~/, homedir());
+  const cliResourceStoreUri = typeof values['resource-store-uri'] === 'string' ? values['resource-store-uri'] : undefined;
+  const envResourceStoreUri = env.RESOURCE_STORE_URI;
+  const defaultResourceStorePath = path.join(baseDir, name, 'files');
+  const resourceStoreUri = normalizeResourceStoreUri(cliResourceStoreUri ?? envResourceStoreUri ?? defaultResourceStorePath);
 
   // Combine configs
   return {
     ...transportConfig,
-    storageDir: path.resolve(storageDir),
+    resourceStoreUri,
     ...(baseUrl && { baseUrl }),
     logLevel,
     baseDir,
@@ -111,4 +111,18 @@ export function parseConfig(args: string[], env: Record<string, string | undefin
  */
 export function createConfig(): ServerConfig {
   return parseConfig(process.argv, process.env);
+}
+
+function normalizeResourceStoreUri(resourceStoreUri: string): string {
+  const filePrefix = 'file://';
+  if (resourceStoreUri.startsWith(filePrefix)) {
+    const rawPath = resourceStoreUri.slice(filePrefix.length);
+    const expandedPath = rawPath.startsWith('~') ? rawPath.replace(/^~/, homedir()) : rawPath;
+    return `${filePrefix}${path.resolve(expandedPath)}`;
+  }
+
+  if (resourceStoreUri.includes('://')) return resourceStoreUri;
+
+  const expandedPath = resourceStoreUri.startsWith('~') ? resourceStoreUri.replace(/^~/, homedir()) : resourceStoreUri;
+  return `${filePrefix}${path.resolve(expandedPath)}`;
 }

@@ -8,7 +8,7 @@ export type Logger = ServerLogger;
  */
 export interface ServerConfig extends BaseServerConfig {
   // PDF-specific configuration
-  storageDir: string;
+  resourceStoreUri: string;
   baseUrl?: string;
 
   logLevel: string;
@@ -18,7 +18,7 @@ export interface ServerConfig extends BaseServerConfig {
 }
 
 export interface StorageContext {
-  storageDir: string;
+  resourceStoreUri: string;
   baseUrl?: string;
   transport: BaseServerConfig['transport'];
 }

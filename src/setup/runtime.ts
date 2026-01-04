@@ -48,8 +48,8 @@ export async function createDefaultRuntime(config: ServerConfig, overrides?: Run
   if (config.transport.type === 'http' && !config.baseUrl && !config.transport.port) {
     throw new Error('pdf-document: HTTP/WS transport requires either baseUrl in server config or port in transport config.');
   }
-  if (!config.storageDir) {
-    throw new Error('pdf-document: Server configuration missing storageDir.');
+  if (!config.resourceStoreUri) {
+    throw new Error('pdf-document: Server configuration missing resourceStoreUri.');
   }
 
   const logger = createLogger(config);
@@ -63,7 +63,7 @@ export async function createDefaultRuntime(config: ServerConfig, overrides?: Run
       resources: [],
       prompts: Object.values(mcp.promptFactories).map((factory) => factory()),
     }));
-  const middlewareFactories = overrides?.middlewareFactories ?? [() => createLoggingLayer(logger), () => createStorageLayer({ storageDir: config.storageDir, baseUrl: config.baseUrl, transport: config.transport })];
+  const middlewareFactories = overrides?.middlewareFactories ?? [() => createLoggingLayer(logger), () => createStorageLayer({ resourceStoreUri: config.resourceStoreUri, baseUrl: config.baseUrl, transport: config.transport })];
 
   return {
     deps,

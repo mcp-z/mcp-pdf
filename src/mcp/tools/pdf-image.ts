@@ -73,7 +73,7 @@ export type Output = z.infer<typeof outputSchema>;
 export default function createTool() {
   async function handler(args: Input, extra: StorageExtra): Promise<CallToolResult> {
     const { storageContext } = extra;
-    const { storageDir, baseUrl, transport } = storageContext;
+    const { resourceStoreUri, baseUrl, transport } = storageContext;
     const { pdfPath, pages = 1, viewportScale = 0.5 } = args;
 
     try {
@@ -114,11 +114,11 @@ export default function createTool() {
         const outputFilename = `${pdfBasename}-p${pageNum}.png`;
 
         // Write to storage
-        const { storedName } = await writeFile(pngBuffer, outputFilename, { storageDir });
+        const { storedName } = await writeFile(pngBuffer, outputFilename, { resourceStoreUri });
 
         // Generate URI
         const uri = getFileUri(storedName, transport, {
-          storageDir,
+          resourceStoreUri,
           ...(baseUrl && { baseUrl }),
           endpoint: '/files',
         });

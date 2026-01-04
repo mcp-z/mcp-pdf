@@ -24,7 +24,7 @@ export async function createHTTPServer(config: ServerConfig, overrides?: Runtime
   app.use(express.json({ limit: '10mb' }));
 
   const fileRouter = createFileServingRouter(
-    { storageDir: config.storageDir },
+    { resourceStoreUri: config.resourceStoreUri },
     {
       contentType: 'application/pdf',
       contentDisposition: 'attachment',

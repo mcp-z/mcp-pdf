@@ -86,7 +86,7 @@ export type Output = PDFOutput & { margins: Margins };
 export default function createTool() {
   async function handler(args: Input, extra: StorageExtra): Promise<CallToolResult> {
     const { storageContext } = extra;
-    const { storageDir, baseUrl, transport } = storageContext;
+    const { resourceStoreUri, baseUrl, transport } = storageContext;
     const { filename = 'document.pdf', title, author, font, layout, pageSetup, content } = args;
     const overflowBehavior = layout?.overflow ?? 'auto';
 
@@ -364,11 +364,11 @@ export default function createTool() {
       const pdfBuffer = await pdfPromise;
 
       // Write file
-      const { storedName } = await writeFile(pdfBuffer, filename, { storageDir });
+      const { storedName } = await writeFile(pdfBuffer, filename, { resourceStoreUri });
 
       // Generate URI
       const fileUri = getFileUri(storedName, transport, {
-        storageDir,
+        resourceStoreUri,
         ...(baseUrl && { baseUrl }),
         endpoint: '/files',
       });
