@@ -33,12 +33,7 @@ const inputSchema = z.object({
   title: z.string().optional().describe('Document title metadata'),
   author: z.string().optional().describe('Document author metadata'),
   font: z.string().optional().describe('Font strategy (default: auto). Built-ins: Helvetica, Times-Roman, Courier. Use a path or URL for Unicode.'),
-  markdown: z
-    .object({
-      parseLinks: z.boolean().optional().describe('Parse markdown links [text](url) as clickable PDF links. Default: false.'),
-    })
-    .optional()
-    .describe('Markdown parsing options for text content'),
+  markdown: z.boolean().optional().describe('Enable markdown parsing (links, **bold**, *italic*). Default: false.'),
   color: z
     .object({
       background: z.string().optional().describe('Page background color (hex like "#000000" or named color). Default: white.'),
@@ -104,7 +99,7 @@ export default function createTool() {
     const { storageContext } = extra;
     const { resourceStoreUri, baseUrl, transport } = storageContext;
     const { filename = 'document.pdf', title, author, font, markdown, color, pageSetup, content } = args;
-    const parseMarkdownLinks = markdown?.parseLinks ?? false;
+    const parseMarkdown = markdown ?? false;
     const hyperlinkColor = color?.hyperlink ?? '#0066CC';
 
     try {
@@ -139,7 +134,6 @@ export default function createTool() {
       const containsEmoji = hasEmoji(contentText);
       const emojiAvailable = containsEmoji ? registerEmojiFont() : false;
       const fonts = await setupFonts(doc, font);
-      const { regular: regularFont, bold: boldFont } = fonts;
 
       const warnings: string[] = [];
 
@@ -159,7 +153,7 @@ export default function createTool() {
       // Validate text content
       for (const item of content) {
         if ((item.type === 'text' || item.type === 'heading') && item.text) {
-          const fnt = item.bold ? boldFont : regularFont;
+          const fnt = item.bold ? fonts.bold : fonts.regular;
           const validation = validateTextForFont(item.text, fnt, undefined);
           if (validation.hasUnsupportedCharacters) {
             warnings.push(...validation.warnings);
@@ -175,14 +169,14 @@ export default function createTool() {
         switch (item.type) {
           case 'text': {
             const fontSize = item.fontSize ?? DEFAULT_TEXT_FONT_SIZE;
-            const fnt = item.bold ? boldFont : regularFont;
+            const fnt = item.bold ? fonts.bold : fonts.regular;
 
             const options = extractTextOptions(item);
             options.width = item.width ?? contentWidth;
 
             const textConfig: TextRenderConfig = {
-              typography: { fontSize, fontName: fnt },
-              features: { enableEmoji: emojiAvailable, markdown: { parseLinks: parseMarkdownLinks } },
+              typography: { fontSize, fontName: fnt, fonts },
+              features: { enableEmoji: emojiAvailable, markdown: parseMarkdown },
               color: { hyperlinkColor },
               layout: { width: options.width, align: options.align, indent: options.indent },
               spacing: { lineGap: options.lineGap, paragraphGap: options.paragraphGap, characterSpacing: options.characterSpacing, wordSpacing: options.wordSpacing },
@@ -197,14 +191,14 @@ export default function createTool() {
 
           case 'heading': {
             const fontSize = item.fontSize ?? DEFAULT_HEADING_FONT_SIZE;
-            const fnt = item.bold !== false ? boldFont : regularFont;
+            const fnt = item.bold !== false ? fonts.bold : fonts.regular;
 
             const options = extractTextOptions(item);
             options.width = item.width ?? contentWidth;
 
             const textConfig: TextRenderConfig = {
-              typography: { fontSize, fontName: fnt },
-              features: { enableEmoji: emojiAvailable, markdown: { parseLinks: parseMarkdownLinks } },
+              typography: { fontSize, fontName: fnt, fonts },
+              features: { enableEmoji: emojiAvailable, markdown: parseMarkdown },
               color: { hyperlinkColor },
               layout: { width: options.width, align: options.align, indent: options.indent },
               spacing: { lineGap: options.lineGap, paragraphGap: options.paragraphGap, characterSpacing: options.characterSpacing, wordSpacing: options.wordSpacing },
