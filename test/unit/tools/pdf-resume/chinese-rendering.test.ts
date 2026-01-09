@@ -236,7 +236,8 @@ describe('Chinese/CJK Character Rendering', (): void => {
     // Should return Helvetica fallback
     assert.strictEqual(fonts.regular, 'Helvetica');
     assert.strictEqual(fonts.bold, 'Helvetica-Bold');
-    assert.strictEqual(fonts.oblique, 'Helvetica-Oblique');
+    assert.strictEqual(fonts.italic, 'Helvetica-Oblique');
+    assert.strictEqual(fonts.boldItalic, 'Helvetica-BoldOblique');
   });
 
   it('should support Star Wars themed Chinese resume', async (): Promise<void> => {
@@ -271,7 +272,7 @@ describe('Chinese/CJK Character Rendering', (): void => {
       doc.moveDown(0.5);
 
       // Episode style
-      doc.font(fonts.oblique);
+      doc.font(fonts.italic);
       doc.fontSize(16);
       doc.text('第一章：英雄覺醒', { align: 'center' });
 

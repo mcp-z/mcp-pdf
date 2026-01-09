@@ -33,12 +33,7 @@ const inputSchema = z.object({
   title: z.string().optional().describe('Document title metadata'),
   author: z.string().optional().describe('Document author metadata'),
   font: z.string().optional().describe('Font strategy (default: auto). Built-ins: Helvetica, Times-Roman, Courier. Use a path or URL for Unicode.'),
-  markdown: z
-    .object({
-      parseLinks: z.boolean().optional().describe('Parse markdown links [text](url) as clickable PDF links. Default: false.'),
-    })
-    .optional()
-    .describe('Markdown parsing options for text content'),
+  markdown: z.boolean().optional().describe('Enable markdown parsing (links, **bold**, *italic*). Default: false.'),
   color: z
     .object({
       background: z.string().optional().describe('Page background color (hex like "#000000" or named color). Default: white.'),
@@ -100,7 +95,7 @@ export default function createTool() {
     const { storageContext } = extra;
     const { resourceStoreUri, baseUrl, transport } = storageContext;
     const { filename = 'document.pdf', title, author, font, markdown, color, layout, pageSetup, content } = args;
-    const parseMarkdownLinks = markdown?.parseLinks ?? false;
+    const parseMarkdown = markdown ?? false;
     const hyperlinkColor = color?.hyperlink ?? '#0066CC';
     const overflowBehavior = layout?.overflow ?? 'auto';
 
@@ -121,10 +116,9 @@ export default function createTool() {
       );
 
       const { doc, pdfPromise, fonts, emojiAvailable, warnings } = setup;
-      const { regular: regularFont, bold: boldFont } = fonts;
 
       // Validate text content against font
-      validateContentText(content as ContentItem[], regularFont, boldFont, warnings);
+      validateContentText(content as ContentItem[], fonts.regular, fonts.bold, warnings);
 
       // Get page dimensions and margins
       const pageWidth = doc.page.width;
@@ -141,7 +135,7 @@ export default function createTool() {
         if (item.type === 'text' || item.type === 'heading') {
           if (!item.text) return 0;
           const fontSize = item.type === 'heading' ? ((item.fontSize as number) ?? DEFAULT_HEADING_FONT_SIZE) : ((item.fontSize as number) ?? DEFAULT_TEXT_FONT_SIZE);
-          const fontName = item.type === 'heading' ? (item.bold !== false ? boldFont : regularFont) : item.bold ? boldFont : regularFont;
+          const fontName = item.type === 'heading' ? (item.bold !== false ? fonts.bold : fonts.regular) : item.bold ? fonts.bold : fonts.regular;
           let height = measureTextHeight(doc, item.text as string, fontSize, fontName, emojiAvailable, {
             width: availableWidth,
             indent: item.indent as number | undefined,
@@ -175,7 +169,7 @@ export default function createTool() {
         switch (item.type) {
           case 'text': {
             const fontSize = item.fontSize ?? DEFAULT_TEXT_FONT_SIZE;
-            const fnt = item.bold ? boldFont : regularFont;
+            const fnt = item.bold ? fonts.bold : fonts.regular;
 
             const options = extractTextOptions(item);
             if (computedX !== undefined) options.x = computedX;
@@ -183,8 +177,8 @@ export default function createTool() {
             if (computedWidth !== undefined) options.width = computedWidth;
 
             const textConfig: TextRenderConfig = {
-              typography: { fontSize, fontName: fnt },
-              features: { enableEmoji: emojiAvailable, markdown: { parseLinks: parseMarkdownLinks } },
+              typography: { fontSize, fontName: fnt, fonts },
+              features: { enableEmoji: emojiAvailable, markdown: parseMarkdown },
               color: { hyperlinkColor },
               layout: { x: options.x, y: options.y, width: options.width, align: options.align, indent: options.indent },
               spacing: { lineGap: options.lineGap, paragraphGap: options.paragraphGap, characterSpacing: options.characterSpacing, wordSpacing: options.wordSpacing, moveDown: options.moveDown },
@@ -194,7 +188,7 @@ export default function createTool() {
           }
           case 'heading': {
             const fontSize = item.fontSize ?? DEFAULT_HEADING_FONT_SIZE;
-            const fnt = item.bold !== false ? boldFont : regularFont;
+            const fnt = item.bold !== false ? fonts.bold : fonts.regular;
 
             const options = extractTextOptions(item);
             if (computedX !== undefined) options.x = computedX;
@@ -202,8 +196,8 @@ export default function createTool() {
             if (computedWidth !== undefined) options.width = computedWidth;
 
             const textConfig: TextRenderConfig = {
-              typography: { fontSize, fontName: fnt },
-              features: { enableEmoji: emojiAvailable, markdown: { parseLinks: parseMarkdownLinks } },
+              typography: { fontSize, fontName: fnt, fonts },
+              features: { enableEmoji: emojiAvailable, markdown: parseMarkdown },
               color: { hyperlinkColor },
               layout: { x: options.x, y: options.y, width: options.width, align: options.align, indent: options.indent },
               spacing: { lineGap: options.lineGap, paragraphGap: options.paragraphGap, characterSpacing: options.characterSpacing, wordSpacing: options.wordSpacing, moveDown: options.moveDown },
@@ -326,7 +320,7 @@ export default function createTool() {
       const maxPage = Math.max(...pageGroups.keys(), 1);
 
       // Width measurer for row layouts with space-between
-      const measureWidth = createWidthMeasurer(doc, regularFont, boldFont, emojiAvailable);
+      const measureWidth = createWidthMeasurer(doc, fonts.regular, fonts.bold, emojiAvailable);
 
       // Calculate layout and render per page
       for (let pageNum = 1; pageNum <= maxPage; pageNum++) {

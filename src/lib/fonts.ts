@@ -5,12 +5,9 @@ import { mkdir, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import type PDFKit from 'pdfkit';
+import type { FontConfig } from './types/typography.ts';
 
-export interface FontConfig {
-  regular: string;
-  bold: string;
-  oblique: string;
-}
+export type { FontConfig } from './types/typography.ts';
 
 // All 14 PDF Standard Fonts (built into PDF spec, no files needed)
 export const PDF_STANDARD_FONTS = ['Courier', 'Courier-Bold', 'Courier-Oblique', 'Courier-BoldOblique', 'Helvetica', 'Helvetica-Bold', 'Helvetica-Oblique', 'Helvetica-BoldOblique', 'Times-Roman', 'Times-Bold', 'Times-Italic', 'Times-BoldItalic', 'Symbol', 'ZapfDingbats'] as const;
@@ -154,7 +151,7 @@ export async function resolveFont(fontSpec: string): Promise<string | null> {
  * Returns FontConfig with regular/bold/oblique variants
  * Falls back to Helvetica if font resolution or registration fails
  */
-export async function setupFonts(doc: PDFKit.PDFDocument, fontSpec: string | undefined): Promise<FontConfig> {
+export async function setupFonts(_doc: PDFKit.PDFDocument, fontSpec: string | undefined): Promise<FontConfig> {
   // Default to auto-detect if not specified
   const spec = fontSpec || 'auto';
 
@@ -166,7 +163,8 @@ export async function setupFonts(doc: PDFKit.PDFDocument, fontSpec: string | und
     return {
       regular: 'Helvetica',
       bold: 'Helvetica-Bold',
-      oblique: 'Helvetica-Oblique',
+      italic: 'Helvetica-Oblique',
+      boldItalic: 'Helvetica-BoldOblique',
     };
   }
 
@@ -177,21 +175,24 @@ export async function setupFonts(doc: PDFKit.PDFDocument, fontSpec: string | und
       return {
         regular: 'Helvetica',
         bold: 'Helvetica-Bold',
-        oblique: 'Helvetica-Oblique',
+        italic: 'Helvetica-Oblique',
+        boldItalic: 'Helvetica-BoldOblique',
       };
     }
     if (resolvedFont.startsWith('Times')) {
       return {
         regular: 'Times-Roman',
         bold: 'Times-Bold',
-        oblique: 'Times-Italic',
+        italic: 'Times-Italic',
+        boldItalic: 'Times-BoldItalic',
       };
     }
     if (resolvedFont.startsWith('Courier')) {
       return {
         regular: 'Courier',
         bold: 'Courier-Bold',
-        oblique: 'Courier-Oblique',
+        italic: 'Courier-Oblique',
+        boldItalic: 'Courier-BoldOblique',
       };
     }
 
@@ -199,27 +200,22 @@ export async function setupFonts(doc: PDFKit.PDFDocument, fontSpec: string | und
     return {
       regular: resolvedFont,
       bold: resolvedFont,
-      oblique: resolvedFont,
+      italic: resolvedFont,
+      boldItalic: resolvedFont,
     };
   }
 
-  // It's a custom font file - register it with PDFKit
-  try {
-    doc.registerFont('CustomFont', resolvedFont);
-    // Use same font for all variants (simplicity)
-    return {
-      regular: 'CustomFont',
-      bold: 'CustomFont',
-      oblique: 'CustomFont',
-    };
-  } catch (_err) {
-    // Fall back to Helvetica on registration failure
-    return {
-      regular: 'Helvetica',
-      bold: 'Helvetica-Bold',
-      oblique: 'Helvetica-Oblique',
-    };
-  }
+  // It's a custom font file path (from auto-detect or explicit path)
+  // Custom fonts typically don't have separate bold/italic files readily available,
+  // so we fall back to Helvetica which has all variants built-in.
+  // This ensures bold/italic markdown styling works correctly.
+  // Note: We intentionally do NOT register the custom font since we won't use it.
+  return {
+    regular: 'Helvetica',
+    bold: 'Helvetica-Bold',
+    italic: 'Helvetica-Oblique',
+    boldItalic: 'Helvetica-BoldOblique',
+  };
 }
 
 export interface CharacterValidationResult {

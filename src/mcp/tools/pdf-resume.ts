@@ -31,12 +31,7 @@ const inputSchema = z.object({
   filename: z.string().optional().describe('Optional logical filename (metadata only). Storage uses UUID. Defaults to "resume.pdf".'),
   resume: resumeInputSchema,
   font: z.string().optional().describe('Font for the PDF. Defaults to "auto" (system font detection). Built-ins are limited to ASCII; provide a path or URL for full Unicode.'),
-  markdown: z
-    .object({
-      parseLinks: z.boolean().optional().describe('Parse markdown links [text](url) as clickable PDF links. Default: false.'),
-    })
-    .optional()
-    .describe('Markdown parsing options for text content'),
+  markdown: z.boolean().optional().describe('Enable markdown parsing (links, **bold**, *italic*). Default: false.'),
   color: z
     .object({
       background: z.string().optional().describe('Page background color (hex like "#000000" or named color). Default: white.'),
@@ -172,7 +167,7 @@ export default function createTool() {
         pageSize: pageSize as PageSizePreset | undefined,
         backgroundColor: color?.background,
         margins: margins,
-        parseMarkdownLinks: markdown?.parseLinks ?? false,
+        parseMarkdown: markdown ?? false,
         hyperlinkColor: color?.hyperlink ?? '#0066CC',
       };
 
@@ -204,12 +199,16 @@ export default function createTool() {
       // Map styling to typography
       if (styling) {
         renderOptions.typography = {
-          text: {
+          content: {
             fontSize: styling.fontSize?.body ?? 10,
             lineHeight: 1.2,
             marginTop: styling.spacing?.afterText ?? 2,
             marginBottom: styling.spacing?.afterText ?? 2,
-            blockMarginBottom: styling.spacing?.betweenSections ?? 8,
+            paragraphMarginBottom: 4,
+            bulletGap: 2,
+            bulletMarginBottom: 2,
+            bulletIndent: 15,
+            itemMarginBottom: 4,
           },
           header: {
             marginTop: 0,
@@ -233,6 +232,9 @@ export default function createTool() {
             underlineGap: 2,
             underlineThickness: 0.5,
           },
+          entryHeader: {
+            marginBottom: 4,
+          },
           entry: {
             position: {
               fontSize: styling.fontSize?.subheading ?? 11,
@@ -250,11 +252,6 @@ export default function createTool() {
             date: {
               width: 90,
             },
-          },
-          bullet: {
-            indent: 15,
-            marginTop: 0,
-            marginBottom: 2,
           },
           quote: {
             indent: 20,

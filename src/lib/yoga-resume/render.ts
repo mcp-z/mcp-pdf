@@ -8,6 +8,7 @@
 import type PDFKit from 'pdfkit';
 import { renderField } from '../formatting.ts';
 import type { CompanyHeaderElement, CredentialData, CredentialListElement, DividerElement, EntryData, EntryHeaderElement, FieldTemplates, GroupElement, HeaderElement, KeywordListElement, LanguageListElement, ReferenceListElement, SectionTitleElement, StructuredContentElement, TextElement } from '../ir/types.ts';
+import { stripMarkdown } from '../markdown.ts';
 import { renderText } from '../pdf-helpers.ts';
 import type { TypographyOptions } from '../types/typography.ts';
 import { type ComputedPosition, calculateEntryColumnWidths, type Page, type PageNode, type RenderContext } from './types.ts';
@@ -71,8 +72,8 @@ export function renderTextElement(ctx: RenderContext, element: TextElement, posi
 
   for (let i = 0; i < paragraphs.length; i++) {
     renderText(doc, paragraphs[i], {
-      typography: { fontSize: style.fontSize, fontName: fonts.regular },
-      features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+      typography: { fontSize: style.fontSize, fontName: fonts.regular, fonts },
+      features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
       color: { hyperlinkColor: ctx.hyperlinkColor },
       layout: { x: position.x, y: currentY, width: position.width, align: 'justify' },
       spacing: { lineGap: style.lineGap },
@@ -106,8 +107,8 @@ export function renderSectionTitle(ctx: RenderContext, element: SectionTitleElem
   // Draw title with emoji support
   doc.font(fonts.bold).fontSize(sectionTitle.fontSize).fillColor('#000000');
   renderText(doc, element.title.toUpperCase(), {
-    typography: { fontSize: sectionTitle.fontSize, fontName: fonts.bold },
-    features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+    typography: { fontSize: sectionTitle.fontSize, fontName: fonts.bold, fonts },
+    features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
     color: { hyperlinkColor: ctx.hyperlinkColor },
     layout: { x: position.x, y: currentY, width: position.width },
     spacing: { characterSpacing: sectionTitle.letterSpacing ?? 0 },
@@ -140,8 +141,8 @@ export function renderHeader(ctx: RenderContext, element: HeaderElement, positio
   const nameHeight = doc.heightOfString(element.name.toUpperCase(), { width: position.width, align: 'center' });
 
   renderText(doc, element.name.toUpperCase(), {
-    typography: { fontSize: header.name.fontSize, fontName: fonts.bold },
-    features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+    typography: { fontSize: header.name.fontSize, fontName: fonts.bold, fonts },
+    features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
     color: { hyperlinkColor: ctx.hyperlinkColor },
     layout: { x: position.x, y: currentY, width: position.width, align: 'center' },
     spacing: { characterSpacing: header.name.letterSpacing ?? 0 },
@@ -173,8 +174,8 @@ export function renderHeader(ctx: RenderContext, element: HeaderElement, positio
     const textY = currentY;
 
     renderText(doc, contactText, {
-      typography: { fontSize: header.contact.fontSize, fontName: fonts.regular },
-      features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+      typography: { fontSize: header.contact.fontSize, fontName: fonts.regular, fonts },
+      features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
       color: { hyperlinkColor: ctx.hyperlinkColor },
       layout: { x: position.x, y: textY, width: position.width, align: 'center' },
       spacing: { characterSpacing: header.contact.letterSpacing ?? 0 },
@@ -258,8 +259,8 @@ export function renderLanguageList(ctx: RenderContext, element: LanguageListElem
 
   doc.font(fonts.regular).fontSize(style.fontSize).fillColor('#000000');
   renderText(doc, fullText, {
-    typography: { fontSize: style.fontSize, fontName: fonts.regular },
-    features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+    typography: { fontSize: style.fontSize, fontName: fonts.regular, fonts },
+    features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
     color: { hyperlinkColor: ctx.hyperlinkColor },
     layout: { x: position.x, y: position.y, width: position.width },
     spacing: { lineGap: style.lineGap },
@@ -295,8 +296,8 @@ export function renderCredentialList(ctx: RenderContext, element: CredentialList
     doc.font(fonts.bold).fontSize(style.fontSize).fillColor('#000000');
     const titleHeight = doc.heightOfString(title, { width: position.width });
     renderText(doc, title, {
-      typography: { fontSize: style.fontSize, fontName: fonts.bold },
-      features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+      typography: { fontSize: style.fontSize, fontName: fonts.bold, fonts },
+      features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
       color: { hyperlinkColor: ctx.hyperlinkColor },
       layout: { x: position.x, y: currentY, width: position.width },
     });
@@ -319,8 +320,8 @@ export function renderCredentialList(ctx: RenderContext, element: CredentialList
 
       for (const para of summaryParagraphs) {
         renderText(doc, para, {
-          typography: { fontSize: style.fontSize, fontName: fonts.regular },
-          features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+          typography: { fontSize: style.fontSize, fontName: fonts.regular, fonts },
+          features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
           color: { hyperlinkColor: ctx.hyperlinkColor },
           layout: { x: position.x, y: currentY, width: position.width, align: 'justify' },
           spacing: { lineGap: style.lineGap },
@@ -358,8 +359,8 @@ export function renderReferenceList(ctx: RenderContext, element: ReferenceListEl
       doc.font(fonts.bold).fontSize(style.fontSize).fillColor('#000000');
       const nameHeight = doc.heightOfString(name, { width: position.width });
       renderText(doc, name, {
-        typography: { fontSize: style.fontSize, fontName: fonts.bold },
-        features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+        typography: { fontSize: style.fontSize, fontName: fonts.bold, fonts },
+        features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
         color: { hyperlinkColor: ctx.hyperlinkColor },
         layout: { x: position.x, y: currentY, width: position.width },
       });
@@ -373,8 +374,8 @@ export function renderReferenceList(ctx: RenderContext, element: ReferenceListEl
       const quoteText = `"${reference}"`;
       const quoteHeight = doc.heightOfString(quoteText, { width: quoteWidth, lineGap: style.lineGap });
       renderText(doc, quoteText, {
-        typography: { fontSize: style.fontSize, fontName: fonts.italic },
-        features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+        typography: { fontSize: style.fontSize, fontName: fonts.italic, fonts },
+        features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
         color: { hyperlinkColor: ctx.hyperlinkColor },
         layout: { x: position.x + quote.indent, y: currentY, width: quoteWidth },
         spacing: { lineGap: style.lineGap },
@@ -416,83 +417,6 @@ function _groupByCompany(entries: EntryData[]): EntryData[][] {
   }
 
   return groups;
-}
-
-/**
- * Render an education entry. Returns height rendered.
- */
-function _renderEducationEntry(ctx: RenderContext, entry: EntryData, x: number, y: number, width: number): number {
-  const { doc, typography, fieldTemplates, emojiAvailable, fonts } = ctx;
-  const style = getResolvedStyle(typography);
-  const { entry: entryStyle } = typography;
-
-  const { leftWidth, rightWidth } = calculateEntryColumnWidths(width, entryStyle.date.width);
-
-  const institution = ensureString(entry.institution);
-
-  const dates = renderField(fieldTemplates.dateRange, {
-    start: entry.startDate,
-    end: entry.endDate,
-  });
-
-  const degreeParts = renderField(fieldTemplates.degree, {
-    studyType: entry.studyType,
-    area: entry.area,
-  });
-
-  let currentY = y;
-
-  // Line 1: Institution + Dates
-  doc.font(fonts.bold).fontSize(style.fontSize).fillColor('#000000');
-  const institutionHeight = doc.heightOfString(institution, { width: leftWidth });
-  renderText(doc, institution, {
-    typography: { fontSize: style.fontSize, fontName: fonts.bold },
-    features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
-    color: { hyperlinkColor: ctx.hyperlinkColor },
-    layout: { y: currentY, width: leftWidth },
-  });
-
-  if (dates) {
-    doc
-      .font(fonts.italic)
-      .fontSize(style.fontSize)
-      .fillColor(entryStyle.company.color ?? '#444444');
-    doc.text(dates, x + width - rightWidth, currentY, { width: rightWidth, align: 'right' });
-    doc.fillColor('#000000');
-  }
-
-  currentY += institutionHeight + style.itemMarginBottom;
-
-  // Degree line (italic)
-  if (degreeParts) {
-    doc.font(fonts.italic).fontSize(style.fontSize).fillColor('#000000');
-    const degreeHeight = doc.heightOfString(degreeParts, { width, lineGap: style.lineGap });
-    renderText(doc, degreeParts, {
-      typography: { fontSize: style.fontSize, fontName: fonts.italic },
-      features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
-      color: { hyperlinkColor: ctx.hyperlinkColor },
-      layout: { y: currentY },
-      spacing: { lineGap: style.lineGap },
-    });
-    currentY += degreeHeight + style.itemMarginBottom;
-  }
-
-  // GPA line
-  if (entry.score) {
-    doc
-      .font(fonts.regular)
-      .fontSize(style.fontSize)
-      .fillColor(entryStyle.location.color ?? '#444444');
-    const gpaText = `GPA: ${entry.score}`;
-    const gpaHeight = doc.heightOfString(gpaText, { width, lineGap: style.lineGap });
-    doc.text(gpaText, x, currentY, { width, lineGap: style.lineGap });
-    currentY += gpaHeight + style.itemMarginBottom;
-    doc.fillColor('#000000');
-  }
-
-  currentY += style.blockMarginBottom;
-
-  return currentY - y;
 }
 
 /**
@@ -539,8 +463,8 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
     doc.font(fonts.bold).fontSize(style.fontSize).fillColor('#000000');
     const institutionHeight = doc.heightOfString(company, { width: leftWidth });
     renderText(doc, company, {
-      typography: { fontSize: style.fontSize, fontName: fonts.bold },
-      features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+      typography: { fontSize: style.fontSize, fontName: fonts.bold, fonts },
+      features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
       color: { hyperlinkColor: ctx.hyperlinkColor },
       layout: { x: position.x, y: currentY, width: leftWidth },
     });
@@ -564,8 +488,8 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
     if (degreeParts) {
       doc.font(fonts.italic).fontSize(style.fontSize).fillColor('#000000');
       renderText(doc, degreeParts, {
-        typography: { fontSize: style.fontSize, fontName: fonts.italic },
-        features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+        typography: { fontSize: style.fontSize, fontName: fonts.italic, fonts },
+        features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
         color: { hyperlinkColor: ctx.hyperlinkColor },
         layout: { x: position.x, y: currentY, width: position.width },
         spacing: { lineGap: style.lineGap },
@@ -589,8 +513,8 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
     doc.font(fonts.italic).fontSize(entryStyle.position.fontSize).fillColor('#000000');
     const positionHeight = doc.heightOfString(positionText, { width: leftWidth });
     renderText(doc, positionText, {
-      typography: { fontSize: entryStyle.position.fontSize, fontName: fonts.italic },
-      features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+      typography: { fontSize: entryStyle.position.fontSize, fontName: fonts.italic, fonts },
+      features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
       color: { hyperlinkColor: ctx.hyperlinkColor },
       layout: { x: position.x, y: currentY, width: leftWidth },
     });
@@ -628,8 +552,8 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
     if (company) {
       doc.font(fonts.bold).fontSize(entryStyle.position.fontSize).fillColor('#000000');
       renderText(doc, company, {
-        typography: { fontSize: entryStyle.position.fontSize, fontName: fonts.bold },
-        features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+        typography: { fontSize: entryStyle.position.fontSize, fontName: fonts.bold, fonts },
+        features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
         color: { hyperlinkColor: ctx.hyperlinkColor },
         layout: { x: position.x, y: currentY, width: leftWidth },
       });
@@ -647,8 +571,8 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
     // Position + Dates line
     doc.font(fonts.italic).fontSize(entryStyle.position.fontSize).fillColor('#000000');
     renderText(doc, positionText, {
-      typography: { fontSize: entryStyle.position.fontSize, fontName: fonts.italic },
-      features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+      typography: { fontSize: entryStyle.position.fontSize, fontName: fonts.italic, fonts },
+      features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
       color: { hyperlinkColor: ctx.hyperlinkColor },
       layout: { x: position.x, y: currentY, width: leftWidth },
     });
@@ -689,15 +613,17 @@ export function renderStructuredContent(ctx: RenderContext, element: StructuredC
   for (const summary of summaries) {
     doc.font(fonts.regular).fontSize(content.fontSize).fillColor('#000000');
     renderText(doc, summary, {
-      typography: { fontSize: content.fontSize, fontName: fonts.regular },
-      features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+      typography: { fontSize: content.fontSize, fontName: fonts.regular, fonts },
+      features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
       color: { hyperlinkColor: ctx.hyperlinkColor },
       layout: { x: position.x, y: currentY, width: position.width, align: 'justify' },
       spacing: { lineGap },
     });
 
     // Calculate the height of the rendered text and advance
-    const summaryHeight = doc.heightOfString(summary, { width: position.width, lineGap });
+    // Strip markdown to measure display text only (matches what gets rendered)
+    const displayText = stripMarkdown(summary);
+    const summaryHeight = doc.heightOfString(displayText, { width: position.width, lineGap });
     currentY += summaryHeight + paragraphMargin;
   }
 
@@ -713,20 +639,25 @@ export function renderStructuredContent(ctx: RenderContext, element: StructuredC
     for (const bulletItem of element.bullets) {
       const bulletText = `• ${bulletItem}`;
       renderText(doc, bulletText, {
-        typography: { fontSize: content.fontSize, fontName: fonts.regular },
-        features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+        typography: { fontSize: content.fontSize, fontName: fonts.regular, fonts },
+        features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
         color: { hyperlinkColor: ctx.hyperlinkColor },
         layout: { x: position.x + indent, y: currentY, width: bulletWidth },
         spacing: { lineGap },
       });
 
       // Calculate the height of the bullet text and advance
-      const bulletHeight = doc.heightOfString(bulletText, { width: bulletWidth, lineGap });
+      // Strip markdown to measure display text only (matches what gets rendered)
+      const displayText = stripMarkdown(bulletItem);
+      const displayBulletText = `• ${displayText}`;
+      const bulletHeight = doc.heightOfString(displayBulletText, { width: bulletWidth, lineGap });
       currentY += bulletHeight + bulletMargin;
     }
   }
 
   // marginBottom is handled by Yoga layout positioning, not by advancing doc.y
+  // Note: We don't add marginBottom here because when element has bullets, they may
+  // continue in a subsequent element, and we don't want extra spacing between elements
 }
 
 /**
@@ -740,8 +671,8 @@ export function renderCompanyHeader(ctx: RenderContext, element: CompanyHeaderEl
 
   doc.font(fonts.bold).fontSize(entryStyle.position.fontSize).fillColor('#000000');
   renderText(doc, element.company, {
-    typography: { fontSize: entryStyle.position.fontSize, fontName: fonts.bold },
-    features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+    typography: { fontSize: entryStyle.position.fontSize, fontName: fonts.bold, fonts },
+    features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
     color: { hyperlinkColor: ctx.hyperlinkColor },
     layout: { x: position.x, y: position.y, width: leftWidth },
   });
@@ -817,14 +748,14 @@ export function renderPage(ctx: RenderContext, page: Page): void {
 /**
  * Create a render context.
  */
-export function createRenderContext(doc: PDFKit.PDFDocument, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean, parseMarkdownLinks: boolean, hyperlinkColor: string): RenderContext {
+export function createRenderContext(doc: PDFKit.PDFDocument, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean, parseMarkdown: boolean, hyperlinkColor: string): RenderContext {
   return {
     doc,
     typography,
     fieldTemplates,
     emojiAvailable,
     fonts: typography.fonts,
-    parseMarkdownLinks,
+    parseMarkdown,
     hyperlinkColor,
   };
 }

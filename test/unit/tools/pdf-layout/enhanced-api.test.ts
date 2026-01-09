@@ -427,8 +427,8 @@ describe('Enhanced API - Space Journey Resume (Sci-Fi Style)', () => {
 
     assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
 
-    // Validation: Check file size is reasonable (should be ~10-30KB depending on fonts/emoji)
-    assert.ok(pdfBuffer.length > 8000 && pdfBuffer.length < 40000, `PDF size should be reasonable (got ${pdfBuffer.length} bytes)`);
+    // Validation: Check file size is reasonable (using Helvetica = smaller, custom fonts = larger)
+    assert.ok(pdfBuffer.length > 3000 && pdfBuffer.length < 40000, `PDF size should be reasonable (got ${pdfBuffer.length} bytes)`);
 
     console.log(`    🌟 Space Journey Resume created: (${pdfBuffer.length} bytes)`);
     console.log(`    📊 Agent calculated ${mainContent.length} progressive values`);

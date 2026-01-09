@@ -213,20 +213,24 @@ function transformEntry(entry: EntryData, variant: 'work' | 'education', isFirst
 
   if (summaryParagraphs.length > 0) {
     // First paragraph is the first line
+    // Include first bullet with first summary paragraph if bullets exist
+    const firstBullet = highlights.length > 0 ? [highlights[0]] : undefined;
+    const remainingBullets = highlights.length > 1 ? highlights.slice(1) : undefined;
+
     firstLine = {
       type: 'structured-content',
       summary: summaryParagraphs[0],
+      bullets: firstBullet,
     };
 
-    // Remaining paragraphs (if any) + all bullets as separate elements
+    // Remaining paragraphs (if any) + remaining bullets as separate elements
     const remainingParagraphs = summaryParagraphs.slice(1);
-    const remainingBullets = highlights;
 
-    if (remainingParagraphs.length > 0 || remainingBullets.length > 0) {
+    if (remainingParagraphs.length > 0 || remainingBullets) {
       remainingLines.push({
         type: 'structured-content',
         summary: remainingParagraphs.length > 0 ? remainingParagraphs : undefined,
-        bullets: remainingBullets.length > 0 ? remainingBullets : undefined,
+        bullets: remainingBullets,
       });
     }
   } else if (highlights.length > 0) {

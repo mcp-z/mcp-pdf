@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { DEFAULT_PAGE_SIZE, PAGE_SIZES, type PageSize, type PageSizePreset } from '../constants.ts';
 import { registerEmojiFont } from './emoji-renderer.ts';
 import { hasEmoji, setupFonts } from './fonts.ts';
+import type { FontConfig } from './types/typography.ts';
 
 // ============================================================================
 // Schemas - Shared content schemas used across tools
@@ -95,7 +96,7 @@ export interface PDFDocumentSetup {
   doc: PDFKit.PDFDocument;
   pageSize: PageSize;
   pdfPromise: Promise<Buffer>;
-  fonts: { regular: string; bold: string };
+  fonts: FontConfig;
   emojiAvailable: boolean;
   warnings: string[];
   actualPageCount: number;
