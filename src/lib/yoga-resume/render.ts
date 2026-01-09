@@ -679,10 +679,12 @@ export function renderStructuredContent(ctx: RenderContext, element: StructuredC
   const lineGap = (content.lineHeight ?? 1.3) * content.fontSize - content.fontSize;
 
   const summaries = Array.isArray(element.summary) ? element.summary : element.summary?.split(/\n\n+/).filter(Boolean) || [];
+  const hasSummary = summaries.length > 0;
+  const hasBullets = element.bullets && element.bullets.length > 0;
 
   // Use absolute positioning from Yoga layout, don't modify doc.y
-  // Apply marginTop for spacing after section title or entry header
-  let currentY = position.y + content.marginTop;
+  // Apply marginTop only if there's summary content (not for bullets-only elements)
+  let currentY = position.y + (hasSummary ? content.marginTop : 0);
 
   for (const summary of summaries) {
     doc.font(fonts.regular).fontSize(content.fontSize).fillColor('#000000');
@@ -699,11 +701,12 @@ export function renderStructuredContent(ctx: RenderContext, element: StructuredC
     currentY += summaryHeight + paragraphMargin;
   }
 
-  if (element.bullets && element.bullets.length > 0 && summaries.length > 0) {
+  // Add bulletGap only between summary and bullets (not before first bullet when no summary)
+  if (hasBullets && hasSummary) {
     currentY += bulletGap;
   }
 
-  if (element.bullets && element.bullets.length > 0) {
+  if (hasBullets) {
     const bulletWidth = position.width - indent;
     doc.font(fonts.regular).fontSize(content.fontSize).fillColor('#000000');
 
