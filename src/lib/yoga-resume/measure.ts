@@ -47,15 +47,15 @@ function ensureString(value: unknown): string {
  * Get resolved text style values from typography.
  */
 function getResolvedStyle(typography: TypographyOptions) {
-  const { text, structuredContent } = typography;
+  const { content } = typography;
   return {
-    fontSize: text.fontSize,
-    lineGap: (text.lineHeight ?? 1.3) * text.fontSize - text.fontSize,
-    paragraphMarginBottom: structuredContent.paragraphMarginBottom,
-    bulletMarginBottom: structuredContent.bulletMarginBottom,
-    bulletGap: structuredContent.bulletGap,
-    blockMarginBottom: structuredContent.bulletGap + structuredContent.bulletMarginBottom,
-    itemMarginBottom: structuredContent.paragraphMarginBottom,
+    fontSize: content.fontSize,
+    lineGap: (content.lineHeight ?? 1.3) * content.fontSize - content.fontSize,
+    paragraphMarginBottom: content.paragraphMarginBottom,
+    bulletMarginBottom: content.bulletMarginBottom,
+    bulletGap: content.bulletGap,
+    blockMarginBottom: content.bulletGap + content.bulletMarginBottom,
+    itemMarginBottom: content.itemMarginBottom,
   };
 }
 
@@ -88,12 +88,17 @@ function stripMarkdownLinks(text: string): string {
  */
 export function measureText(ctx: MeasureContext, element: TextElement): number {
   const { doc, typography, emojiAvailable, width } = ctx;
+  const { content } = typography;
   const style = getResolvedStyle(typography);
   const paragraphs = paragraphsFromContent(element.content);
 
   if (paragraphs.length === 0) return 0;
 
   let totalHeight = 0;
+
+  // Add marginTop for spacing after section title
+  totalHeight += content.marginTop;
+
   for (let i = 0; i < paragraphs.length; i++) {
     const height = measureTextHeight(doc, paragraphs[i], style.fontSize, typography.fonts.regular, emojiAvailable, {
       width,
@@ -104,6 +109,9 @@ export function measureText(ctx: MeasureContext, element: TextElement): number {
       totalHeight += style.paragraphMarginBottom;
     }
   }
+
+  // Add marginBottom for spacing at end of content block
+  totalHeight += content.marginBottom;
 
   return totalHeight;
 }
@@ -241,7 +249,7 @@ function measureWorkEntry(ctx: MeasureContext, entry: EntryData, isGrouped: bool
     if (summaryParagraphs.length > 0) {
       totalHeight += style.blockMarginBottom;
     }
-    const bulletWidth = width - typography.structuredContent.bulletIndent;
+    const bulletWidth = width - typography.content.bulletIndent;
     doc.font(typography.fonts.regular).fontSize(style.fontSize);
     for (const highlight of highlights) {
       totalHeight += doc.heightOfString(`• ${highlight}`, { width: bulletWidth, lineGap: style.lineGap });
@@ -352,8 +360,8 @@ export function measureEntryHeader(ctx: MeasureContext, element: EntryHeaderElem
     totalHeight += Math.max(positionHeight, dateHeight);
   }
 
-  // Add small spacing after header before content
-  totalHeight += style.blockMarginBottom + 4;
+  // Add spacing after header before content (from entryHeader settings)
+  totalHeight += typography.entryHeader.marginBottom;
 
   return totalHeight;
 }
@@ -364,23 +372,26 @@ export function measureEntryHeader(ctx: MeasureContext, element: EntryHeaderElem
  */
 export function measureStructuredContent(ctx: MeasureContext, element: StructuredContentElement): number {
   const { doc, typography, width } = ctx;
-  const { structuredContent, text } = typography;
+  const { content } = typography;
 
-  const indent = element.spacing?.bulletIndent ?? structuredContent.bulletIndent;
-  const paragraphMargin = element.spacing?.paragraphMarginBottom ?? structuredContent.paragraphMarginBottom;
-  const bulletGap = element.spacing?.bulletGap ?? structuredContent.bulletGap;
-  const bulletMargin = element.spacing?.bulletMarginBottom ?? structuredContent.bulletMarginBottom;
+  const indent = element.spacing?.bulletIndent ?? content.bulletIndent;
+  const paragraphMargin = element.spacing?.paragraphMarginBottom ?? content.paragraphMarginBottom;
+  const bulletGap = element.spacing?.bulletGap ?? content.bulletGap;
+  const bulletMargin = element.spacing?.bulletMarginBottom ?? content.bulletMarginBottom;
 
   let totalHeight = 0;
 
   const summaries = Array.isArray(element.summary) ? element.summary : element.summary?.split(/\n\n+/).filter(Boolean) || [];
-  const lineGap = (text.lineHeight ?? 1.3) * text.fontSize - text.fontSize;
+  const lineGap = (content.lineHeight ?? 1.3) * content.fontSize - content.fontSize;
+
+  // Add marginTop for spacing after section title or entry header
+  totalHeight += content.marginTop;
 
   // Measure actual wrapped text height for each summary paragraph
   // Strip markdown links to measure display text only (matches what gets rendered)
   for (const summary of summaries) {
     const displayText = stripMarkdownLinks(summary);
-    doc.font(typography.fonts.regular).fontSize(text.fontSize);
+    doc.font(typography.fonts.regular).fontSize(content.fontSize);
     totalHeight += doc.heightOfString(displayText, { width, lineGap });
     totalHeight += paragraphMargin;
   }
@@ -391,7 +402,7 @@ export function measureStructuredContent(ctx: MeasureContext, element: Structure
 
   if (element.bullets && element.bullets.length > 0) {
     const bulletWidth = width - indent;
-    doc.font(typography.fonts.regular).fontSize(text.fontSize);
+    doc.font(typography.fonts.regular).fontSize(content.fontSize);
 
     // Measure actual wrapped text height for each bullet
     // Strip markdown links to measure display text only (matches what gets rendered)
@@ -402,6 +413,9 @@ export function measureStructuredContent(ctx: MeasureContext, element: Structure
       totalHeight += bulletMargin;
     }
   }
+
+  // Add marginBottom for spacing at end of content block
+  totalHeight += content.marginBottom;
 
   return totalHeight;
 }
