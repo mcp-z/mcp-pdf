@@ -84,9 +84,7 @@ export function measureText(ctx: MeasureContext, element: TextElement): number {
   const { content } = typography;
   const style = getResolvedStyle(typography);
   const paragraphs = paragraphsFromContent(element.content);
-
   if (paragraphs.length === 0) return 0;
-
   let totalHeight = 0;
 
   // Add marginTop for spacing after section title
@@ -105,7 +103,6 @@ export function measureText(ctx: MeasureContext, element: TextElement): number {
 
   // Add marginBottom for spacing at end of content block
   totalHeight += content.marginBottom;
-
   return totalHeight;
 }
 
@@ -115,7 +112,6 @@ export function measureText(ctx: MeasureContext, element: TextElement): number {
 export function measureSectionTitle(ctx: MeasureContext, element: SectionTitleElement): number {
   const { doc, typography, width } = ctx;
   const { sectionTitle } = typography;
-
   if (!element.title) return 0;
 
   doc.font(typography.fonts.bold).fontSize(sectionTitle.fontSize);
@@ -144,10 +140,7 @@ export function measureHeader(ctx: MeasureContext, element: HeaderElement): numb
   if (element.contactItems.length > 0) {
     const contactTexts = element.contactItems
       .map((item) => {
-        if (item.location) {
-          return renderField(fieldTemplates.location, item.location);
-        }
-        return item.text;
+        return item ? renderField(fieldTemplates.location, item.location) : item.text;
       })
       .filter((text) => text.length > 0);
 
@@ -159,7 +152,6 @@ export function measureHeader(ctx: MeasureContext, element: HeaderElement): numb
 
   const nameMarginBottom = header.name.marginBottom ?? 0;
   const headerMarginBottom = header.marginBottom ?? 0;
-
   return nameHeight + nameMarginBottom + contactHeight + headerMarginBottom;
 }
 
@@ -170,7 +162,6 @@ export function measureDivider(_ctx: MeasureContext, element: DividerElement): n
   const marginTop = element.margin?.top ?? 8;
   const marginBottom = element.margin?.bottom ?? 8;
   const thickness = element.thickness ?? 0.5;
-
   return marginTop + thickness + marginBottom;
 }
 
@@ -199,7 +190,6 @@ function measureWorkEntry(ctx: MeasureContext, entry: EntryData, isGrouped: bool
   const highlights = Array.isArray(entryData.highlights) ? (entryData.highlights as string[]).map(ensureString).filter(Boolean) : [];
 
   let totalHeight = 0;
-
   if (!isGrouped) {
     // Line 1: Company + Location
     doc.font(typography.fonts.bold).fontSize(entryStyle.position.fontSize);
@@ -306,22 +296,28 @@ export function measureEntryHeader(ctx: MeasureContext, element: EntryHeaderElem
     const institutionHeight = doc.heightOfString(company, { width: leftWidth });
     doc.font(typography.fonts.italic).fontSize(style.fontSize);
     const dateHeight = dateText ? doc.heightOfString(dateText, { width: rightWidth }) : 0;
-    totalHeight += Math.max(institutionHeight, dateHeight) + style.itemMarginBottom;
+    totalHeight += Math.max(institutionHeight, dateHeight);
 
     // Degree line
     const degreeParts = renderField(fieldTemplates.degree, {
       studyType: entry.studyType,
       area: entry.area,
     });
+
+    // Add lineSpacing after institution only if degree or GPA follows
+    if (degreeParts || entry.score) totalHeight += typography.entryHeader.lineSpacing;
     if (degreeParts) {
       doc.font(typography.fonts.italic).fontSize(style.fontSize);
-      totalHeight += doc.heightOfString(degreeParts, { width, lineGap: style.lineGap }) + style.itemMarginBottom;
+      totalHeight += doc.heightOfString(degreeParts, { width, lineGap: style.lineGap });
+
+      // Only add lineSpacing if GPA follows
+      if (entry.score) totalHeight += typography.entryHeader.lineSpacing;
     }
 
     // GPA line
     if (entry.score) {
       doc.font(typography.fonts.regular).fontSize(style.fontSize);
-      totalHeight += doc.heightOfString(`GPA: ${entry.score}`, { width, lineGap: style.lineGap }) + style.itemMarginBottom;
+      totalHeight += doc.heightOfString(`GPA: ${entry.score}`, { width, lineGap: style.lineGap });
     }
   } else if (element.isGroupedPosition) {
     // Grouped work entry: Position + Dates (company is in separate CompanyHeaderElement)
@@ -343,7 +339,7 @@ export function measureEntryHeader(ctx: MeasureContext, element: EntryHeaderElem
     // Use correct font for location measurement (matches rendering)
     doc.font(typography.fonts.bold).fontSize(entryStyle.location.fontSize);
     const locationHeight = location ? doc.heightOfString(location, { width: rightWidth }) : 0;
-    totalHeight += Math.max(companyHeight, locationHeight) + (entryStyle.position.marginBottom ?? 0);
+    totalHeight += Math.max(companyHeight, locationHeight) + typography.entryHeader.lineSpacing;
 
     // Position + Dates line
     doc.font(typography.fonts.italic).fontSize(entryStyle.position.fontSize);
@@ -396,9 +392,7 @@ export function measureStructuredContent(ctx: MeasureContext, element: Structure
   }
 
   // Add bulletGap only between summary and bullets (not before first bullet when no summary)
-  if (hasBullets && hasSummary) {
-    totalHeight += bulletGap;
-  }
+  if (hasBullets && hasSummary) totalHeight += bulletGap;
 
   if (hasBullets) {
     const bulletWidth = width - indent;
@@ -417,9 +411,7 @@ export function measureStructuredContent(ctx: MeasureContext, element: Structure
   // Add marginBottom only if there's summary content AND no bullets
   // When element has bullets, the marginBottom is suppressed because bullets may continue
   // in a subsequent element, and we don't want extra spacing between elements
-  if (hasSummary && !hasBullets) {
-    totalHeight += content.marginBottom;
-  }
+  if (hasSummary && !hasBullets) totalHeight += content.marginBottom;
 
   return totalHeight;
 }

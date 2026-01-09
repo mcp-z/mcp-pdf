@@ -95,7 +95,8 @@ export interface ContentStyle {
 // =============================================================================
 
 export interface EntryHeaderStyle {
-  marginBottom: number;
+  lineSpacing: number; // Space between lines within entry header (company→position, institution→degree→GPA)
+  marginBottom: number; // Space after complete entry header (before content or next entry)
 }
 
 // =============================================================================
@@ -170,7 +171,7 @@ export const DEFAULT_TYPOGRAPHY: TypographyOptions = {
   content: {
     fontSize: 10,
     lineHeight: 1.3,
-    marginTop: 6,
+    marginTop: 0,
     marginBottom: 6,
     paragraphMarginBottom: 4,
     bulletGap: 2,
@@ -179,6 +180,7 @@ export const DEFAULT_TYPOGRAPHY: TypographyOptions = {
     itemMarginBottom: 4,
   },
   entryHeader: {
+    lineSpacing: 2,
     marginBottom: 4,
   },
   entry: {
