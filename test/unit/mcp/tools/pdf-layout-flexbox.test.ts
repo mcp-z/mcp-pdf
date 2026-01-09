@@ -553,8 +553,8 @@ describe('Flexbox Layout Tests', () => {
     it('creates a two-column event flyer', async () => {
       const result = await tool.handler(
         {
-          pageSetup: {
-            backgroundColor: '#fffef5',
+          color: {
+            background: '#fffef5',
           },
           content: [
             // Header (wrapped in group for positioning)

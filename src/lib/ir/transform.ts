@@ -9,14 +9,12 @@
 import type { ResumeSchema } from '../../../assets/resume.ts';
 import { mergeFieldTemplates, registerFieldFilters } from '../formatting.ts';
 import type {
-  CompanyHeaderElement,
   ContactItem,
   CredentialData,
   CredentialListElement,
   DividerConfig,
   DividerElement,
   DocumentMetadata,
-  EntryContentLineElement,
   EntryData,
   EntryHeaderElement,
   EntryListElement,
@@ -32,27 +30,16 @@ import type {
   SectionConfig,
   SectionsConfig,
   SectionTitleElement,
-  SummaryHighlightsElement,
+  StructuredContentElement,
   TemplateElement,
   TextElement,
 } from './types.ts';
 import { isDividerConfig, isSectionConfig } from './types.ts';
 
-// =============================================================================
-// Typography Spacing Constants (should match measure.ts/render.ts)
-// =============================================================================
-
-const SPACING = {
-  paragraphMargin: 4,
-  bulletMargin: 2,
-  blockMargin: 6,
-  summaryToBulletGap: 6, // Extra space when transitioning from summary to bullets
-};
-
 /**
  * Inferred data types for automatic rendering
  */
-type InferredType = 'text' | 'summary-highlights' | 'entry-list' | 'keyword-list' | 'language-list' | 'credential-list' | 'reference-list' | 'unknown';
+type InferredType = 'text' | 'structured-content' | 'entry-list' | 'keyword-list' | 'language-list' | 'credential-list' | 'reference-list' | 'unknown';
 
 /**
  * Get a nested value from an object using dot notation
@@ -124,7 +111,7 @@ function inferDataType(data: unknown): InferredType {
 
     // Summary-highlights: has highlights array
     if ('highlights' in obj && Array.isArray(obj.highlights)) {
-      return 'summary-highlights';
+      return 'structured-content';
     }
 
     // Text: has summary
@@ -168,7 +155,7 @@ function ensureString(value: unknown): string {
 /**
  * Group entries by company name (for work entries).
  */
-function groupByCompany(entries: EntryData[]): EntryData[][] {
+function _groupByCompany(entries: EntryData[]): EntryData[][] {
   const groups: EntryData[][] = [];
   let currentGroup: EntryData[] = [];
   let currentCompany = '';
@@ -198,94 +185,79 @@ function groupByCompany(entries: EntryData[]): EntryData[][] {
 }
 
 /**
- * Create content line elements from an entry's summary and highlights.
- * Returns array of EntryContentLineElement with proper spacing metadata.
+ * Transform a single entry into EntryHeader + StructuredContent elements.
+ * This is the unified transformation for all entry types (work, education, volunteer).
+ *
+ * Uses atomic grouping: header + first content line stay together on same page
+ * to prevent orphaned headers. Remaining content can paginate independently.
  */
-function createContentLines(entry: EntryData): EntryContentLineElement[] {
+function transformEntry(entry: EntryData, variant: 'work' | 'education', isFirstEntry: boolean, sectionTitleElement: SectionTitleElement | null): LayoutElement[] {
+  const elements: LayoutElement[] = [];
+
+  const headerElement: EntryHeaderElement = {
+    type: 'entry-header',
+    variant,
+    entry,
+    isGroupedPosition: false,
+    showLocation: true,
+  };
+
   const entryData = entry as Record<string, unknown>;
   const summaryText = entryData.summary ?? entryData.description;
   const summaryParagraphs = paragraphsFromContent(summaryText as string | string[] | undefined);
   const highlights = Array.isArray(entryData.highlights) ? (entryData.highlights as string[]).map(ensureString).filter(Boolean) : [];
 
-  const contentLines: EntryContentLineElement[] = [];
-  const totalItems = summaryParagraphs.length + highlights.length;
+  // Build first line (first paragraph OR first bullet)
+  let firstLine: StructuredContentElement | null = null;
+  const remainingLines: StructuredContentElement[] = [];
 
-  // Add summary paragraphs
-  for (let i = 0; i < summaryParagraphs.length; i++) {
-    const isFirst = contentLines.length === 0;
-    const isLast = contentLines.length === totalItems - 1;
+  if (summaryParagraphs.length > 0) {
+    // First paragraph is the first line
+    firstLine = {
+      type: 'structured-content',
+      summary: summaryParagraphs[0],
+    };
 
-    contentLines.push({
-      type: 'entry-content-line',
-      contentType: 'summary',
-      text: summaryParagraphs[i],
-      position: totalItems === 1 ? 'only' : isFirst ? 'first' : isLast ? 'last' : 'middle',
-      afterTypeChange: false,
-      marginTop: isFirst ? 0 : SPACING.paragraphMargin,
-    });
+    // Remaining paragraphs (if any) + all bullets as separate elements
+    const remainingParagraphs = summaryParagraphs.slice(1);
+    const remainingBullets = highlights;
+
+    if (remainingParagraphs.length > 0 || remainingBullets.length > 0) {
+      remainingLines.push({
+        type: 'structured-content',
+        summary: remainingParagraphs.length > 0 ? remainingParagraphs : undefined,
+        bullets: remainingBullets.length > 0 ? remainingBullets : undefined,
+      });
+    }
+  } else if (highlights.length > 0) {
+    // No paragraphs, first bullet is the first line
+    firstLine = {
+      type: 'structured-content',
+      bullets: [highlights[0]],
+    };
+
+    // Remaining bullets as separate element
+    if (highlights.length > 1) {
+      remainingLines.push({
+        type: 'structured-content',
+        bullets: highlights.slice(1),
+      });
+    }
   }
 
-  // Add bullet highlights
-  for (let i = 0; i < highlights.length; i++) {
-    const isFirst = contentLines.length === 0;
-    const isLast = contentLines.length === totalItems - 1;
-    const afterTypeChange = i === 0 && summaryParagraphs.length > 0;
-
-    contentLines.push({
-      type: 'entry-content-line',
-      contentType: 'bullet',
-      text: highlights[i],
-      position: totalItems === 1 ? 'only' : isFirst ? 'first' : isLast ? 'last' : 'middle',
-      afterTypeChange,
-      marginTop: isFirst ? 0 : afterTypeChange ? SPACING.summaryToBulletGap : SPACING.bulletMargin,
-    });
-  }
-
-  return contentLines;
-}
-
-/**
- * Decompose a single entry into header + content line elements.
- * Returns elements that should be added to the layout.
- *
- * @param entry - The entry data
- * @param variant - 'work' or 'education'
- * @param isFirstEntry - Whether this is the first entry (for grouping with section title)
- * @param sectionTitleElement - Optional section title to group with first entry
- * @param isGroupedPosition - Whether this entry is part of a grouped company
- * @param showLocation - Whether to show location on this entry
- */
-function decomposeEntry(entry: EntryData, variant: 'work' | 'education', isFirstEntry: boolean, sectionTitleElement: SectionTitleElement | null, isGroupedPosition = false, showLocation = true): LayoutElement[] {
-  const elements: LayoutElement[] = [];
-  const contentLines = createContentLines(entry);
-
-  // Create entry header element
-  const headerElement: EntryHeaderElement = {
-    type: 'entry-header',
-    variant,
-    entry,
-    isGroupedPosition,
-    showLocation,
-  };
-
-  // Determine what goes in the atomic group
+  // Build atomic group: section title + header + first line
   const atomicChildren: LayoutElement[] = [];
 
-  // First entry gets section title in the atomic group
   if (isFirstEntry && sectionTitleElement) {
     atomicChildren.push(sectionTitleElement);
   }
 
-  // Header always goes in atomic group
   atomicChildren.push(headerElement);
 
-  // First content line (if any) goes in atomic group to prevent orphaned header
-  const firstLine = contentLines.shift();
   if (firstLine) {
     atomicChildren.push(firstLine);
   }
 
-  // Create the atomic group
   const atomicGroup: GroupElement = {
     type: 'group',
     wrap: false,
@@ -294,7 +266,7 @@ function decomposeEntry(entry: EntryData, variant: 'work' | 'education', isFirst
   elements.push(atomicGroup);
 
   // Remaining content lines are separate elements for fine-grained pagination
-  for (const line of contentLines) {
+  for (const line of remainingLines) {
     elements.push(line);
   }
 
@@ -302,66 +274,10 @@ function decomposeEntry(entry: EntryData, variant: 'work' | 'education', isFirst
 }
 
 /**
- * Decompose grouped entries (multiple positions at same company).
- */
-function decomposeGroupedEntries(entries: EntryData[], variant: 'work' | 'education', isFirstGroup: boolean, sectionTitleElement: SectionTitleElement | null): LayoutElement[] {
-  const elements: LayoutElement[] = [];
-
-  // Get company info from first entry
-  const firstEntry = entries[0] as Record<string, unknown>;
-  const company = ensureString(firstEntry.name ?? firstEntry.organization ?? firstEntry.entity);
-
-  // Check if all entries have the same location
-  const locations = entries.map((e) => ensureString((e as Record<string, unknown>).location)).filter(Boolean);
-  const uniqueLocations = [...new Set(locations)];
-  const sameLocation = uniqueLocations.length <= 1;
-  const sharedLocation = sameLocation && uniqueLocations.length === 1 ? (uniqueLocations[0] ?? null) : null;
-
-  // Create company header element
-  const companyHeader: CompanyHeaderElement = {
-    type: 'company-header',
-    company,
-    location: sharedLocation,
-  };
-
-  // For the first group, section title + company header + first position header + first content
-  // For subsequent groups, company header + first position header + first content
-  const firstPositionElements = decomposeEntry(entries[0], variant, false, null, true, !sameLocation);
-
-  // Build atomic group for company header + first position
-  const atomicChildren: LayoutElement[] = [];
-  if (isFirstGroup && sectionTitleElement) {
-    atomicChildren.push(sectionTitleElement);
-  }
-  atomicChildren.push(companyHeader);
-
-  // Add the first position's atomic group children (unwrap it)
-  const firstPositionAtomic = firstPositionElements.shift() as GroupElement;
-  atomicChildren.push(...firstPositionAtomic.children);
-
-  const atomicGroup: GroupElement = {
-    type: 'group',
-    wrap: false,
-    children: atomicChildren,
-  };
-  elements.push(atomicGroup);
-
-  // Add remaining content lines from first position
-  elements.push(...firstPositionElements);
-
-  // Add remaining positions
-  for (let i = 1; i < entries.length; i++) {
-    const positionElements = decomposeEntry(entries[i], variant, false, null, true, !sameLocation);
-    elements.push(...positionElements);
-  }
-
-  return elements;
-}
-
-/**
  * Transform entry-list into fine-grained elements for better pagination.
+ * Creates EntryHeader + StructuredContent elements for each entry.
  */
-function transformEntryListFineGrained(entryList: EntryListElement, sectionTitleElement: SectionTitleElement | null, source: string): LayoutElement[] {
+function transformEntryList(entryList: EntryListElement, sectionTitleElement: SectionTitleElement | null, source: string): LayoutElement[] {
   const elements: LayoutElement[] = [];
   const { entries, variant } = entryList;
 
@@ -372,33 +288,11 @@ function transformEntryListFineGrained(entryList: EntryListElement, sectionTitle
     return elements;
   }
 
-  if (variant === 'education') {
-    // Education entries are not grouped by company
-    for (let i = 0; i < entries.length; i++) {
-      const entryElements = decomposeEntry(entries[i], variant, i === 0, i === 0 ? sectionTitleElement : null);
-      elements.push(...entryElements);
-    }
-  } else {
-    // Work entries - group by company
-    const groups = groupByCompany(entries);
-
-    for (let groupIndex = 0; groupIndex < groups.length; groupIndex++) {
-      const group = groups[groupIndex];
-      const isFirstGroup = groupIndex === 0;
-
-      if (group.length === 1) {
-        // Single entry - no company grouping needed
-        const entryElements = decomposeEntry(group[0], variant, isFirstGroup, isFirstGroup ? sectionTitleElement : null);
-        elements.push(...entryElements);
-      } else {
-        // Multiple entries at same company
-        const groupElements = decomposeGroupedEntries(group, variant, isFirstGroup, isFirstGroup ? sectionTitleElement : null);
-        elements.push(...groupElements);
-      }
-    }
+  for (let i = 0; i < entries.length; i++) {
+    const entryElements = transformEntry(entries[i], variant, i === 0, i === 0 ? sectionTitleElement : null);
+    elements.push(...entryElements);
   }
 
-  // Tag all elements with source
   for (const el of elements) {
     el.source = source;
     if (el.type === 'group' && 'children' in el) {
@@ -482,14 +376,14 @@ function transformData(data: unknown, source: string, config: SectionConfig): La
       } as TextElement;
     }
 
-    case 'summary-highlights': {
+    case 'structured-content': {
       const obj = data as { summary?: string | string[]; highlights?: string[] };
       return {
-        type: 'summary-highlights',
+        type: 'structured-content',
         summary: typeof obj.summary === 'string' ? obj.summary : obj.summary?.join('\n'),
-        highlights: obj.highlights || [],
+        bullets: obj.highlights || [],
         style: config.style,
-      } as SummaryHighlightsElement;
+      } as StructuredContentElement;
     }
 
     case 'entry-list': {
@@ -619,8 +513,8 @@ function transformSection(resume: ResumeSchema, config: SectionConfig): LayoutEl
     if (type === 'entry-list') {
       // Entry list: use fine-grained decomposition for optimal pagination
       const entryList = contentElement as EntryListElement;
-      const fineGrainedElements = transformEntryListFineGrained(entryList, sectionTitleElement, source);
-      elements.push(...fineGrainedElements);
+      const entryElements = transformEntryList(entryList, sectionTitleElement, source);
+      elements.push(...entryElements);
       return tagElements(); // Early return since elements are already tagged
     }
     if (type === 'keyword-list') {

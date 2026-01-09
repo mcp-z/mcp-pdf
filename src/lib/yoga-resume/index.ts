@@ -30,6 +30,7 @@ export {
   measureLanguageList,
   measureReferenceList,
   measureSectionTitle,
+  measureStructuredContent,
   measureText,
 } from './measure.ts';
 
@@ -50,7 +51,6 @@ export {
   createRenderContext,
   renderCredentialList,
   renderDivider,
-  renderEntryList,
   renderGroup,
   renderHeader,
   renderKeywordList,
@@ -59,8 +59,8 @@ export {
   renderPageNode,
   renderReferenceList,
   renderSectionTitle,
-  renderSummaryHighlights,
-  renderText,
+  renderStructuredContent,
+  renderTextElement,
 } from './render.ts';
 // Types
 export type {

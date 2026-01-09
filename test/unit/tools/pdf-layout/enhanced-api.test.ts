@@ -2,7 +2,7 @@ import assert from 'assert';
 import PDFDocument from 'pdfkit';
 import { registerEmojiFont } from '../../../../src/lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts } from '../../../../src/lib/fonts.ts';
-import { type PDFTextOptions, renderTextWithEmoji } from '../../../../src/lib/pdf-helpers.ts';
+import { type PDFTextOptions, renderText } from '../../../../src/lib/pdf-helpers.ts';
 
 type ContentItem =
   | { type: 'text'; text: string; fontSize?: number; bold?: boolean; color?: string; left?: number; top?: number; width?: number; align?: string; oblique?: number | boolean; characterSpacing?: number; moveDown?: number }
@@ -93,7 +93,11 @@ async function createPdfWithEnhancements(options: {
         if (item.oblique !== undefined) options.oblique = item.oblique;
         if (item.characterSpacing !== undefined) options.characterSpacing = item.characterSpacing;
 
-        renderTextWithEmoji(doc, item.text, fontSize, font, emojiAvailable, options);
+        renderText(doc, item.text, {
+          typography: { fontSize, fontName: font },
+          features: { enableEmoji: emojiAvailable },
+          layout: options,
+        });
 
         if (item.color) doc.fillColor('black');
         if (item.moveDown !== undefined) doc.moveDown(item.moveDown);
