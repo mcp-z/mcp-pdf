@@ -347,7 +347,6 @@ export function renderReferenceList(ctx: RenderContext, element: ReferenceListEl
   if (element.items.length === 0) return;
 
   let currentY = position.y;
-
   for (const ref of element.items) {
     const name = ensureString(ref.name);
     const reference = ensureString(ref.reference);
@@ -478,13 +477,16 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
       doc.fillColor('#000000');
     }
 
-    currentY += institutionHeight + style.itemMarginBottom;
+    currentY += institutionHeight;
 
     // Degree line
     const degreeParts = renderField(fieldTemplates.degree, {
       studyType: entry.studyType,
       area: entry.area,
     });
+
+    // Add lineSpacing after institution only if degree or GPA follows
+    if (degreeParts || entry.score) currentY += typography.entryHeader.lineSpacing;
     if (degreeParts) {
       doc.font(fonts.italic).fontSize(style.fontSize).fillColor('#000000');
       renderText(doc, degreeParts, {
@@ -495,7 +497,12 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
         spacing: { lineGap: style.lineGap },
       });
       const degreeHeight = doc.heightOfString(degreeParts, { width: position.width, lineGap: style.lineGap });
-      currentY += degreeHeight + style.itemMarginBottom;
+      currentY += degreeHeight;
+
+      // Only add lineSpacing if GPA follows
+      if (entry.score) {
+        currentY += typography.entryHeader.lineSpacing;
+      }
     }
 
     // GPA line
@@ -566,7 +573,7 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
     }
 
     // Use maximum of company and location heights to prevent overlap
-    currentY += Math.max(companyHeight, locationHeight) + (entryStyle.position.marginBottom ?? 0);
+    currentY += Math.max(companyHeight, locationHeight) + typography.entryHeader.lineSpacing;
 
     // Position + Dates line
     doc.font(fonts.italic).fontSize(entryStyle.position.fontSize).fillColor('#000000');
