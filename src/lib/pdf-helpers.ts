@@ -385,16 +385,10 @@ function renderTextUnified(doc: PDFKit.PDFDocument, text: string, fontSize: numb
       lineX += options.indent;
     }
 
-    // Render words in line
-    for (const word of line.words) {
-      const wordWidth = word.width + (options.wordSpacing || 0);
-
-      // Set color for this word
-      if (word.isLink) {
-        doc.fillColor(hyperlinkColor);
-      } else {
-        doc.fillColor('black');
-      }
+    // Merge consecutive text words with same styling for efficient PDF generation
+    let wordIndex = 0;
+    while (wordIndex < line.words.length) {
+      const word = line.words[wordIndex];
 
       if (word.type === 'emoji') {
         // Render emoji as image
@@ -412,30 +406,55 @@ function renderTextUnified(doc: PDFKit.PDFDocument, text: string, fontSize: numb
         if (word.isLink && word.linkUrl) {
           doc.link(lineX, currentY, word.width, lineHeight, word.linkUrl);
         }
+
+        lineX += word.width + (options.wordSpacing || 0);
+        wordIndex++;
       } else {
-        // Render text word with underline if it's a link
+        // Merge consecutive text words with same styling
+        let mergedText = '';
+        let mergedWidth = 0;
+        const spanStartX = lineX;
+        const isLink = word.isLink;
+
+        // Merge all consecutive text words with same link status
+        while (wordIndex < line.words.length && line.words[wordIndex].type === 'text' && line.words[wordIndex].isLink === isLink) {
+          mergedText += line.words[wordIndex].content;
+          mergedWidth += line.words[wordIndex].width;
+          wordIndex++;
+        }
+
+        // Add word spacing to the end (will be applied between words in PDFKit)
+        mergedWidth += (options.wordSpacing || 0) * (mergedText.split(/\s+/).filter(Boolean).length - 1 || 0);
+
+        // Set color for this span
+        if (isLink) {
+          doc.fillColor(hyperlinkColor);
+        } else {
+          doc.fillColor('black');
+        }
+
+        // Render merged text span
         const textOptions: PDFTextOptions = {
           continued: false,
           lineBreak: true,
-          underline: word.isLink || options.underline,
+          underline: isLink || options.underline,
         };
-        // Only add strike option if explicitly true
         if (options.strike) {
           textOptions.strike = true;
         }
 
-        doc.text(word.content, lineX, currentY, textOptions);
+        doc.text(mergedText, spanStartX, currentY, textOptions);
+
+        // Reset color to black
+        doc.fillColor('black');
+
+        // Add link annotation for the entire span
+        if (isLink && word.linkUrl) {
+          doc.link(spanStartX, currentY, mergedWidth, lineHeight, word.linkUrl);
+        }
+
+        lineX += mergedWidth + (options.wordSpacing || 0);
       }
-
-      // Reset color to black after rendering
-      doc.fillColor('black');
-
-      // Add link annotation for link words
-      if (word.isLink && word.linkUrl) {
-        doc.link(lineX, currentY, word.width, lineHeight, word.linkUrl);
-      }
-
-      lineX += wordWidth;
     }
 
     // Move to next line using PDFKit's actual line height
