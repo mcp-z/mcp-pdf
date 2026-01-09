@@ -379,13 +379,19 @@ export function measureStructuredContent(ctx: MeasureContext, element: Structure
   const bulletGap = element.spacing?.bulletGap ?? content.bulletGap;
   const bulletMargin = element.spacing?.bulletMarginBottom ?? content.bulletMarginBottom;
 
+  const summaries = Array.isArray(element.summary) ? element.summary : element.summary?.split(/\n\n+/).filter(Boolean) || [];
+  const hasSummary = summaries.length > 0;
+  const hasBullets = element.bullets && element.bullets.length > 0;
+
   let totalHeight = 0;
 
-  const summaries = Array.isArray(element.summary) ? element.summary : element.summary?.split(/\n\n+/).filter(Boolean) || [];
   const lineGap = (content.lineHeight ?? 1.3) * content.fontSize - content.fontSize;
 
-  // Add marginTop for spacing after section title or entry header
-  totalHeight += content.marginTop;
+  // Add marginTop only if there's summary content (not for bullets-only elements)
+  // This prevents double-spacing when bullets are split across multiple structured-content elements
+  if (hasSummary) {
+    totalHeight += content.marginTop;
+  }
 
   // Measure actual wrapped text height for each summary paragraph
   // Strip markdown links to measure display text only (matches what gets rendered)
@@ -396,11 +402,12 @@ export function measureStructuredContent(ctx: MeasureContext, element: Structure
     totalHeight += paragraphMargin;
   }
 
-  if (element.bullets && element.bullets.length > 0 && summaries.length > 0) {
+  // Add bulletGap only between summary and bullets (not before first bullet when no summary)
+  if (hasBullets && hasSummary) {
     totalHeight += bulletGap;
   }
 
-  if (element.bullets && element.bullets.length > 0) {
+  if (hasBullets) {
     const bulletWidth = width - indent;
     doc.font(typography.fonts.regular).fontSize(content.fontSize);
 
@@ -414,8 +421,10 @@ export function measureStructuredContent(ctx: MeasureContext, element: Structure
     }
   }
 
-  // Add marginBottom for spacing at end of content block
-  totalHeight += content.marginBottom;
+  // Add marginBottom only if there's summary content (not for bullets-only elements)
+  if (hasSummary) {
+    totalHeight += content.marginBottom;
+  }
 
   return totalHeight;
 }
