@@ -77,7 +77,7 @@ describe('Resume Styling Options', () => {
           marginTop: 12,
           marginBottom: 8,
         },
-        text: {
+        content: {
           marginBottom: 4,
         },
       } as RenderOptions['typography'],

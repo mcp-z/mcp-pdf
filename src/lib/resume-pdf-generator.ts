@@ -166,10 +166,10 @@ function mergeTypography(defaults: TypographyOptions, overrides?: Partial<Typogr
     if (overrides.header) merged.header = { ...merged.header, ...overrides.header };
     if (overrides.sectionTitle) merged.sectionTitle = { ...merged.sectionTitle, ...overrides.sectionTitle };
     if (overrides.entry) merged.entry = { ...merged.entry, ...overrides.entry };
-    if (overrides.text) merged.text = { ...merged.text, ...overrides.text };
+    if (overrides.content) merged.content = { ...merged.content, ...overrides.content };
+    if (overrides.entryHeader) merged.entryHeader = { ...merged.entryHeader, ...overrides.entryHeader };
     if (overrides.quote) merged.quote = { ...merged.quote, ...overrides.quote };
     if (overrides.divider) merged.divider = { ...merged.divider, ...overrides.divider };
-    if (overrides.structuredContent) merged.structuredContent = { ...merged.structuredContent, ...overrides.structuredContent };
   }
 
   return merged;
