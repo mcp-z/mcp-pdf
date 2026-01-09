@@ -173,7 +173,7 @@ export const DEFAULT_TYPOGRAPHY: TypographyOptions = {
     marginTop: 6,
     marginBottom: 6,
     paragraphMarginBottom: 4,
-    bulletGap: 3,
+    bulletGap: 2,
     bulletMarginBottom: 2,
     bulletIndent: 12,
     itemMarginBottom: 4,
