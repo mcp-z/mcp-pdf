@@ -7,26 +7,8 @@
 
 import type PDFKit from 'pdfkit';
 import { renderField } from '../formatting.ts';
-import type {
-  CompanyHeaderElement,
-  CredentialData,
-  CredentialListElement,
-  DividerElement,
-  EntryContentLineElement,
-  EntryData,
-  EntryHeaderElement,
-  EntryListElement,
-  FieldTemplates,
-  GroupElement,
-  HeaderElement,
-  KeywordListElement,
-  LanguageListElement,
-  ReferenceListElement,
-  SectionTitleElement,
-  SummaryHighlightsElement,
-  TextElement,
-} from '../ir/types.ts';
-import { renderTextWithEmoji } from '../pdf-helpers.ts';
+import type { CompanyHeaderElement, CredentialData, CredentialListElement, DividerElement, EntryData, EntryHeaderElement, FieldTemplates, GroupElement, HeaderElement, KeywordListElement, LanguageListElement, ReferenceListElement, SectionTitleElement, StructuredContentElement, TextElement } from '../ir/types.ts';
+import { renderText } from '../pdf-helpers.ts';
 import type { TypographyOptions } from '../types/typography.ts';
 import { type ComputedPosition, calculateEntryColumnWidths, type Page, type PageNode, type RenderContext } from './types.ts';
 
@@ -76,31 +58,27 @@ function paragraphsFromContent(content: string | string[] | undefined): string[]
 /**
  * Render text element at computed position.
  */
-export function renderText(ctx: RenderContext, element: TextElement, position: ComputedPosition): void {
+export function renderTextElement(ctx: RenderContext, element: TextElement, position: ComputedPosition): void {
   const { doc, typography, emojiAvailable, fonts } = ctx;
   const style = getResolvedStyle(typography);
   const paragraphs = paragraphsFromContent(element.content);
 
   if (paragraphs.length === 0) return;
 
-  let currentY = position.y;
-
   for (let i = 0; i < paragraphs.length; i++) {
-    renderTextWithEmoji(doc, paragraphs[i], style.fontSize, fonts.regular, emojiAvailable, {
-      x: position.x,
-      y: currentY,
-      width: position.width,
-      lineGap: style.lineGap,
-      align: 'justify',
+    renderText(doc, paragraphs[i], {
+      typography: { fontSize: style.fontSize, fontName: fonts.regular },
+      features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+      color: { hyperlinkColor: ctx.hyperlinkColor },
+      layout: { x: position.x, width: position.width, align: 'justify' },
+      spacing: { lineGap: style.lineGap },
     });
 
-    // Calculate height of this paragraph to advance Y
-    doc.font(fonts.regular).fontSize(style.fontSize);
-    const height = doc.heightOfString(paragraphs[i], { width: position.width, lineGap: style.lineGap });
-    currentY += height;
+    // Get the actual Y position after rendering (PDFKit updates doc.y)
+    const _paragraphHeight = doc.y - (position.y + (i > 0 ? style.paragraphMarginBottom : 0));
 
     if (i < paragraphs.length - 1) {
-      currentY += style.paragraphMarginBottom;
+      doc.y += style.paragraphMarginBottom;
     }
   }
 }
@@ -119,11 +97,12 @@ export function renderSectionTitle(ctx: RenderContext, element: SectionTitleElem
 
   // Draw title with emoji support
   doc.font(fonts.bold).fontSize(sectionTitle.fontSize).fillColor('#000000');
-  renderTextWithEmoji(doc, element.title.toUpperCase(), sectionTitle.fontSize, fonts.bold, emojiAvailable, {
-    x: position.x,
-    y: currentY,
-    width: position.width,
-    characterSpacing: sectionTitle.letterSpacing ?? 0,
+  renderText(doc, element.title.toUpperCase(), {
+    typography: { fontSize: sectionTitle.fontSize, fontName: fonts.bold },
+    features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+    color: { hyperlinkColor: ctx.hyperlinkColor },
+    layout: { x: position.x, y: currentY, width: position.width },
+    spacing: { characterSpacing: sectionTitle.letterSpacing ?? 0 },
   });
 
   // Calculate title height
@@ -152,12 +131,12 @@ export function renderHeader(ctx: RenderContext, element: HeaderElement, positio
   doc.font(fonts.bold).fontSize(header.name.fontSize);
   const nameHeight = doc.heightOfString(element.name.toUpperCase(), { width: position.width, align: 'center' });
 
-  renderTextWithEmoji(doc, element.name.toUpperCase(), header.name.fontSize, fonts.bold, emojiAvailable, {
-    x: position.x,
-    y: currentY,
-    width: position.width,
-    align: 'center',
-    characterSpacing: header.name.letterSpacing ?? 0,
+  renderText(doc, element.name.toUpperCase(), {
+    typography: { fontSize: header.name.fontSize, fontName: fonts.bold },
+    features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+    color: { hyperlinkColor: ctx.hyperlinkColor },
+    layout: { x: position.x, y: currentY, width: position.width, align: 'center' },
+    spacing: { characterSpacing: header.name.letterSpacing ?? 0 },
   });
   currentY += nameHeight + (header.name.marginBottom ?? 0);
 
@@ -170,6 +149,9 @@ export function renderHeader(ctx: RenderContext, element: HeaderElement, positio
         if (item.location) {
           return renderField(fieldTemplates.location, item.location);
         }
+        if (item.url) {
+          return renderField(fieldTemplates.url, { text: item.text, url: item.url });
+        }
         return item.text;
       })
       .filter((text) => text.length > 0);
@@ -179,35 +161,18 @@ export function renderHeader(ctx: RenderContext, element: HeaderElement, positio
 
     // Calculate text position for link annotations
     const textWidth = doc.widthOfString(contactText);
-    const textX = position.x + (position.width - textWidth) / 2;
+    const _textX = position.x + (position.width - textWidth) / 2;
     const textY = currentY;
 
-    renderTextWithEmoji(doc, contactText, header.contact.fontSize, fonts.regular, emojiAvailable, {
-      x: position.x,
-      y: textY,
-      width: position.width,
-      align: 'center',
-      characterSpacing: header.contact.letterSpacing ?? 0,
+    renderText(doc, contactText, {
+      typography: { fontSize: header.contact.fontSize, fontName: fonts.regular },
+      features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+      color: { hyperlinkColor: ctx.hyperlinkColor },
+      layout: { x: position.x, y: textY, width: position.width, align: 'center' },
+      spacing: { characterSpacing: header.contact.letterSpacing ?? 0 },
     });
 
-    // Add clickable link annotations
-    let searchPos = 0;
-    for (const item of element.contactItems) {
-      if (item.url) {
-        const itemText = item.location ? renderField(fieldTemplates.location, item.location) : item.text;
-        if (!itemText) continue;
-
-        const idx = contactText.indexOf(itemText, searchPos);
-        if (idx >= 0) {
-          const beforeText = contactText.substring(0, idx);
-          const beforeWidth = doc.widthOfString(beforeText);
-          const linkWidth = doc.widthOfString(itemText);
-          const linkX = textX + beforeWidth;
-          doc.link(linkX, textY, linkWidth, header.contact.fontSize, item.url);
-          searchPos = idx + itemText.length;
-        }
-      }
-    }
+    // URLs are now handled through field templates and renderTextWithEmoji
   }
 }
 
@@ -284,11 +249,12 @@ export function renderLanguageList(ctx: RenderContext, element: LanguageListElem
   const fullText = languageTexts.join(', ');
 
   doc.font(fonts.regular).fontSize(style.fontSize).fillColor('#000000');
-  renderTextWithEmoji(doc, fullText, style.fontSize, fonts.regular, emojiAvailable, {
-    x: position.x,
-    y: position.y,
-    width: position.width,
-    lineGap: style.lineGap,
+  renderText(doc, fullText, {
+    typography: { fontSize: style.fontSize, fontName: fonts.regular },
+    features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+    color: { hyperlinkColor: ctx.hyperlinkColor },
+    layout: { x: position.x, y: position.y, width: position.width },
+    spacing: { lineGap: style.lineGap },
   });
 }
 
@@ -320,10 +286,11 @@ export function renderCredentialList(ctx: RenderContext, element: CredentialList
     // Render title (bold)
     doc.font(fonts.bold).fontSize(style.fontSize).fillColor('#000000');
     const titleHeight = doc.heightOfString(title, { width: position.width });
-    renderTextWithEmoji(doc, title, style.fontSize, fonts.bold, emojiAvailable, {
-      x: position.x,
-      y: currentY,
-      width: position.width,
+    renderText(doc, title, {
+      typography: { fontSize: style.fontSize, fontName: fonts.bold },
+      features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+      color: { hyperlinkColor: ctx.hyperlinkColor },
+      layout: { x: position.x, y: currentY, width: position.width },
     });
     currentY += titleHeight;
 
@@ -343,12 +310,12 @@ export function renderCredentialList(ctx: RenderContext, element: CredentialList
       doc.font(fonts.regular).fillColor('#000000');
 
       for (const para of summaryParagraphs) {
-        renderTextWithEmoji(doc, para, style.fontSize, fonts.regular, emojiAvailable, {
-          x: position.x,
-          y: currentY,
-          width: position.width,
-          lineGap: style.lineGap,
-          align: 'justify',
+        renderText(doc, para, {
+          typography: { fontSize: style.fontSize, fontName: fonts.regular },
+          features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+          color: { hyperlinkColor: ctx.hyperlinkColor },
+          layout: { x: position.x, y: currentY, width: position.width, align: 'justify' },
+          spacing: { lineGap: style.lineGap },
         });
         doc.font(fonts.regular).fontSize(style.fontSize);
         const paraHeight = doc.heightOfString(para, { width: position.width, lineGap: style.lineGap });
@@ -382,10 +349,11 @@ export function renderReferenceList(ctx: RenderContext, element: ReferenceListEl
     if (name) {
       doc.font(fonts.bold).fontSize(style.fontSize).fillColor('#000000');
       const nameHeight = doc.heightOfString(name, { width: position.width });
-      renderTextWithEmoji(doc, name, style.fontSize, fonts.bold, emojiAvailable, {
-        x: position.x,
-        y: currentY,
-        width: position.width,
+      renderText(doc, name, {
+        typography: { fontSize: style.fontSize, fontName: fonts.bold },
+        features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+        color: { hyperlinkColor: ctx.hyperlinkColor },
+        layout: { x: position.x, y: currentY, width: position.width },
       });
       currentY += nameHeight + style.itemMarginBottom;
     }
@@ -396,11 +364,12 @@ export function renderReferenceList(ctx: RenderContext, element: ReferenceListEl
       doc.font(fonts.italic).fontSize(style.fontSize).fillColor('#000000');
       const quoteText = `"${reference}"`;
       const quoteHeight = doc.heightOfString(quoteText, { width: quoteWidth, lineGap: style.lineGap });
-      renderTextWithEmoji(doc, quoteText, style.fontSize, fonts.italic, emojiAvailable, {
-        x: position.x + quote.indent,
-        y: currentY,
-        width: quoteWidth,
-        lineGap: style.lineGap,
+      renderText(doc, quoteText, {
+        typography: { fontSize: style.fontSize, fontName: fonts.italic },
+        features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+        color: { hyperlinkColor: ctx.hyperlinkColor },
+        layout: { x: position.x + quote.indent, y: currentY, width: quoteWidth },
+        spacing: { lineGap: style.lineGap },
       });
       currentY += quoteHeight;
     }
@@ -410,40 +379,9 @@ export function renderReferenceList(ctx: RenderContext, element: ReferenceListEl
 }
 
 /**
- * Render entry list element at computed position.
- * This is complex - delegates to work or education entry renderers.
- */
-export function renderEntryList(ctx: RenderContext, element: EntryListElement, position: ComputedPosition): void {
-  const { entries, variant } = element;
-  if (entries.length === 0) return;
-
-  let currentY = position.y;
-
-  if (variant === 'education') {
-    for (const entry of entries) {
-      const height = renderEducationEntry(ctx, entry, position.x, currentY, position.width);
-      currentY += height;
-    }
-  } else {
-    // Work entries - group by company
-    const groups = groupByCompany(entries);
-
-    for (const group of groups) {
-      if (group.length === 1) {
-        const height = renderSingleWorkEntry(ctx, group[0], position.x, currentY, position.width);
-        currentY += height;
-      } else {
-        const height = renderGroupedWorkEntry(ctx, group, position.x, currentY, position.width);
-        currentY += height;
-      }
-    }
-  }
-}
-
-/**
  * Group entries by company name.
  */
-function groupByCompany(entries: EntryData[]): EntryData[][] {
+function _groupByCompany(entries: EntryData[]): EntryData[][] {
   const groups: EntryData[][] = [];
   let currentGroup: EntryData[] = [];
   let currentCompany = '';
@@ -473,267 +411,9 @@ function groupByCompany(entries: EntryData[]): EntryData[][] {
 }
 
 /**
- * Render a single work entry. Returns height rendered.
- */
-function renderSingleWorkEntry(ctx: RenderContext, entry: EntryData, x: number, y: number, width: number): number {
-  const { doc, typography, fieldTemplates, emojiAvailable, fonts } = ctx;
-  const style = getResolvedStyle(typography);
-  const { entry: entryStyle, bullet } = typography;
-
-  const { leftWidth, rightWidth } = calculateEntryColumnWidths(width, entryStyle.date.width);
-
-  const entryData = entry as Record<string, unknown>;
-  const company = ensureString(entryData.name ?? entryData.organization ?? entryData.entity);
-  const position = ensureString(entryData.position ?? (entryData.roles as string[])?.[0]);
-  const location = ensureString(entryData.location);
-
-  const dateText = renderField(fieldTemplates.dateRange, {
-    start: entry.startDate,
-    end: entry.endDate,
-  });
-
-  const summaryText = entryData.summary ?? entryData.description;
-  const summaryParagraphs = paragraphsFromContent(summaryText as string | string[] | undefined);
-  const highlights = Array.isArray(entryData.highlights) ? (entryData.highlights as string[]).map(ensureString).filter(Boolean) : [];
-
-  let currentY = y;
-
-  // Line 1: Company + Location
-  if (company) {
-    doc.font(fonts.bold).fontSize(entryStyle.position.fontSize).fillColor('#000000');
-    const companyHeight = doc.heightOfString(company, { width: leftWidth });
-    renderTextWithEmoji(doc, company, entryStyle.position.fontSize, fonts.bold, emojiAvailable, {
-      x,
-      y: currentY,
-      width: leftWidth,
-    });
-
-    if (location) {
-      doc.font(fonts.bold).fontSize(entryStyle.location.fontSize);
-      doc.text(location, x + width - rightWidth, currentY, { width: rightWidth, align: 'right' });
-    }
-
-    currentY += companyHeight + (entryStyle.position.marginBottom ?? 0);
-  }
-
-  // Line 2: Position + Dates
-  doc.font(fonts.italic).fontSize(entryStyle.position.fontSize).fillColor('#000000');
-  const positionHeight = doc.heightOfString(position, { width: leftWidth });
-  renderTextWithEmoji(doc, position, entryStyle.position.fontSize, fonts.italic, emojiAvailable, {
-    x,
-    y: currentY,
-    width: leftWidth,
-  });
-
-  if (dateText) {
-    doc
-      .font(fonts.italic)
-      .fontSize(entryStyle.company.fontSize)
-      .fillColor(entryStyle.company.color ?? '#444444');
-    doc.text(dateText, x + width - rightWidth, currentY, { width: rightWidth, align: 'right' });
-    doc.fillColor('#000000');
-  }
-
-  const hasContent = summaryParagraphs.length > 0 || highlights.length > 0;
-  currentY += positionHeight + 3 + (hasContent ? style.blockMarginBottom : 0);
-
-  // Summary paragraphs
-  if (summaryParagraphs.length > 0) {
-    doc.font(fonts.regular).fillColor('#000000');
-    for (const para of summaryParagraphs) {
-      renderTextWithEmoji(doc, para, style.fontSize, fonts.regular, emojiAvailable, {
-        x,
-        y: currentY,
-        width,
-        lineGap: style.lineGap,
-        align: 'justify',
-      });
-      doc.font(fonts.regular).fontSize(style.fontSize);
-      const paraHeight = doc.heightOfString(para, { width, lineGap: style.lineGap });
-      currentY += paraHeight + style.paragraphMarginBottom;
-    }
-  }
-
-  // Bullet highlights
-  if (highlights.length > 0) {
-    if (summaryParagraphs.length > 0) {
-      currentY += style.blockMarginBottom;
-    }
-    const bulletWidth = width - bullet.indent;
-    doc.font(fonts.regular).fillColor('#000000');
-
-    for (const highlight of highlights) {
-      const bulletText = `• ${highlight}`;
-      renderTextWithEmoji(doc, bulletText, style.fontSize, fonts.regular, emojiAvailable, {
-        x: x + bullet.indent,
-        y: currentY,
-        width: bulletWidth,
-        lineGap: style.lineGap,
-      });
-      doc.font(fonts.regular).fontSize(style.fontSize);
-      const bulletHeight = doc.heightOfString(bulletText, { width: bulletWidth, lineGap: style.lineGap });
-      currentY += bulletHeight + (bullet.marginBottom ?? 2);
-    }
-  }
-
-  currentY += style.blockMarginBottom;
-
-  return currentY - y;
-}
-
-/**
- * Render grouped work entries (multiple positions at same company). Returns height rendered.
- */
-function renderGroupedWorkEntry(ctx: RenderContext, entries: EntryData[], x: number, y: number, width: number): number {
-  const { doc, typography, emojiAvailable, fonts } = ctx;
-  const style = getResolvedStyle(typography);
-  const { entry: entryStyle } = typography;
-
-  const firstJob = entries[0] as Record<string, unknown>;
-  const company = ensureString(firstJob.name ?? firstJob.organization ?? firstJob.entity);
-
-  const locations = entries.map((j) => ensureString((j as Record<string, unknown>).location)).filter(Boolean);
-  const uniqueLocations = [...new Set(locations)];
-  const sameLocation = uniqueLocations.length <= 1;
-  const sharedLocation = sameLocation && uniqueLocations.length === 1 ? (uniqueLocations[0] ?? null) : null;
-
-  let currentY = y;
-
-  // Company header
-  const { leftWidth, rightWidth } = calculateEntryColumnWidths(width, entryStyle.date.width);
-
-  doc.font(fonts.bold).fontSize(entryStyle.position.fontSize).fillColor('#000000');
-  const companyHeight = doc.heightOfString(company, { width: leftWidth });
-  renderTextWithEmoji(doc, company, entryStyle.position.fontSize, fonts.bold, emojiAvailable, {
-    x,
-    y: currentY,
-    width: leftWidth,
-  });
-
-  if (sharedLocation) {
-    doc.font(fonts.bold).fontSize(entryStyle.location.fontSize);
-    doc.text(sharedLocation, x + width - rightWidth, currentY, { width: rightWidth, align: 'right' });
-  }
-
-  currentY += companyHeight + (entryStyle.position.marginBottom ?? 0) + style.blockMarginBottom;
-
-  // Render each position
-  for (const entry of entries) {
-    const height = renderPositionEntry(ctx, entry, x, currentY, width, !sameLocation);
-    currentY += height;
-  }
-
-  return currentY - y;
-}
-
-/**
- * Render a position within a grouped work entry. Returns height rendered.
- */
-function renderPositionEntry(ctx: RenderContext, entry: EntryData, x: number, y: number, width: number, showLocation: boolean): number {
-  const { doc, typography, fieldTemplates, emojiAvailable, fonts } = ctx;
-  const style = getResolvedStyle(typography);
-  const { entry: entryStyle, bullet } = typography;
-
-  const { leftWidth, rightWidth } = calculateEntryColumnWidths(width, entryStyle.date.width);
-
-  const entryData = entry as Record<string, unknown>;
-  const position = ensureString(entryData.position ?? (entryData.roles as string[])?.[0]);
-  const location = showLocation ? ensureString(entryData.location) : '';
-
-  const dateText = renderField(fieldTemplates.dateRange, {
-    start: entry.startDate,
-    end: entry.endDate,
-  });
-
-  const summaryText = entryData.summary ?? entryData.description;
-  const summaryParagraphs = paragraphsFromContent(summaryText as string | string[] | undefined);
-  const highlights = Array.isArray(entryData.highlights) ? (entryData.highlights as string[]).map(ensureString).filter(Boolean) : [];
-
-  let currentY = y;
-
-  // Line 1: Position + Dates
-  doc.font(fonts.italic).fontSize(entryStyle.position.fontSize).fillColor('#000000');
-  const positionHeight = doc.heightOfString(position, { width: leftWidth });
-  renderTextWithEmoji(doc, position, entryStyle.position.fontSize, fonts.italic, emojiAvailable, {
-    x,
-    y: currentY,
-    width: leftWidth,
-  });
-
-  if (dateText) {
-    doc
-      .font(fonts.italic)
-      .fontSize(entryStyle.company.fontSize)
-      .fillColor(entryStyle.company.color ?? '#444444');
-    doc.text(dateText, x + width - rightWidth, currentY, { width: rightWidth, align: 'right' });
-    doc.fillColor('#000000');
-  }
-
-  currentY += positionHeight;
-
-  // Line 2: Location (if shown)
-  if (location) {
-    doc
-      .font(fonts.regular)
-      .fontSize(entryStyle.location.fontSize)
-      .fillColor(entryStyle.location.color ?? '#444444');
-    const locHeight = doc.heightOfString(location, { width });
-    doc.text(location, x, currentY, { width });
-    currentY += locHeight;
-    doc.fillColor('#000000');
-  }
-
-  const hasContent = summaryParagraphs.length > 0 || highlights.length > 0;
-  currentY += hasContent ? style.blockMarginBottom + 4 : 2;
-
-  // Summary paragraphs
-  if (summaryParagraphs.length > 0) {
-    doc.font(fonts.regular).fillColor('#000000');
-    for (const para of summaryParagraphs) {
-      renderTextWithEmoji(doc, para, style.fontSize, fonts.regular, emojiAvailable, {
-        x,
-        y: currentY,
-        width,
-        lineGap: style.lineGap,
-        align: 'justify',
-      });
-      doc.font(fonts.regular).fontSize(style.fontSize);
-      const paraHeight = doc.heightOfString(para, { width, lineGap: style.lineGap });
-      currentY += paraHeight + style.paragraphMarginBottom;
-    }
-  }
-
-  // Bullet highlights
-  if (highlights.length > 0) {
-    if (summaryParagraphs.length > 0) {
-      currentY += style.blockMarginBottom;
-    }
-    const bulletWidth = width - bullet.indent;
-    doc.font(fonts.regular).fillColor('#000000');
-
-    for (const highlight of highlights) {
-      const bulletText = `• ${highlight}`;
-      renderTextWithEmoji(doc, bulletText, style.fontSize, fonts.regular, emojiAvailable, {
-        x: x + bullet.indent,
-        y: currentY,
-        width: bulletWidth,
-        lineGap: style.lineGap,
-      });
-      doc.font(fonts.regular).fontSize(style.fontSize);
-      const bulletHeight = doc.heightOfString(bulletText, { width: bulletWidth, lineGap: style.lineGap });
-      currentY += bulletHeight + (bullet.marginBottom ?? 2);
-    }
-  }
-
-  currentY += style.blockMarginBottom;
-
-  return currentY - y;
-}
-
-/**
  * Render an education entry. Returns height rendered.
  */
-function renderEducationEntry(ctx: RenderContext, entry: EntryData, x: number, y: number, width: number): number {
+function _renderEducationEntry(ctx: RenderContext, entry: EntryData, x: number, y: number, width: number): number {
   const { doc, typography, fieldTemplates, emojiAvailable, fonts } = ctx;
   const style = getResolvedStyle(typography);
   const { entry: entryStyle } = typography;
@@ -757,10 +437,11 @@ function renderEducationEntry(ctx: RenderContext, entry: EntryData, x: number, y
   // Line 1: Institution + Dates
   doc.font(fonts.bold).fontSize(style.fontSize).fillColor('#000000');
   const institutionHeight = doc.heightOfString(institution, { width: leftWidth });
-  renderTextWithEmoji(doc, institution, style.fontSize, fonts.bold, emojiAvailable, {
-    x,
-    y: currentY,
-    width: leftWidth,
+  renderText(doc, institution, {
+    typography: { fontSize: style.fontSize, fontName: fonts.bold },
+    features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+    color: { hyperlinkColor: ctx.hyperlinkColor },
+    layout: { y: currentY, width: leftWidth },
   });
 
   if (dates) {
@@ -778,11 +459,12 @@ function renderEducationEntry(ctx: RenderContext, entry: EntryData, x: number, y
   if (degreeParts) {
     doc.font(fonts.italic).fontSize(style.fontSize).fillColor('#000000');
     const degreeHeight = doc.heightOfString(degreeParts, { width, lineGap: style.lineGap });
-    renderTextWithEmoji(doc, degreeParts, style.fontSize, fonts.italic, emojiAvailable, {
-      x,
-      y: currentY,
-      width,
-      lineGap: style.lineGap,
+    renderText(doc, degreeParts, {
+      typography: { fontSize: style.fontSize, fontName: fonts.italic },
+      features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+      color: { hyperlinkColor: ctx.hyperlinkColor },
+      layout: { y: currentY },
+      spacing: { lineGap: style.lineGap },
     });
     currentY += degreeHeight + style.itemMarginBottom;
   }
@@ -803,48 +485,6 @@ function renderEducationEntry(ctx: RenderContext, entry: EntryData, x: number, y
   currentY += style.blockMarginBottom;
 
   return currentY - y;
-}
-
-/**
- * Render summary highlights element at computed position.
- */
-export function renderSummaryHighlights(ctx: RenderContext, element: SummaryHighlightsElement, position: ComputedPosition): void {
-  const { doc, typography, emojiAvailable, fonts } = ctx;
-  const style = getResolvedStyle(typography);
-  const { bullet } = typography;
-
-  let currentY = position.y;
-
-  // Summary paragraph
-  if (element.summary) {
-    doc.font(fonts.regular).fontSize(style.fontSize).fillColor('#000000');
-    renderTextWithEmoji(doc, element.summary, style.fontSize, fonts.regular, emojiAvailable, {
-      x: position.x,
-      y: currentY,
-      width: position.width,
-      lineGap: style.lineGap,
-    });
-    const summaryHeight = doc.heightOfString(element.summary, { width: position.width, lineGap: style.lineGap });
-    currentY += summaryHeight + style.paragraphMarginBottom;
-  }
-
-  // Bullet highlights
-  if (element.highlights.length > 0) {
-    const bulletWidth = position.width - bullet.indent;
-    doc.font(fonts.regular).fillColor('#000000');
-
-    for (const highlight of element.highlights) {
-      const bulletText = `• ${highlight}`;
-      renderTextWithEmoji(doc, bulletText, style.fontSize, fonts.regular, emojiAvailable, {
-        x: position.x + bullet.indent,
-        y: currentY,
-        width: bulletWidth,
-        lineGap: style.lineGap,
-      });
-      const bulletHeight = doc.heightOfString(bulletText, { width: bulletWidth, lineGap: style.lineGap });
-      currentY += bulletHeight + (bullet.marginBottom ?? 2);
-    }
-  }
 }
 
 /**
@@ -890,17 +530,18 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
     // Education: Institution + Dates on first line, degree on second
     doc.font(fonts.bold).fontSize(style.fontSize).fillColor('#000000');
     const institutionHeight = doc.heightOfString(company, { width: leftWidth });
-    renderTextWithEmoji(doc, company, style.fontSize, fonts.bold, emojiAvailable, {
-      x: position.x,
-      y: currentY,
-      width: leftWidth,
+    renderText(doc, company, {
+      typography: { fontSize: style.fontSize, fontName: fonts.bold },
+      features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+      color: { hyperlinkColor: ctx.hyperlinkColor },
+      layout: { x: position.x, y: currentY, width: leftWidth },
     });
 
     if (dateText) {
       doc
-        .font(fonts.italic)
-        .fontSize(style.fontSize)
-        .fillColor(entryStyle.company.color ?? '#444444');
+        .font(fonts.regular)
+        .fontSize(entryStyle.company.fontSize)
+        .fillColor(entryStyle.company.color ?? '#666666');
       doc.text(dateText, position.x + position.width - rightWidth, currentY, { width: rightWidth, align: 'right' });
       doc.fillColor('#000000');
     }
@@ -914,11 +555,12 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
     });
     if (degreeParts) {
       doc.font(fonts.italic).fontSize(style.fontSize).fillColor('#000000');
-      renderTextWithEmoji(doc, degreeParts, style.fontSize, fonts.italic, emojiAvailable, {
-        x: position.x,
-        y: currentY,
-        width: position.width,
-        lineGap: style.lineGap,
+      renderText(doc, degreeParts, {
+        typography: { fontSize: style.fontSize, fontName: fonts.italic },
+        features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+        color: { hyperlinkColor: ctx.hyperlinkColor },
+        layout: { x: position.x, y: currentY, width: position.width },
+        spacing: { lineGap: style.lineGap },
       });
       const degreeHeight = doc.heightOfString(degreeParts, { width: position.width, lineGap: style.lineGap });
       currentY += degreeHeight + style.itemMarginBottom;
@@ -938,10 +580,11 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
     // Grouped work entry: Position + Dates (company is in separate CompanyHeaderElement)
     doc.font(fonts.italic).fontSize(entryStyle.position.fontSize).fillColor('#000000');
     const positionHeight = doc.heightOfString(positionText, { width: leftWidth });
-    renderTextWithEmoji(doc, positionText, entryStyle.position.fontSize, fonts.italic, emojiAvailable, {
-      x: position.x,
-      y: currentY,
-      width: leftWidth,
+    renderText(doc, positionText, {
+      typography: { fontSize: entryStyle.position.fontSize, fontName: fonts.italic },
+      features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+      color: { hyperlinkColor: ctx.hyperlinkColor },
+      layout: { x: position.x, y: currentY, width: leftWidth },
     });
 
     if (dateText) {
@@ -976,10 +619,11 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
     // Render company
     if (company) {
       doc.font(fonts.bold).fontSize(entryStyle.position.fontSize).fillColor('#000000');
-      renderTextWithEmoji(doc, company, entryStyle.position.fontSize, fonts.bold, emojiAvailable, {
-        x: position.x,
-        y: currentY,
-        width: leftWidth,
+      renderText(doc, company, {
+        typography: { fontSize: entryStyle.position.fontSize, fontName: fonts.bold },
+        features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+        color: { hyperlinkColor: ctx.hyperlinkColor },
+        layout: { x: position.x, y: currentY, width: leftWidth },
       });
     }
 
@@ -994,10 +638,11 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
 
     // Position + Dates line
     doc.font(fonts.italic).fontSize(entryStyle.position.fontSize).fillColor('#000000');
-    renderTextWithEmoji(doc, positionText, entryStyle.position.fontSize, fonts.italic, emojiAvailable, {
-      x: position.x,
-      y: currentY,
-      width: leftWidth,
+    renderText(doc, positionText, {
+      typography: { fontSize: entryStyle.position.fontSize, fontName: fonts.italic },
+      features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+      color: { hyperlinkColor: ctx.hyperlinkColor },
+      layout: { x: position.x, y: currentY, width: leftWidth },
     });
 
     if (dateText) {
@@ -1012,36 +657,61 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
 }
 
 /**
- * Render entry content line element (single summary paragraph or bullet).
+ * Render a structured content element (summary + optional bullets).
+ * This is the single source of truth for ALL summary+bullet rendering.
  */
-export function renderEntryContentLine(ctx: RenderContext, element: EntryContentLineElement, position: ComputedPosition): void {
+export function renderStructuredContent(ctx: RenderContext, element: StructuredContentElement, position: ComputedPosition): void {
   const { doc, typography, emojiAvailable, fonts } = ctx;
-  const style = getResolvedStyle(typography);
-  const { bullet } = typography;
+  const { structuredContent, text } = typography;
 
-  // Position includes marginTop from element (already factored into height measurement)
-  const currentY = position.y + element.marginTop;
+  const indent = element.spacing?.bulletIndent ?? structuredContent.bulletIndent;
+  const paragraphMargin = element.spacing?.paragraphMarginBottom ?? structuredContent.paragraphMarginBottom;
+  const bulletGap = element.spacing?.bulletGap ?? structuredContent.bulletGap;
+  const bulletMargin = element.spacing?.bulletMarginBottom ?? structuredContent.bulletMarginBottom;
+  const lineGap = (text.lineHeight ?? 1.3) * text.fontSize - text.fontSize;
 
-  if (element.contentType === 'summary') {
-    doc.font(fonts.regular).fontSize(style.fontSize).fillColor('#000000');
-    renderTextWithEmoji(doc, element.text, style.fontSize, fonts.regular, emojiAvailable, {
-      x: position.x,
-      y: currentY,
-      width: position.width,
-      lineGap: style.lineGap,
-      align: 'justify',
+  const summaries = Array.isArray(element.summary) ? element.summary : element.summary?.split(/\n\n+/).filter(Boolean) || [];
+
+  // Use absolute positioning from Yoga layout, don't modify doc.y
+  let currentY = position.y;
+
+  for (const summary of summaries) {
+    doc.font(fonts.regular).fontSize(text.fontSize).fillColor('#000000');
+    renderText(doc, summary, {
+      typography: { fontSize: text.fontSize, fontName: fonts.regular },
+      features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+      color: { hyperlinkColor: ctx.hyperlinkColor },
+      layout: { x: position.x, y: currentY, width: position.width, align: 'justify' },
+      spacing: { lineGap },
     });
-  } else {
-    // Bullet
-    const bulletWidth = position.width - bullet.indent;
-    const bulletText = `• ${element.text}`;
-    doc.font(fonts.regular).fontSize(style.fontSize).fillColor('#000000');
-    renderTextWithEmoji(doc, bulletText, style.fontSize, fonts.regular, emojiAvailable, {
-      x: position.x + bullet.indent,
-      y: currentY,
-      width: bulletWidth,
-      lineGap: style.lineGap,
-    });
+
+    // Calculate the height of the rendered text and advance
+    const summaryHeight = doc.heightOfString(summary, { width: position.width, lineGap });
+    currentY += summaryHeight + paragraphMargin;
+  }
+
+  if (element.bullets && element.bullets.length > 0 && summaries.length > 0) {
+    currentY += bulletGap;
+  }
+
+  if (element.bullets && element.bullets.length > 0) {
+    const bulletWidth = position.width - indent;
+    doc.font(fonts.regular).fontSize(text.fontSize).fillColor('#000000');
+
+    for (const bulletItem of element.bullets) {
+      const bulletText = `• ${bulletItem}`;
+      renderText(doc, bulletText, {
+        typography: { fontSize: text.fontSize, fontName: fonts.regular },
+        features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+        color: { hyperlinkColor: ctx.hyperlinkColor },
+        layout: { x: position.x + indent, y: currentY, width: bulletWidth },
+        spacing: { lineGap },
+      });
+
+      // Calculate the height of the bullet text and advance
+      const bulletHeight = doc.heightOfString(bulletText, { width: bulletWidth, lineGap });
+      currentY += bulletHeight + bulletMargin;
+    }
   }
 }
 
@@ -1055,10 +725,11 @@ export function renderCompanyHeader(ctx: RenderContext, element: CompanyHeaderEl
   const { leftWidth, rightWidth } = calculateEntryColumnWidths(position.width, entryStyle.date.width);
 
   doc.font(fonts.bold).fontSize(entryStyle.position.fontSize).fillColor('#000000');
-  renderTextWithEmoji(doc, element.company, entryStyle.position.fontSize, fonts.bold, emojiAvailable, {
-    x: position.x,
-    y: position.y,
-    width: leftWidth,
+  renderText(doc, element.company, {
+    typography: { fontSize: entryStyle.position.fontSize, fontName: fonts.bold },
+    features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
+    color: { hyperlinkColor: ctx.hyperlinkColor },
+    layout: { x: position.x, y: position.y, width: leftWidth },
   });
 
   if (element.location) {
@@ -1079,7 +750,7 @@ export function renderPageNode(ctx: RenderContext, node: PageNode): void {
 
   switch (element.type) {
     case 'text':
-      renderText(ctx, element, position);
+      renderTextElement(ctx, element, position);
       break;
     case 'section-title':
       renderSectionTitle(ctx, element, position);
@@ -1089,9 +760,6 @@ export function renderPageNode(ctx: RenderContext, node: PageNode): void {
       break;
     case 'divider':
       renderDivider(ctx, element, position);
-      break;
-    case 'entry-list':
-      renderEntryList(ctx, element, position);
       break;
     case 'keyword-list':
       renderKeywordList(ctx, element, position);
@@ -1105,17 +773,14 @@ export function renderPageNode(ctx: RenderContext, node: PageNode): void {
     case 'reference-list':
       renderReferenceList(ctx, element, position);
       break;
-    case 'summary-highlights':
-      renderSummaryHighlights(ctx, element, position);
+    case 'structured-content':
+      renderStructuredContent(ctx, element, position);
       break;
     case 'group':
       renderGroup(ctx, element, children);
       break;
     case 'entry-header':
       renderEntryHeader(ctx, element, position);
-      break;
-    case 'entry-content-line':
-      renderEntryContentLine(ctx, element, position);
       break;
     case 'company-header':
       renderCompanyHeader(ctx, element, position);
@@ -1138,12 +803,14 @@ export function renderPage(ctx: RenderContext, page: Page): void {
 /**
  * Create a render context.
  */
-export function createRenderContext(doc: PDFKit.PDFDocument, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean): RenderContext {
+export function createRenderContext(doc: PDFKit.PDFDocument, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean, parseMarkdownLinks: boolean, hyperlinkColor: string): RenderContext {
   return {
     doc,
     typography,
     fieldTemplates,
     emojiAvailable,
     fonts: typography.fonts,
+    parseMarkdownLinks,
+    hyperlinkColor,
   };
 }

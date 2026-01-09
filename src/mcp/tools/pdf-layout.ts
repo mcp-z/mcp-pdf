@@ -17,7 +17,7 @@ import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE, type Margins, type P
 import { createWidthMeasurer, measureTextHeight } from '../../lib/content-measure.ts';
 import { resolveImageDimensions } from '../../lib/image-dimensions.ts';
 import { createPDFDocument, extractTextOptions, type PDFOutput, pdfOutputSchema, validateContentText } from '../../lib/pdf-core.ts';
-import { renderTextWithEmoji } from '../../lib/pdf-helpers.ts';
+import { renderText, type TextRenderConfig } from '../../lib/pdf-helpers.ts';
 import { calculateLayout, type LayoutContent, type LayoutNode } from '../../lib/yoga-layout.ts';
 import type { BaseContentItem } from '../../schemas/content.ts';
 import { type ContentItem, contentItemSchema, type GroupItem, layoutSchema } from '../../schemas/layout.ts';
@@ -33,6 +33,19 @@ const inputSchema = z.object({
   title: z.string().optional().describe('Document title metadata'),
   author: z.string().optional().describe('Document author metadata'),
   font: z.string().optional().describe('Font strategy (default: auto). Built-ins: Helvetica, Times-Roman, Courier. Use a path or URL for Unicode.'),
+  markdown: z
+    .object({
+      parseLinks: z.boolean().optional().describe('Parse markdown links [text](url) as clickable PDF links. Default: false.'),
+    })
+    .optional()
+    .describe('Markdown parsing options for text content'),
+  color: z
+    .object({
+      background: z.string().optional().describe('Page background color (hex like "#000000" or named color). Default: white.'),
+      hyperlink: z.string().optional().describe('Color for hyperlink text (hex like "#0066CC" or named color). Default: #0066CC (classic browser blue).'),
+    })
+    .optional()
+    .describe('Color settings for the PDF'),
   layout: layoutSchema,
   pageSetup: z
     .object({
@@ -49,7 +62,6 @@ const inputSchema = z.object({
         })
         .optional()
         .describe('Page margins in points. all 4 (top, bottom, left, right) are REQUIRED if provided. Default: 0 on all sides for full canvas access.'),
-      backgroundColor: z.string().optional().describe('Page background color (hex like "#000000" or named color). Default: white.'),
     })
     .optional()
     .describe('Page configuration including size, margins, and background color.'),
@@ -87,7 +99,9 @@ export default function createTool() {
   async function handler(args: Input, extra: StorageExtra): Promise<CallToolResult> {
     const { storageContext } = extra;
     const { resourceStoreUri, baseUrl, transport } = storageContext;
-    const { filename = 'document.pdf', title, author, font, layout, pageSetup, content } = args;
+    const { filename = 'document.pdf', title, author, font, markdown, color, layout, pageSetup, content } = args;
+    const parseMarkdownLinks = markdown?.parseLinks ?? false;
+    const hyperlinkColor = color?.hyperlink ?? '#0066CC';
     const overflowBehavior = layout?.overflow ?? 'auto';
 
     try {
@@ -100,7 +114,7 @@ export default function createTool() {
           subject: filename,
           pageSize: pageSetup?.size as PageSizePreset | [number, number] | undefined,
           margins: pageSetup?.margins ?? { top: 0, bottom: 0, left: 0, right: 0 },
-          backgroundColor: pageSetup?.backgroundColor,
+          backgroundColor: color?.background,
         },
         font,
         contentText
@@ -162,28 +176,39 @@ export default function createTool() {
           case 'text': {
             const fontSize = item.fontSize ?? DEFAULT_TEXT_FONT_SIZE;
             const fnt = item.bold ? boldFont : regularFont;
-            if (item.color) doc.fillColor(item.color);
 
             const options = extractTextOptions(item);
             if (computedX !== undefined) options.x = computedX;
             if (computedY !== undefined) options.y = computedY;
             if (computedWidth !== undefined) options.width = computedWidth;
 
-            renderTextWithEmoji(doc, item.text ?? '', fontSize, fnt, emojiAvailable, options);
-            if (item.color) doc.fillColor('black');
+            const textConfig: TextRenderConfig = {
+              typography: { fontSize, fontName: fnt },
+              features: { enableEmoji: emojiAvailable, markdown: { parseLinks: parseMarkdownLinks } },
+              color: { hyperlinkColor },
+              layout: { x: options.x, y: options.y, width: options.width, align: options.align, indent: options.indent },
+              spacing: { lineGap: options.lineGap, paragraphGap: options.paragraphGap, characterSpacing: options.characterSpacing, wordSpacing: options.wordSpacing, moveDown: options.moveDown },
+            };
+            renderText(doc, item.text ?? '', textConfig);
             break;
           }
           case 'heading': {
             const fontSize = item.fontSize ?? DEFAULT_HEADING_FONT_SIZE;
             const fnt = item.bold !== false ? boldFont : regularFont;
-            if (item.color) doc.fillColor(item.color);
 
             const options = extractTextOptions(item);
             if (computedX !== undefined) options.x = computedX;
             if (computedY !== undefined) options.y = computedY;
             if (computedWidth !== undefined) options.width = computedWidth;
 
-            renderTextWithEmoji(doc, item.text ?? '', fontSize, fnt, emojiAvailable, options);
+            const textConfig: TextRenderConfig = {
+              typography: { fontSize, fontName: fnt },
+              features: { enableEmoji: emojiAvailable, markdown: { parseLinks: parseMarkdownLinks } },
+              color: { hyperlinkColor },
+              layout: { x: options.x, y: options.y, width: options.width, align: options.align, indent: options.indent },
+              spacing: { lineGap: options.lineGap, paragraphGap: options.paragraphGap, characterSpacing: options.characterSpacing, wordSpacing: options.wordSpacing, moveDown: options.moveDown },
+            };
+            renderText(doc, item.text ?? '', textConfig);
             if (item.color) doc.fillColor('black');
             break;
           }
