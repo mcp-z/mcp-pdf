@@ -64,6 +64,10 @@ export interface RenderOptions {
   backgroundColor?: string;
   /** Explicit margins (if provided, overrides default resume margins) */
   margins?: Margins;
+  /** Whether to parse markdown links [text](url) as clickable PDF links */
+  parseMarkdownLinks?: boolean;
+  /** Color for hyperlink text (default: #0066CC) */
+  hyperlinkColor?: string;
 }
 
 /**
@@ -163,9 +167,9 @@ function mergeTypography(defaults: TypographyOptions, overrides?: Partial<Typogr
     if (overrides.sectionTitle) merged.sectionTitle = { ...merged.sectionTitle, ...overrides.sectionTitle };
     if (overrides.entry) merged.entry = { ...merged.entry, ...overrides.entry };
     if (overrides.text) merged.text = { ...merged.text, ...overrides.text };
-    if (overrides.bullet) merged.bullet = { ...merged.bullet, ...overrides.bullet };
     if (overrides.quote) merged.quote = { ...merged.quote, ...overrides.quote };
     if (overrides.divider) merged.divider = { ...merged.divider, ...overrides.divider };
+    if (overrides.structuredContent) merged.structuredContent = { ...merged.structuredContent, ...overrides.structuredContent };
   }
 
   return merged;
@@ -258,7 +262,7 @@ export async function generateResumePDFBuffer(resume: ResumeSchema, options: Ren
   };
 
   // Create render context
-  const renderCtx = createRenderContext(doc, typography, layoutDoc.fieldTemplates, emojiAvailable);
+  const renderCtx = createRenderContext(doc, typography, layoutDoc.fieldTemplates, emojiAvailable, options.parseMarkdownLinks ?? false, options.hyperlinkColor ?? '#0066CC');
 
   // Return a promise that resolves when the PDF is complete
   return new Promise<Buffer>((resolve, reject) => {

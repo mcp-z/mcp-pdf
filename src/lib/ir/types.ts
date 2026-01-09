@@ -45,6 +45,8 @@ export interface FieldTemplates {
   language?: string;
   /** Skill category display (default: "{{ name }}: {{ keywords | join: ', ' }}") */
   skill?: string;
+  /** URL display as markdown link (default: "[{{ text }}]({{ url }})") */
+  url?: string;
 }
 
 // ===== Sections Config (input) =====
@@ -192,10 +194,16 @@ export interface ReferenceListElement extends BaseElement {
 }
 
 /** Summary with highlights element */
-export interface SummaryHighlightsElement extends BaseElement {
-  type: 'summary-highlights';
-  summary?: string;
-  highlights: string[];
+export interface StructuredContentElement extends BaseElement {
+  type: 'structured-content';
+  summary?: string | string[];
+  bullets?: string[];
+  spacing?: {
+    paragraphMarginBottom?: number;
+    bulletGap?: number;
+    bulletMarginBottom?: number;
+    bulletIndent?: number;
+  };
 }
 
 /** Location data for contact items - matches JSON Resume schema */
@@ -255,19 +263,6 @@ export interface EntryHeaderElement extends BaseElement {
   showLocation?: boolean;
 }
 
-/** Single content line element - paragraph or bullet (for fine-grained pagination) */
-export interface EntryContentLineElement extends BaseElement {
-  type: 'entry-content-line';
-  contentType: 'summary' | 'bullet';
-  text: string;
-  /** Position in sequence (for spacing decisions) */
-  position: 'first' | 'middle' | 'last' | 'only';
-  /** Whether this follows a different content type (summary→bullet transition needs extra space) */
-  afterTypeChange: boolean;
-  /** Margin top in points (can be stripped if first on page) */
-  marginTop: number;
-}
-
 /** Company header element - for grouped entries with multiple positions at same company */
 export interface CompanyHeaderElement extends BaseElement {
   type: 'company-header';
@@ -276,22 +271,7 @@ export interface CompanyHeaderElement extends BaseElement {
 }
 
 /** Discriminated union of all layout elements */
-export type LayoutElement =
-  | TextElement
-  | DividerElement
-  | SectionTitleElement
-  | EntryListElement
-  | KeywordListElement
-  | LanguageListElement
-  | CredentialListElement
-  | ReferenceListElement
-  | SummaryHighlightsElement
-  | HeaderElement
-  | TemplateElement
-  | GroupElement
-  | EntryHeaderElement
-  | EntryContentLineElement
-  | CompanyHeaderElement;
+export type LayoutElement = TextElement | DividerElement | SectionTitleElement | EntryListElement | KeywordListElement | LanguageListElement | CredentialListElement | ReferenceListElement | StructuredContentElement | HeaderElement | TemplateElement | GroupElement | EntryHeaderElement | CompanyHeaderElement;
 
 // ===== Layout Document (complete IR) =====
 

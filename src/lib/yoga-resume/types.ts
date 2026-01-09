@@ -23,6 +23,8 @@ export interface RenderContext {
   fieldTemplates: Required<FieldTemplates>;
   emojiAvailable: boolean;
   fonts: FontConfig;
+  parseMarkdownLinks: boolean;
+  hyperlinkColor: string;
 }
 
 // =============================================================================

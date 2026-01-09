@@ -74,11 +74,18 @@ export type TextStyle = FontStyle &
     blockMarginBottom?: number;
   };
 
-export type BulletStyle = IndentStyle & SpacingStyle;
+export type BulletStyle = IndentStyle;
 
 export type QuoteStyle = IndentStyle;
 
 export type DividerStyle = SpacingStyle & ThicknessStyle & ColorStyle;
+
+export interface StructuredContentStyle {
+  paragraphMarginBottom: number;
+  bulletGap: number;
+  bulletMarginBottom: number;
+  bulletIndent: number;
+}
 
 // =============================================================================
 // Font Configuration
@@ -101,9 +108,9 @@ export interface TypographyOptions {
   sectionTitle: SectionTitleStyle;
   entry: EntryStyle;
   text: TextStyle;
-  bullet: BulletStyle;
   quote: QuoteStyle;
   divider: DividerStyle;
+  structuredContent: StructuredContentStyle;
 }
 
 // =============================================================================
@@ -130,7 +137,7 @@ export const DEFAULT_TYPOGRAPHY: TypographyOptions = {
     boldItalic: 'Helvetica-BoldOblique',
   },
   header: {
-    marginBottom: 12,
+    marginBottom: 8,
     name: {
       fontSize: 24,
       marginBottom: 4,
@@ -142,12 +149,12 @@ export const DEFAULT_TYPOGRAPHY: TypographyOptions = {
     },
   },
   sectionTitle: {
-    fontSize: 11,
-    marginTop: 12,
-    marginBottom: 8,
-    letterSpacing: 1,
+    fontSize: 12,
+    marginTop: 6,
+    marginBottom: 6,
+    letterSpacing: 1.5,
     underlineGap: 2,
-    underlineThickness: 0.5,
+    underlineThickness: 1,
   },
   entry: {
     position: {
@@ -169,20 +176,20 @@ export const DEFAULT_TYPOGRAPHY: TypographyOptions = {
   text: {
     fontSize: 10,
     lineHeight: 1.3,
-    marginBottom: 4,
-    blockMarginBottom: 6,
-  },
-  bullet: {
-    indent: 12,
-    marginBottom: 2,
   },
   quote: {
     indent: 16,
   },
   divider: {
-    marginTop: 8,
-    marginBottom: 8,
+    marginTop: 6,
+    marginBottom: 6,
     thickness: 0.5,
     color: '#cccccc',
+  },
+  structuredContent: {
+    paragraphMarginBottom: 4,
+    bulletGap: 3,
+    bulletMarginBottom: 2,
+    bulletIndent: 12,
   },
 };

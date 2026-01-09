@@ -16,9 +16,10 @@ export const DEFAULT_FIELD_TEMPLATES: Required<FieldTemplates> = {
   dateRange: "{{ start | date: 'MMM YYYY' }}{% if start %} – {% endif %}{{ end | date: 'MMM YYYY' | default: 'Present' }}",
   degree: '{{ studyType }}{% if area %}, {{ area }}{% endif %}',
   contactLine: "{{ items | join: ' | ' }}",
-  credential: '{{ title | default: name }}{% if awarder %}, {{ awarder }}{% endif %}{% if issuer %}, {{ issuer }}{% endif %}{% if publisher %}, {{ publisher }}{% endif %}',
+  credential: '{{ title | default: name }}{% if awarder %}, {{ awarder }}{% endif %}{% if issuer %}, {{ issuer %}{% endif %}{% if publisher %}, {{ publisher %}{% endif %}',
   language: '{{ language }}{% if fluency %} ({{ fluency }}){% endif %}',
   skill: "{{ name }}: {{ keywords | join: ', ' }}",
+  url: '[{{ text }}]({{ url }})',
 };
 
 const MONTH_NAMES_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

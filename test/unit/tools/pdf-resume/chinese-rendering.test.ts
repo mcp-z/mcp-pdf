@@ -4,7 +4,7 @@ import { join } from 'path';
 import PDFDocument from 'pdfkit';
 import { registerEmojiFont } from '../../../../src/lib/emoji-renderer.ts';
 import { needsUnicodeFont, setupFonts } from '../../../../src/lib/fonts.ts';
-import { renderTextWithEmoji } from '../../../../src/lib/pdf-helpers.ts';
+import { renderText } from '../../../../src/lib/pdf-helpers.ts';
 
 // Use .tmp/ in package root per QUALITY.md rule T8
 const testOutputDir = join(process.cwd(), '.tmp', 'chinese-tests');
@@ -50,11 +50,17 @@ describe('Chinese/CJK Character Rendering', (): void => {
 
       // Render Chinese text
       const chineseText = '測試中文字符渲染';
-      renderTextWithEmoji(doc, chineseText, 12, fonts.regular, false);
+      renderText(doc, chineseText, {
+        typography: { fontSize: 12, fontName: fonts.regular },
+        features: { enableEmoji: false },
+      });
 
       // Render mixed text
       const mixedText = 'Hello 世界 World';
-      renderTextWithEmoji(doc, mixedText, 12, fonts.regular, false);
+      renderText(doc, mixedText, {
+        typography: { fontSize: 12, fontName: fonts.regular },
+        features: { enableEmoji: false },
+      });
 
       doc.end();
 
@@ -133,7 +139,10 @@ describe('Chinese/CJK Character Rendering', (): void => {
 
       // Hiragana and Kanji
       const japaneseText = 'こんにちは世界。これはテストです。';
-      renderTextWithEmoji(doc, japaneseText, 12, fonts.regular, false);
+      renderText(doc, japaneseText, {
+        typography: { fontSize: 12, fontName: fonts.regular },
+        features: { enableEmoji: false },
+      });
 
       doc.end();
 
@@ -160,7 +169,10 @@ describe('Chinese/CJK Character Rendering', (): void => {
       const fonts = await setupFonts(doc, 'auto');
 
       const koreanText = '안녕하세요 세계. 이것은 테스트입니다.';
-      renderTextWithEmoji(doc, koreanText, 12, fonts.regular, false);
+      renderText(doc, koreanText, {
+        typography: { fontSize: 12, fontName: fonts.regular },
+        features: { enableEmoji: false },
+      });
 
       doc.end();
 
@@ -192,7 +204,11 @@ describe('Chinese/CJK Character Rendering', (): void => {
       // Chinese with emoji
       const mixedText = '你好 👋 世界 🌍';
       const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-      renderTextWithEmoji(doc, mixedText, 12, fonts.regular, emojiAvailable, { width: pageWidth });
+      renderText(doc, mixedText, {
+        typography: { fontSize: 12, fontName: fonts.regular },
+        features: { enableEmoji: emojiAvailable },
+        layout: { width: pageWidth },
+      });
 
       doc.end();
 

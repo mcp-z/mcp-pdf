@@ -91,7 +91,9 @@ describe('pdf-layout tool', () => {
       filename: 'custom-page.pdf',
       pageSetup: {
         margins: { top: 100, bottom: 100, left: 100, right: 100 },
-        backgroundColor: '#f0f0f0',
+      },
+      color: {
+        background: '#f0f0f0',
       },
       content: [{ type: 'text', text: 'Custom page setup' }],
     };
