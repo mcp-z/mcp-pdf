@@ -4,7 +4,7 @@ import { mkdir } from 'fs/promises';
 import { join } from 'path';
 import PDFDocument from 'pdfkit';
 import { setupFonts } from '../../../../src/lib/fonts.ts';
-import { renderTextWithEmoji } from '../../../../src/lib/pdf-helpers.ts';
+import { renderText } from '../../../../src/lib/pdf-helpers.ts';
 
 // Use .tmp/ in package root per QUALITY.md rule T8
 const testOutputDir = join(process.cwd(), '.tmp', 'layout-tests');
@@ -21,9 +21,20 @@ describe('Layout Options for pdf-layout', () => {
     const fonts = await setupFonts(doc, undefined);
     const { regular: regularFont } = fonts;
 
-    renderTextWithEmoji(doc, 'Left aligned (default)', 12, regularFont, false);
-    renderTextWithEmoji(doc, 'Center aligned', 12, regularFont, false, { align: 'center' });
-    renderTextWithEmoji(doc, 'Right aligned', 12, regularFont, false, { align: 'right' });
+    renderText(doc, 'Left aligned (default)', {
+      typography: { fontSize: 12, fontName: regularFont },
+      features: { enableEmoji: false },
+    });
+    renderText(doc, 'Center aligned', {
+      typography: { fontSize: 12, fontName: regularFont },
+      features: { enableEmoji: false },
+      layout: { align: 'center' },
+    });
+    renderText(doc, 'Right aligned', {
+      typography: { fontSize: 12, fontName: regularFont },
+      features: { enableEmoji: false },
+      layout: { align: 'right' },
+    });
 
     doc.end();
 
@@ -49,11 +60,20 @@ describe('Layout Options for pdf-layout', () => {
     const fonts = await setupFonts(doc, undefined);
     const { regular: regularFont } = fonts;
 
-    renderTextWithEmoji(doc, 'Line 1', 12, regularFont, false);
+    renderText(doc, 'Line 1', {
+      typography: { fontSize: 12, fontName: regularFont },
+      features: { enableEmoji: false },
+    });
     doc.moveDown(0.5);
-    renderTextWithEmoji(doc, 'Line 2 (0.5 spacing)', 12, regularFont, false);
+    renderText(doc, 'Line 2 (0.5 spacing)', {
+      typography: { fontSize: 12, fontName: regularFont },
+      features: { enableEmoji: false },
+    });
     doc.moveDown(2);
-    renderTextWithEmoji(doc, 'Line 3 (2.0 spacing)', 12, regularFont, false);
+    renderText(doc, 'Line 3 (2.0 spacing)', {
+      typography: { fontSize: 12, fontName: regularFont },
+      features: { enableEmoji: false },
+    });
 
     doc.end();
 
@@ -79,9 +99,18 @@ describe('Layout Options for pdf-layout', () => {
     const fonts = await setupFonts(doc, undefined);
     const { regular: regularFont } = fonts;
 
-    renderTextWithEmoji(doc, 'Normal text', 12, regularFont, false);
-    renderTextWithEmoji(doc, 'Underlined text', 12, regularFont, false, { underline: true });
-    renderTextWithEmoji(doc, 'Strikethrough text', 12, regularFont, false, { strike: true });
+    renderText(doc, 'Normal text', {
+      typography: { fontSize: 12, fontName: regularFont },
+      features: { enableEmoji: false },
+    });
+    renderText(doc, 'Underlined text', {
+      typography: { fontSize: 12, fontName: regularFont, underline: true },
+      features: { enableEmoji: false },
+    });
+    renderText(doc, 'Strikethrough text', {
+      typography: { fontSize: 12, fontName: regularFont, strike: true },
+      features: { enableEmoji: false },
+    });
 
     doc.end();
 
@@ -107,9 +136,20 @@ describe('Layout Options for pdf-layout', () => {
     const fonts = await setupFonts(doc, undefined);
     const { regular: regularFont } = fonts;
 
-    renderTextWithEmoji(doc, 'No indent', 12, regularFont, false);
-    renderTextWithEmoji(doc, 'Indent 20', 12, regularFont, false, { indent: 20 });
-    renderTextWithEmoji(doc, 'Indent 40', 12, regularFont, false, { indent: 40 });
+    renderText(doc, 'No indent', {
+      typography: { fontSize: 12, fontName: regularFont },
+      features: { enableEmoji: false },
+    });
+    renderText(doc, 'Indent 20', {
+      typography: { fontSize: 12, fontName: regularFont },
+      features: { enableEmoji: false },
+      layout: { indent: 20 },
+    });
+    renderText(doc, 'Indent 40', {
+      typography: { fontSize: 12, fontName: regularFont },
+      features: { enableEmoji: false },
+      layout: { indent: 40 },
+    });
 
     doc.end();
 

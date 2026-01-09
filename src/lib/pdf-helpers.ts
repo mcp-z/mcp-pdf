@@ -1,5 +1,4 @@
 import type PDFKit from 'pdfkit';
-import { WRAP_EPSILON } from '../constants.ts';
 import { measureEmoji, renderEmojiToBuffer, splitTextAndEmoji } from './emoji-renderer.ts';
 import { hasEmoji } from './fonts.ts';
 
@@ -25,27 +24,215 @@ export interface PDFTextOptions {
   moveDown?: number;
 }
 
+// ============================================================================
+// New Grouped Configuration API
+// ============================================================================
+
+export interface TypographyConfig {
+  fontSize: number;
+  fontName: string;
+  bold?: boolean;
+  underline?: boolean;
+  strike?: boolean;
+  oblique?: boolean | number;
+}
+
+export interface ColorConfig {
+  fillColor?: string;
+  hyperlinkColor?: string;
+}
+
+export interface MarkdownConfig {
+  parseLinks?: boolean;
+  parseBold?: boolean;
+  parseItalic?: boolean;
+}
+
+export interface FeaturesConfig {
+  enableEmoji?: boolean;
+  markdown?: MarkdownConfig;
+}
+
+export interface LayoutConfig {
+  x?: number;
+  y?: number;
+  width?: number;
+  align?: 'left' | 'center' | 'right' | 'justify';
+  indent?: number;
+}
+
+export interface SpacingConfig {
+  lineGap?: number;
+  paragraphGap?: number;
+  moveDown?: number;
+  characterSpacing?: number;
+  wordSpacing?: number;
+  continued?: boolean;
+  lineBreak?: boolean;
+}
+
+export interface AnnotationConfig {
+  link?: string;
+}
+
+export interface TextRenderConfig {
+  typography: TypographyConfig;
+  color?: ColorConfig;
+  features?: FeaturesConfig;
+  layout?: LayoutConfig;
+  spacing?: SpacingConfig;
+  annotation?: AnnotationConfig;
+}
+
+// ============================================================================
+// End New Grouped Configuration API
+// ============================================================================
+
 /**
- * Render text with inline emoji support
+ * Segment types for text with markdown links
+ */
+interface TextSegment {
+  type: 'text';
+  content: string;
+}
+
+interface LinkSegment {
+  type: 'link';
+  text: string;
+  url: string;
+}
+
+type MarkdownSegment = TextSegment | LinkSegment;
+
+/**
+ * Parse markdown links from text and return segments
+ * Converts [text](url) into segments with link metadata
+ */
+function _parseMarkdownLinks(text: string): MarkdownSegment[] {
+  const segments: MarkdownSegment[] = [];
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null = linkRegex.exec(text);
+
+  while (match !== null) {
+    // Add text before the link
+    if (match.index > lastIndex) {
+      segments.push({
+        type: 'text',
+        content: text.substring(lastIndex, match.index),
+      });
+    }
+
+    // Add the link
+    segments.push({
+      type: 'link',
+      text: match[1],
+      url: match[2],
+    });
+
+    lastIndex = match.index + match[0].length;
+    match = linkRegex.exec(text);
+  }
+
+  // Add remaining text after the last link
+  if (lastIndex < text.length) {
+    segments.push({
+      type: 'text',
+      content: text.substring(lastIndex),
+    });
+  }
+
+  // If no links were found, return the original text as a single segment
+  if (segments.length === 0) {
+    segments.push({
+      type: 'text',
+      content: text,
+    });
+  }
+
+  return segments;
+}
+
+/**
+ * Check if text contains markdown links
+ */
+function hasMarkdownLinks(text: string): boolean {
+  return /\[([^\]]+)\]\(([^)]+)\)/.test(text);
+}
+
+/**
+ * Render text with inline emoji support and markdown links
  *
  * If emoji font is available and text contains emoji, renders emoji as inline images.
+ * If text contains markdown links [text](url), renders them as clickable links.
  * Otherwise, renders text normally using PDFKit.
  *
- * Supports both single-line and multi-line/wrapped text with emoji.
+ * Supports both single-line and multi-line/wrapped text with emoji and links.
  *
  * @param doc - PDFKit document
- * @param text - Text to render (may contain emoji)
+ * @param text - Text to render (may contain emoji and markdown links)
  * @param fontSize - Font size in points
  * @param fontName - Font name to use for text
  * @param emojiAvailable - Whether emoji font is available
+ * @param enableMarkdownLinks - Whether to parse and render markdown links as clickable
+ * @param hyperlinkColor - Color for hyperlink text (default: #0066CC)
  * @param options - Additional PDFKit text options
  */
-export function renderTextWithEmoji(doc: PDFKit.PDFDocument, text: string, fontSize: number, fontName: string, emojiAvailable: boolean, options: PDFTextOptions = {}): void {
-  if (!emojiAvailable || !hasEmoji(text)) {
-    // No emoji support or no emoji in text - render normally
-    doc.fontSize(fontSize).font(fontName);
 
-    // PDFKit requires three-argument form for proper positioning with width
+/**
+ * Render text with grouped configuration options.
+ * New API that groups related options together for better organization.
+ */
+export function renderText(doc: PDFKit.PDFDocument, text: string, config: TextRenderConfig): void {
+  const { typography, color = {}, features = {}, layout = {}, spacing = {}, annotation = {} } = config;
+
+  const { fontSize, fontName } = typography;
+  const { hyperlinkColor = '#0066CC' } = color;
+  const { enableEmoji = false, markdown: markdownConfig = {} } = features;
+  const { parseLinks = false } = markdownConfig;
+  const { x, y, width, align = 'left', indent = 0 } = layout;
+  const { lineGap = 0, paragraphGap = 0, moveDown, characterSpacing = 0, wordSpacing = 0, continued = false, lineBreak = true } = spacing;
+  const { link } = annotation;
+
+  const options: PDFTextOptions = {
+    x,
+    y,
+    width,
+    align,
+    indent,
+    lineGap,
+    paragraphGap,
+    characterSpacing,
+    wordSpacing,
+    continued,
+    lineBreak,
+    moveDown,
+    link,
+  };
+
+  renderTextUnified(doc, text, fontSize, fontName, enableEmoji, parseLinks, hyperlinkColor, options);
+}
+
+/**
+ * Unified text rendering function that handles all cases:
+ * - Plain text
+ * - Text with markdown links
+ * - Text with emoji
+ * - Text with both links and emoji
+ * - All of the above with wrapping
+ *
+ * This is the single unified function that replaces renderTextWithEmoji and renderTextWithLinks
+ */
+function renderTextUnified(doc: PDFKit.PDFDocument, text: string, fontSize: number, fontName: string, enableEmoji: boolean, parseMarkdownLinks: boolean, hyperlinkColor: string, options: PDFTextOptions): void {
+  // Detect content features
+  const hasLinks = parseMarkdownLinks && hasMarkdownLinks(text);
+  const hasEmojiContent = enableEmoji && hasEmoji(text);
+
+  // Apply typography settings
+  doc.fontSize(fontSize).font(fontName);
+
+  // Plain text case - simple and fast
+  if (!hasEmojiContent && !hasLinks) {
     if (options.x !== undefined || options.y !== undefined) {
       const textOptions = { ...options };
       delete textOptions.x;
@@ -57,114 +244,201 @@ export function renderTextWithEmoji(doc: PDFKit.PDFDocument, text: string, fontS
     return;
   }
 
-  // Setup font for measurements
-  doc.fontSize(fontSize).font(fontName);
+  // Parse content
+  const markdownSegments = hasLinks ? _parseMarkdownLinks(text) : null;
+  const emojiSegments = hasEmojiContent ? splitTextAndEmoji(text) : null;
 
-  // Use provided positions or current document position
-  const startX = options.x ?? doc.x;
-  const startY = options.y ?? doc.y;
-
-  // Width must be provided for wrapping - no margin-based defaults
-  if (options.width === undefined) {
-    throw new Error('width is required for emoji text rendering');
+  // Handle links without width - simple case
+  if (hasLinks && !hasEmojiContent && options.width === undefined) {
+    if (markdownSegments) {
+      renderTextWithLinksSimple(doc, markdownSegments, fontName, hyperlinkColor, options.x, options.y, fontSize);
+    }
+    return;
   }
+
+  // Complex case - need wrapping or emoji handling
   const effectiveWidth = options.width;
+  if (effectiveWidth === undefined) {
+    throw new Error('width is required for complex text rendering (emoji or wrapping)');
+  }
 
-  // Split text into text/emoji segments
-  const segments = splitTextAndEmoji(text);
+  // Prepare text for rendering
+  let textToRender = text;
+  const linkAnnotations: Array<{ text: string; url: string; startIndex: number }> = [];
 
-  // Break segments into words for wrapping
-  const words: Array<{ type: 'text' | 'emoji'; content: string; width: number }> = [];
+  if (hasLinks) {
+    if (hasLinks && markdownSegments) {
+      // Build plain text and track link positions
+      let plainText = '';
+      for (const segment of markdownSegments) {
+        if (segment.type === 'text') {
+          plainText += segment.content;
+        } else {
+          // Track where this link appears in the plain text
+          linkAnnotations.push({
+            text: segment.text,
+            url: segment.url,
+            startIndex: plainText.length,
+          });
+          plainText += segment.text;
+        }
+      }
+      textToRender = plainText;
+    }
+  }
+
+  // Split into segments for rendering
+  const segments = hasEmojiContent && emojiSegments ? emojiSegments : [{ type: 'text' as const, content: textToRender }];
+
+  // Calculate word positions and wrap
+  const words: Array<{ type: 'text' | 'emoji'; content: string; width: number; charStart: number; charEnd: number; isLink?: boolean; linkUrl?: string }> = [];
+  let charPosition = 0;
+
   for (const segment of segments) {
     if (segment.type === 'emoji') {
       const emojiMetrics = measureEmoji(segment.content, fontSize);
+      const charEnd = charPosition + segment.content.length;
+
+      // Check if this emoji is part of a link
+      const linkInfo = linkAnnotations.find((link) => charPosition >= link.startIndex && charPosition < link.startIndex + link.text.length);
+
       words.push({
         type: 'emoji',
         content: segment.content,
         width: emojiMetrics.width,
+        charStart: charPosition,
+        charEnd,
+        isLink: !!linkInfo,
+        linkUrl: linkInfo?.url,
       });
+      charPosition = charEnd;
     } else {
       // Split text segment into words
       const textWords = segment.content.split(/(\s+)/);
       for (const word of textWords) {
         if (word.length > 0) {
+          const charEnd = charPosition + word.length;
+
+          // Check if this word is part of a link
+          const linkInfo = linkAnnotations.find((link) => charPosition >= link.startIndex && charPosition < link.startIndex + link.text.length);
+
           words.push({
             type: 'text',
             content: word,
             width: doc.widthOfString(word),
+            charStart: charPosition,
+            charEnd,
+            isLink: !!linkInfo,
+            linkUrl: linkInfo?.url,
           });
+          charPosition = charEnd;
         }
       }
     }
   }
 
   // Wrap words into lines
-  const lines: Array<Array<{ type: 'text' | 'emoji'; content: string; width: number }>> = [];
-  let currentLine: Array<{ type: 'text' | 'emoji'; content: string; width: number }> = [];
+  const lines: Array<{ words: typeof words; width: number }> = [];
+  let currentLineWords: typeof words = [];
   let currentLineWidth = 0;
 
   for (const word of words) {
-    const wordWidth = word.width;
+    const wordWidth = word.width + (options.wordSpacing || 0);
 
-    if (currentLineWidth + wordWidth > effectiveWidth + WRAP_EPSILON && currentLine.length > 0) {
-      // Start a new line
-      lines.push(currentLine);
-      currentLine = [word];
+    if (currentLineWords.length === 0) {
+      currentLineWords.push(word);
       currentLineWidth = wordWidth;
-    } else {
-      // Add to current line
-      currentLine.push(word);
+    } else if (currentLineWidth + wordWidth <= effectiveWidth - (options.indent || 0)) {
+      currentLineWords.push(word);
       currentLineWidth += wordWidth;
+    } else {
+      lines.push({ words: currentLineWords, width: currentLineWidth });
+      currentLineWords = [word];
+      currentLineWidth = wordWidth;
     }
   }
 
-  // Add the last line
-  if (currentLine.length > 0) {
-    lines.push(currentLine);
+  if (currentLineWords.length > 0) {
+    lines.push({ words: currentLineWords, width: currentLineWidth });
   }
 
-  // Get actual line height from PDFKit (matches PDFKit's internal calculation)
-  // currentLineHeight(true) = font's natural height with built-in gap
-  // + lineGap = any extra spacing user requested
-  const lineHeight = doc.currentLineHeight(true) + (options.lineGap ?? 0);
+  // Calculate starting position
+  const startX = options.x ?? doc.x;
+  let currentY = options.y ?? doc.y;
+  const lineGap = options.lineGap ?? 0;
+  const lineHeight = doc.currentLineHeight(true) + lineGap;
 
   // Render each line
-  let currentY = startY;
-
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
-    if (!line) continue;
-    let currentX = startX;
 
-    // Render each word in the line
-    for (let i = 0; i < line.length; i++) {
-      const word = line[i];
-      if (!word) continue;
+    // Calculate X offset based on alignment
+    let lineX = startX;
+    if (options.align === 'center') {
+      lineX = startX + (effectiveWidth - line.width) / 2;
+    } else if (options.align === 'right') {
+      lineX = startX + (effectiveWidth - line.width);
+    }
 
-      if (word.type === 'text') {
-        // Render text
-        doc.text(word.content, currentX, currentY, {
-          continued: false,
-          lineBreak: false,
-        });
-        currentX += word.width;
+    // Add indent for first line
+    if (lineIndex === 0 && options.indent) {
+      lineX += options.indent;
+    }
+
+    // Render words in line
+    for (const word of line.words) {
+      const wordWidth = word.width + (options.wordSpacing || 0);
+
+      // Set color for this word
+      if (word.isLink) {
+        doc.fillColor(hyperlinkColor);
       } else {
-        // Render emoji as inline image
-        const emojiMetrics = measureEmoji(word.content, fontSize);
+        doc.fillColor('black');
+      }
+
+      if (word.type === 'emoji') {
+        // Render emoji as image
         const emojiBuffer = renderEmojiToBuffer(word.content, fontSize);
         if (emojiBuffer) {
-          // Position emoji using measured baseline offset
+          const emojiMetrics = measureEmoji(word.content, fontSize);
           const emojiY = currentY + emojiMetrics.baselineOffset;
-          doc.image(emojiBuffer, currentX, emojiY, {
+          doc.image(emojiBuffer, lineX, emojiY, {
             width: emojiMetrics.width,
             height: emojiMetrics.height,
           });
         }
-        currentX += word.width;
+
+        // If emoji is part of a link, add link annotation
+        if (word.isLink && word.linkUrl) {
+          doc.link(lineX, currentY, word.width, lineHeight, word.linkUrl);
+        }
+      } else {
+        // Render text word with underline if it's a link
+        const textOptions: PDFTextOptions = {
+          continued: false,
+          lineBreak: true,
+          underline: word.isLink || options.underline,
+        };
+        // Only add strike option if explicitly true
+        if (options.strike) {
+          textOptions.strike = true;
+        }
+
+        doc.text(word.content, lineX, currentY, textOptions);
       }
+
+      // Reset color to black after rendering
+      doc.fillColor('black');
+
+      // Add link annotation for link words
+      if (word.isLink && word.linkUrl) {
+        doc.link(lineX, currentY, word.width, lineHeight, word.linkUrl);
+      }
+
+      lineX += wordWidth;
     }
 
-    // Move to next line
+    // Move to next line using PDFKit's actual line height
     currentY += lineHeight;
   }
 
@@ -176,4 +450,43 @@ export function renderTextWithEmoji(doc: PDFKit.PDFDocument, text: string, fontS
   if (options.moveDown !== undefined) {
     doc.moveDown(options.moveDown);
   }
+}
+
+/**
+ * Simple path for rendering links without width constraint
+ */
+function renderTextWithLinksSimple(doc: PDFKit.PDFDocument, segments: MarkdownSegment[], fontName: string, hyperlinkColor: string, x?: number, y?: number, _fontSize?: number): void {
+  doc.font(fontName);
+
+  const startX = x ?? doc.x;
+  const startY = y ?? doc.y;
+  let currentX = startX;
+  const currentY = startY;
+
+  for (const segment of segments) {
+    if (segment.type === 'text') {
+      doc.text(segment.content, currentX, currentY, { continued: true, lineBreak: false });
+      currentX += doc.widthOfString(segment.content);
+    } else {
+      // Render link text with blue color (PDFKit's underline will use fillColor)
+      const linkText = segment.text;
+      const linkWidth = doc.widthOfString(linkText);
+      const currentLineHeight = doc.currentLineHeight(true);
+
+      // Set fillColor to hyperlink color - PDFKit's underline will use this color
+      doc.fillColor(hyperlinkColor);
+      doc.text(linkText, currentX, currentY, {
+        continued: true,
+        lineBreak: false,
+        underline: true,
+      });
+      doc.fillColor('black');
+
+      // Add clickable link annotation
+      doc.link(currentX, currentY, linkWidth, currentLineHeight, segment.url);
+      currentX += linkWidth;
+    }
+  }
+
+  doc.text('', { continued: false }); // End the continued text
 }

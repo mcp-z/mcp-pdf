@@ -19,7 +19,7 @@ import { registerEmojiFont } from '../../lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts, validateTextForFont } from '../../lib/fonts.ts';
 import { resolveImageDimensions } from '../../lib/image-dimensions.ts';
 import { extractTextOptions, type PDFOutput, pdfOutputSchema, resolvePageSize } from '../../lib/pdf-core.ts';
-import { renderTextWithEmoji } from '../../lib/pdf-helpers.ts';
+import { renderText, type TextRenderConfig } from '../../lib/pdf-helpers.ts';
 import { flowingContentItemSchema } from '../../schemas/content.ts';
 import type { StorageExtra } from '../../types.ts';
 
@@ -33,6 +33,19 @@ const inputSchema = z.object({
   title: z.string().optional().describe('Document title metadata'),
   author: z.string().optional().describe('Document author metadata'),
   font: z.string().optional().describe('Font strategy (default: auto). Built-ins: Helvetica, Times-Roman, Courier. Use a path or URL for Unicode.'),
+  markdown: z
+    .object({
+      parseLinks: z.boolean().optional().describe('Parse markdown links [text](url) as clickable PDF links. Default: false.'),
+    })
+    .optional()
+    .describe('Markdown parsing options for text content'),
+  color: z
+    .object({
+      background: z.string().optional().describe('Page background color (hex like "#000000" or named color). Default: white.'),
+      hyperlink: z.string().optional().describe('Color for hyperlink text (hex like "#0066CC" or named color). Default: #0066CC (classic browser blue).'),
+    })
+    .optional()
+    .describe('Color settings for the PDF'),
   pageSetup: z
     .object({
       size: z
@@ -48,10 +61,9 @@ const inputSchema = z.object({
         })
         .optional()
         .describe('Page margins in points. all 4 (top, bottom, left, right) are REQUIRED if provided. Defaults vary by page size (LETTER/LEGAL: 72pt, A4: ~56pt).'),
-      backgroundColor: z.string().optional().describe('Page background color (hex like "#000000" or named color). Default: white.'),
     })
     .optional()
-    .describe('Page configuration including size, margins, and background color.'),
+    .describe('Page configuration including size and margins.'),
   content: z.array(flowingContentItemSchema).describe('Document content in flow order'),
 });
 
@@ -91,7 +103,9 @@ export default function createTool() {
   async function handler(args: Input, extra: StorageExtra): Promise<CallToolResult> {
     const { storageContext } = extra;
     const { resourceStoreUri, baseUrl, transport } = storageContext;
-    const { filename = 'document.pdf', title, author, font, pageSetup, content } = args;
+    const { filename = 'document.pdf', title, author, font, markdown, color, pageSetup, content } = args;
+    const parseMarkdownLinks = markdown?.parseLinks ?? false;
+    const hyperlinkColor = color?.hyperlink ?? '#0066CC';
 
     try {
       // Resolve page size and margins
@@ -133,8 +147,8 @@ export default function createTool() {
       let actualPageCount = 0;
       doc.on('pageAdded', () => {
         actualPageCount++;
-        if (pageSetup?.backgroundColor) {
-          doc.rect(0, 0, resolvedPageSize.width, resolvedPageSize.height).fill(pageSetup.backgroundColor);
+        if (color?.background) {
+          doc.rect(0, 0, resolvedPageSize.width, resolvedPageSize.height).fill(color.background);
           doc.fillColor('black');
         }
       });
@@ -162,34 +176,44 @@ export default function createTool() {
           case 'text': {
             const fontSize = item.fontSize ?? DEFAULT_TEXT_FONT_SIZE;
             const fnt = item.bold ? boldFont : regularFont;
-            if (item.color) doc.fillColor(item.color);
 
             const options = extractTextOptions(item);
             options.width = item.width ?? contentWidth;
 
-            renderTextWithEmoji(doc, item.text ?? '', fontSize, fnt, emojiAvailable, options);
+            const textConfig: TextRenderConfig = {
+              typography: { fontSize, fontName: fnt },
+              features: { enableEmoji: emojiAvailable, markdown: { parseLinks: parseMarkdownLinks } },
+              color: { hyperlinkColor },
+              layout: { width: options.width, align: options.align, indent: options.indent },
+              spacing: { lineGap: options.lineGap, paragraphGap: options.paragraphGap, characterSpacing: options.characterSpacing, wordSpacing: options.wordSpacing },
+            };
+            renderText(doc, item.text ?? '', textConfig);
 
             if (item.moveDown) {
               doc.moveDown(item.moveDown);
             }
-            if (item.color) doc.fillColor('black');
             break;
           }
 
           case 'heading': {
             const fontSize = item.fontSize ?? DEFAULT_HEADING_FONT_SIZE;
             const fnt = item.bold !== false ? boldFont : regularFont;
-            if (item.color) doc.fillColor(item.color);
 
             const options = extractTextOptions(item);
             options.width = item.width ?? contentWidth;
 
-            renderTextWithEmoji(doc, item.text ?? '', fontSize, fnt, emojiAvailable, options);
+            const textConfig: TextRenderConfig = {
+              typography: { fontSize, fontName: fnt },
+              features: { enableEmoji: emojiAvailable, markdown: { parseLinks: parseMarkdownLinks } },
+              color: { hyperlinkColor },
+              layout: { width: options.width, align: options.align, indent: options.indent },
+              spacing: { lineGap: options.lineGap, paragraphGap: options.paragraphGap, characterSpacing: options.characterSpacing, wordSpacing: options.wordSpacing },
+            };
+            renderText(doc, item.text ?? '', textConfig);
 
             if (item.moveDown) {
               doc.moveDown(item.moveDown);
             }
-            if (item.color) doc.fillColor('black');
             break;
           }
 

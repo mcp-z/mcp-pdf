@@ -13,7 +13,6 @@ import type {
   CredentialData,
   CredentialListElement,
   DividerElement,
-  EntryContentLineElement,
   EntryData,
   EntryHeaderElement,
   EntryListElement,
@@ -25,6 +24,7 @@ import type {
   LayoutElement,
   ReferenceListElement,
   SectionTitleElement,
+  StructuredContentElement,
   TextElement,
 } from '../ir/types.ts';
 import type { TypographyOptions } from '../types/typography.ts';
@@ -47,13 +47,15 @@ function ensureString(value: unknown): string {
  * Get resolved text style values from typography.
  */
 function getResolvedStyle(typography: TypographyOptions) {
-  const { text } = typography;
+  const { text, structuredContent } = typography;
   return {
     fontSize: text.fontSize,
     lineGap: (text.lineHeight ?? 1.3) * text.fontSize - text.fontSize,
-    paragraphMarginBottom: text.marginBottom ?? 4,
-    itemMarginBottom: text.marginBottom ?? 4,
-    blockMarginBottom: text.blockMarginBottom ?? 6,
+    paragraphMarginBottom: structuredContent.paragraphMarginBottom,
+    bulletMarginBottom: structuredContent.bulletMarginBottom,
+    bulletGap: structuredContent.bulletGap,
+    blockMarginBottom: structuredContent.bulletGap + structuredContent.bulletMarginBottom,
+    itemMarginBottom: structuredContent.paragraphMarginBottom,
   };
 }
 
@@ -67,6 +69,14 @@ function paragraphsFromContent(content: string | string[] | undefined): string[]
     .split(/\n\n+/)
     .map((p) => p.trim())
     .filter(Boolean);
+}
+
+/**
+ * Strip markdown link syntax for accurate measurement.
+ * Converts [text](url) to just text.
+ */
+function stripMarkdownLinks(text: string): string {
+  return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1');
 }
 
 // =============================================================================
@@ -169,7 +179,7 @@ export function measureDivider(_ctx: MeasureContext, element: DividerElement): n
 function measureWorkEntry(ctx: MeasureContext, entry: EntryData, isGrouped: boolean, showLocation: boolean): number {
   const { doc, typography, fieldTemplates, width } = ctx;
   const style = getResolvedStyle(typography);
-  const { entry: entryStyle, bullet } = typography;
+  const { entry: entryStyle } = typography;
 
   const { leftWidth, rightWidth } = calculateEntryColumnWidths(width, entryStyle.date.width);
 
@@ -231,11 +241,11 @@ function measureWorkEntry(ctx: MeasureContext, entry: EntryData, isGrouped: bool
     if (summaryParagraphs.length > 0) {
       totalHeight += style.blockMarginBottom;
     }
-    const bulletWidth = width - bullet.indent;
+    const bulletWidth = width - typography.structuredContent.bulletIndent;
     doc.font(typography.fonts.regular).fontSize(style.fontSize);
     for (const highlight of highlights) {
       totalHeight += doc.heightOfString(`• ${highlight}`, { width: bulletWidth, lineGap: style.lineGap });
-      totalHeight += bullet.marginBottom ?? 2;
+      totalHeight += style.bulletMarginBottom;
     }
   }
 
@@ -349,28 +359,48 @@ export function measureEntryHeader(ctx: MeasureContext, element: EntryHeaderElem
 }
 
 /**
- * Measure entry content line element height (single summary paragraph or bullet).
+ * Measure structured content element height (summary + optional bullets).
+ * This is the single source of truth for all summary+bullet height measurement.
  */
-export function measureEntryContentLine(ctx: MeasureContext, element: EntryContentLineElement): number {
+export function measureStructuredContent(ctx: MeasureContext, element: StructuredContentElement): number {
   const { doc, typography, width } = ctx;
-  const style = getResolvedStyle(typography);
-  const { bullet } = typography;
+  const { structuredContent, text } = typography;
 
-  let totalHeight = element.marginTop;
+  const indent = element.spacing?.bulletIndent ?? structuredContent.bulletIndent;
+  const paragraphMargin = element.spacing?.paragraphMarginBottom ?? structuredContent.paragraphMarginBottom;
+  const bulletGap = element.spacing?.bulletGap ?? structuredContent.bulletGap;
+  const bulletMargin = element.spacing?.bulletMarginBottom ?? structuredContent.bulletMarginBottom;
 
-  if (element.contentType === 'summary') {
-    doc.font(typography.fonts.regular).fontSize(style.fontSize);
-    totalHeight += doc.heightOfString(element.text, { width, lineGap: style.lineGap });
-  } else {
-    // Bullet
-    const bulletWidth = width - bullet.indent;
-    doc.font(typography.fonts.regular).fontSize(style.fontSize);
-    totalHeight += doc.heightOfString(`• ${element.text}`, { width: bulletWidth, lineGap: style.lineGap });
+  let totalHeight = 0;
+
+  const summaries = Array.isArray(element.summary) ? element.summary : element.summary?.split(/\n\n+/).filter(Boolean) || [];
+  const lineGap = (text.lineHeight ?? 1.3) * text.fontSize - text.fontSize;
+
+  // Measure actual wrapped text height for each summary paragraph
+  // Strip markdown links to measure display text only (matches what gets rendered)
+  for (const summary of summaries) {
+    const displayText = stripMarkdownLinks(summary);
+    doc.font(typography.fonts.regular).fontSize(text.fontSize);
+    totalHeight += doc.heightOfString(displayText, { width, lineGap });
+    totalHeight += paragraphMargin;
   }
 
-  // Add trailing margin for last item
-  if (element.position === 'last' || element.position === 'only') {
-    totalHeight += style.blockMarginBottom;
+  if (element.bullets && element.bullets.length > 0 && summaries.length > 0) {
+    totalHeight += bulletGap;
+  }
+
+  if (element.bullets && element.bullets.length > 0) {
+    const bulletWidth = width - indent;
+    doc.font(typography.fonts.regular).fontSize(text.fontSize);
+
+    // Measure actual wrapped text height for each bullet
+    // Strip markdown links to measure display text only (matches what gets rendered)
+    for (const bulletItem of element.bullets) {
+      const displayText = stripMarkdownLinks(bulletItem);
+      const bulletText = `• ${displayText}`;
+      totalHeight += doc.heightOfString(bulletText, { width: bulletWidth, lineGap });
+      totalHeight += bulletMargin;
+    }
   }
 
   return totalHeight;
@@ -382,7 +412,6 @@ export function measureEntryContentLine(ctx: MeasureContext, element: EntryConte
 export function measureCompanyHeaderElement(ctx: MeasureContext, element: CompanyHeaderElement): number {
   const { doc, typography, width } = ctx;
   const { entry: entryStyle } = typography;
-  const style = getResolvedStyle(typography);
 
   const { leftWidth, rightWidth } = calculateEntryColumnWidths(width, entryStyle.date.width);
 
@@ -391,7 +420,7 @@ export function measureCompanyHeaderElement(ctx: MeasureContext, element: Compan
   const locationHeight = element.location ? doc.heightOfString(element.location, { width: rightWidth }) : 0;
   const line1Height = Math.max(companyHeight, locationHeight);
 
-  return line1Height + (entryStyle.position.marginBottom ?? 0) + style.blockMarginBottom;
+  return line1Height + (entryStyle.position.marginBottom ?? 0);
 }
 
 /**
@@ -503,7 +532,7 @@ export function measureEntryList(ctx: MeasureContext, element: EntryListElement)
 }
 
 /**
- * Measure keyword list element height.
+ * Create a measure context from PDF document and typography.
  */
 export function measureKeywordList(ctx: MeasureContext, element: KeywordListElement): number {
   const { doc, typography, fieldTemplates, width } = ctx;
@@ -675,50 +704,17 @@ export function measureElement(ctx: MeasureContext, element: LayoutElement): num
       return measureGroup(ctx, element);
     case 'entry-header':
       return measureEntryHeader(ctx, element);
-    case 'entry-content-line':
-      return measureEntryContentLine(ctx, element);
+    case 'structured-content':
+      return measureStructuredContent(ctx, element);
     case 'company-header':
       return measureCompanyHeaderElement(ctx, element);
     case 'template':
       // Template elements require custom measurement based on rendered content
       // For now, return 0 - templates should be transformed before layout
       return 0;
-    case 'summary-highlights':
-      // Summary highlights are rare, measure as text + bullets
-      return measureSummaryHighlights(ctx, element);
     default:
       return 0;
   }
-}
-
-/**
- * Measure summary highlights element height.
- */
-function measureSummaryHighlights(ctx: MeasureContext, element: { summary?: string; highlights: string[] }): number {
-  const { doc, typography, width } = ctx;
-  const style = getResolvedStyle(typography);
-  const { bullet } = typography;
-
-  let totalHeight = 0;
-
-  // Summary paragraph
-  if (element.summary) {
-    doc.font(typography.fonts.regular).fontSize(style.fontSize);
-    totalHeight += doc.heightOfString(element.summary, { width, lineGap: style.lineGap });
-    totalHeight += style.paragraphMarginBottom;
-  }
-
-  // Bullet highlights
-  if (element.highlights.length > 0) {
-    const bulletWidth = width - bullet.indent;
-    doc.font(typography.fonts.regular).fontSize(style.fontSize);
-    for (const highlight of element.highlights) {
-      totalHeight += doc.heightOfString(`• ${highlight}`, { width: bulletWidth, lineGap: style.lineGap });
-      totalHeight += bullet.marginBottom ?? 2;
-    }
-  }
-
-  return totalHeight;
 }
 
 /**

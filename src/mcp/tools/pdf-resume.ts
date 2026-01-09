@@ -31,8 +31,20 @@ const inputSchema = z.object({
   filename: z.string().optional().describe('Optional logical filename (metadata only). Storage uses UUID. Defaults to "resume.pdf".'),
   resume: resumeInputSchema,
   font: z.string().optional().describe('Font for the PDF. Defaults to "auto" (system font detection). Built-ins are limited to ASCII; provide a path or URL for full Unicode.'),
+  markdown: z
+    .object({
+      parseLinks: z.boolean().optional().describe('Parse markdown links [text](url) as clickable PDF links. Default: false.'),
+    })
+    .optional()
+    .describe('Markdown parsing options for text content'),
+  color: z
+    .object({
+      background: z.string().optional().describe('Page background color (hex like "#000000" or named color). Default: white.'),
+      hyperlink: z.string().optional().describe('Color for hyperlink text (hex like "#0066CC" or named color). Default: #0066CC (classic browser blue).'),
+    })
+    .optional()
+    .describe('Color settings for the PDF'),
   pageSize: z.enum(['LETTER', 'A4', 'LEGAL']).optional().describe('Page size preset (default: "LETTER"). Use "A4" for international standard.'),
-  backgroundColor: z.string().optional().describe('Page background color (hex like "#fffff0" or named color like "ivory"). Default: white.'),
   sections: sectionsConfigSchema,
   layout: resumeLayoutSchema,
   styling: stylingSchema,
@@ -77,7 +89,7 @@ export default function createTool() {
   async function handler(args: Input, extra: StorageExtra): Promise<CallToolResult> {
     const { storageContext, logger } = extra;
     const { resourceStoreUri, baseUrl, transport } = storageContext;
-    const { filename = 'resume.pdf', resume, font, pageSize, backgroundColor, sections, layout, styling } = args;
+    const { filename = 'resume.pdf', resume, font, markdown, color, pageSize, sections, layout, styling } = args;
 
     try {
       // Validate resume against JSON Schema
@@ -158,8 +170,10 @@ export default function createTool() {
       const renderOptions: RenderOptions = {
         font,
         pageSize: pageSize as PageSizePreset | undefined,
-        backgroundColor,
+        backgroundColor: color?.background,
         margins: margins,
+        parseMarkdownLinks: markdown?.parseLinks ?? false,
+        hyperlinkColor: color?.hyperlink ?? '#0066CC',
       };
 
       // Map sections config
