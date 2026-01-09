@@ -68,23 +68,34 @@ export interface EntryStyle {
   date: EntryDateStyle;
 }
 
-export type TextStyle = FontStyle &
-  SpacingStyle &
-  LineHeightStyle & {
-    blockMarginBottom?: number;
-  };
-
 export type BulletStyle = IndentStyle;
 
 export type QuoteStyle = IndentStyle;
 
 export type DividerStyle = SpacingStyle & ThicknessStyle & ColorStyle;
 
-export interface StructuredContentStyle {
+// =============================================================================
+// Content Style (unified settings for all content types)
+// =============================================================================
+
+export interface ContentStyle {
+  fontSize: number;
+  lineHeight: number;
+  marginTop: number;
+  marginBottom: number;
   paragraphMarginBottom: number;
   bulletGap: number;
   bulletMarginBottom: number;
   bulletIndent: number;
+  itemMarginBottom: number;
+}
+
+// =============================================================================
+// Entry Header Style (for work/education/volunteer entry headers)
+// =============================================================================
+
+export interface EntryHeaderStyle {
+  marginBottom: number;
 }
 
 // =============================================================================
@@ -106,11 +117,11 @@ export interface TypographyOptions {
   fonts: FontConfig;
   header: HeaderStyle;
   sectionTitle: SectionTitleStyle;
+  content: ContentStyle;
+  entryHeader: EntryHeaderStyle;
   entry: EntryStyle;
-  text: TextStyle;
   quote: QuoteStyle;
   divider: DividerStyle;
-  structuredContent: StructuredContentStyle;
 }
 
 // =============================================================================
@@ -156,6 +167,20 @@ export const DEFAULT_TYPOGRAPHY: TypographyOptions = {
     underlineGap: 2,
     underlineThickness: 1,
   },
+  content: {
+    fontSize: 10,
+    lineHeight: 1.3,
+    marginTop: 6,
+    marginBottom: 6,
+    paragraphMarginBottom: 4,
+    bulletGap: 3,
+    bulletMarginBottom: 2,
+    bulletIndent: 12,
+    itemMarginBottom: 4,
+  },
+  entryHeader: {
+    marginBottom: 4,
+  },
   entry: {
     position: {
       fontSize: 11,
@@ -173,10 +198,6 @@ export const DEFAULT_TYPOGRAPHY: TypographyOptions = {
       width: 130,
     },
   },
-  text: {
-    fontSize: 10,
-    lineHeight: 1.3,
-  },
   quote: {
     indent: 16,
   },
@@ -185,11 +206,5 @@ export const DEFAULT_TYPOGRAPHY: TypographyOptions = {
     marginBottom: 6,
     thickness: 0.5,
     color: '#cccccc',
-  },
-  structuredContent: {
-    paragraphMarginBottom: 4,
-    bulletGap: 3,
-    bulletMarginBottom: 2,
-    bulletIndent: 12,
   },
 };

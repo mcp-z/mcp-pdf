@@ -29,13 +29,13 @@ function ensureString(value: unknown): string {
  * Get resolved text style values from typography.
  */
 function getResolvedStyle(typography: TypographyOptions) {
-  const { text } = typography;
+  const { content } = typography;
   return {
-    fontSize: text.fontSize,
-    lineGap: (text.lineHeight ?? 1.3) * text.fontSize - text.fontSize,
-    paragraphMarginBottom: text.marginBottom ?? 4,
-    itemMarginBottom: text.marginBottom ?? 4,
-    blockMarginBottom: text.blockMarginBottom ?? 6,
+    fontSize: content.fontSize,
+    lineGap: (content.lineHeight ?? 1.3) * content.fontSize - content.fontSize,
+    paragraphMarginBottom: content.paragraphMarginBottom,
+    itemMarginBottom: content.itemMarginBottom,
+    blockMarginBottom: content.bulletGap + content.bulletMarginBottom,
   };
 }
 
@@ -60,27 +60,35 @@ function paragraphsFromContent(content: string | string[] | undefined): string[]
  */
 export function renderTextElement(ctx: RenderContext, element: TextElement, position: ComputedPosition): void {
   const { doc, typography, emojiAvailable, fonts } = ctx;
+  const { content } = typography;
   const style = getResolvedStyle(typography);
   const paragraphs = paragraphsFromContent(element.content);
 
   if (paragraphs.length === 0) return;
+
+  // Apply marginTop for spacing after section title
+  let currentY = position.y + content.marginTop;
 
   for (let i = 0; i < paragraphs.length; i++) {
     renderText(doc, paragraphs[i], {
       typography: { fontSize: style.fontSize, fontName: fonts.regular },
       features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
       color: { hyperlinkColor: ctx.hyperlinkColor },
-      layout: { x: position.x, width: position.width, align: 'justify' },
+      layout: { x: position.x, y: currentY, width: position.width, align: 'justify' },
       spacing: { lineGap: style.lineGap },
     });
 
     // Get the actual Y position after rendering (PDFKit updates doc.y)
-    const _paragraphHeight = doc.y - (position.y + (i > 0 ? style.paragraphMarginBottom : 0));
+    const _paragraphHeight = doc.y - (currentY + (i > 0 ? style.paragraphMarginBottom : 0));
+    currentY = doc.y;
 
     if (i < paragraphs.length - 1) {
       doc.y += style.paragraphMarginBottom;
+      currentY = doc.y;
     }
   }
+
+  // marginBottom is handled by Yoga layout positioning, not by advancing doc.y
 }
 
 /**
@@ -662,23 +670,24 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
  */
 export function renderStructuredContent(ctx: RenderContext, element: StructuredContentElement, position: ComputedPosition): void {
   const { doc, typography, emojiAvailable, fonts } = ctx;
-  const { structuredContent, text } = typography;
+  const { content } = typography;
 
-  const indent = element.spacing?.bulletIndent ?? structuredContent.bulletIndent;
-  const paragraphMargin = element.spacing?.paragraphMarginBottom ?? structuredContent.paragraphMarginBottom;
-  const bulletGap = element.spacing?.bulletGap ?? structuredContent.bulletGap;
-  const bulletMargin = element.spacing?.bulletMarginBottom ?? structuredContent.bulletMarginBottom;
-  const lineGap = (text.lineHeight ?? 1.3) * text.fontSize - text.fontSize;
+  const indent = element.spacing?.bulletIndent ?? content.bulletIndent;
+  const paragraphMargin = element.spacing?.paragraphMarginBottom ?? content.paragraphMarginBottom;
+  const bulletGap = element.spacing?.bulletGap ?? content.bulletGap;
+  const bulletMargin = element.spacing?.bulletMarginBottom ?? content.bulletMarginBottom;
+  const lineGap = (content.lineHeight ?? 1.3) * content.fontSize - content.fontSize;
 
   const summaries = Array.isArray(element.summary) ? element.summary : element.summary?.split(/\n\n+/).filter(Boolean) || [];
 
   // Use absolute positioning from Yoga layout, don't modify doc.y
-  let currentY = position.y;
+  // Apply marginTop for spacing after section title or entry header
+  let currentY = position.y + content.marginTop;
 
   for (const summary of summaries) {
-    doc.font(fonts.regular).fontSize(text.fontSize).fillColor('#000000');
+    doc.font(fonts.regular).fontSize(content.fontSize).fillColor('#000000');
     renderText(doc, summary, {
-      typography: { fontSize: text.fontSize, fontName: fonts.regular },
+      typography: { fontSize: content.fontSize, fontName: fonts.regular },
       features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
       color: { hyperlinkColor: ctx.hyperlinkColor },
       layout: { x: position.x, y: currentY, width: position.width, align: 'justify' },
@@ -696,12 +705,12 @@ export function renderStructuredContent(ctx: RenderContext, element: StructuredC
 
   if (element.bullets && element.bullets.length > 0) {
     const bulletWidth = position.width - indent;
-    doc.font(fonts.regular).fontSize(text.fontSize).fillColor('#000000');
+    doc.font(fonts.regular).fontSize(content.fontSize).fillColor('#000000');
 
     for (const bulletItem of element.bullets) {
       const bulletText = `• ${bulletItem}`;
       renderText(doc, bulletText, {
-        typography: { fontSize: text.fontSize, fontName: fonts.regular },
+        typography: { fontSize: content.fontSize, fontName: fonts.regular },
         features: { enableEmoji: emojiAvailable, markdown: { parseLinks: ctx.parseMarkdownLinks } },
         color: { hyperlinkColor: ctx.hyperlinkColor },
         layout: { x: position.x + indent, y: currentY, width: bulletWidth },
@@ -713,6 +722,8 @@ export function renderStructuredContent(ctx: RenderContext, element: StructuredC
       currentY += bulletHeight + bulletMargin;
     }
   }
+
+  // marginBottom is handled by Yoga layout positioning, not by advancing doc.y
 }
 
 /**
