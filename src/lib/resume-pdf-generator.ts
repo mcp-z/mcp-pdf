@@ -8,11 +8,11 @@ import type { ResumeSchema } from '../../assets/resume.ts';
 import { DEFAULT_PAGE_SIZE, type Margins, PAGE_SIZES, type PageSizePreset, RESUME_DEFAULT_MARGINS } from '../constants.ts';
 import type { Logger } from '../types.ts';
 import { registerEmojiFont } from './emoji-renderer.ts';
-import { hasEmoji, isPDFStandardFont, needsUnicodeFont, resolveFont } from './fonts.ts';
+import { hasEmoji, needsUnicodeFont, setupFonts } from './fonts.ts';
 import { isTwoColumnLayout, transformToResumeLayout } from './ir/layout-transform.ts';
 import { DEFAULT_SECTIONS, transformToLayout } from './ir/transform.ts';
 import type { FieldTemplates, SectionsConfig } from './ir/types.ts';
-import type { TypographyOptions } from './types/typography.ts';
+import type { FontConfig, TypographyOptions } from './types/typography.ts';
 import { DEFAULT_TYPOGRAPHY } from './types/typography.ts';
 import { calculateResumeLayout, calculateTwoColumnLayout, createRenderContext, type PageConfig, paginateLayoutWithAtomicGroups, renderPage } from './yoga-resume/index.ts';
 
@@ -64,8 +64,8 @@ export interface RenderOptions {
   backgroundColor?: string;
   /** Explicit margins (if provided, overrides default resume margins) */
   margins?: Margins;
-  /** Whether to parse markdown links [text](url) as clickable PDF links */
-  parseMarkdownLinks?: boolean;
+  /** Whether to parse markdown */
+  parseMarkdown?: boolean;
   /** Color for hyperlink text (default: #0066CC) */
   hyperlinkColor?: string;
 }
@@ -75,92 +75,29 @@ export interface RenderOptions {
  * Returns a FontConfig compatible with TypographyOptions (includes italic variants)
  * Falls back to Helvetica if font resolution or registration fails
  */
-async function setupFonts(doc: InstanceType<typeof PDFDocument>, fontSpec: string | undefined): Promise<{ regular: string; bold: string; italic: string; boldItalic: string }> {
-  const spec = fontSpec || 'auto';
-  const resolvedFont = await resolveFont(spec);
-
-  // Fall back to Helvetica if resolution failed
-  if (!resolvedFont) {
-    return {
-      regular: 'Helvetica',
-      bold: 'Helvetica-Bold',
-      italic: 'Helvetica-Oblique',
-      boldItalic: 'Helvetica-BoldOblique',
-    };
-  }
-
-  // If it's a standard PDF font, use its variants
-  if (isPDFStandardFont(resolvedFont)) {
-    if (resolvedFont.startsWith('Helvetica')) {
-      return {
-        regular: 'Helvetica',
-        bold: 'Helvetica-Bold',
-        italic: 'Helvetica-Oblique',
-        boldItalic: 'Helvetica-BoldOblique',
-      };
-    }
-    if (resolvedFont.startsWith('Times')) {
-      return {
-        regular: 'Times-Roman',
-        bold: 'Times-Bold',
-        italic: 'Times-Italic',
-        boldItalic: 'Times-BoldItalic',
-      };
-    }
-    if (resolvedFont.startsWith('Courier')) {
-      return {
-        regular: 'Courier',
-        bold: 'Courier-Bold',
-        italic: 'Courier-Oblique',
-        boldItalic: 'Courier-BoldOblique',
-      };
-    }
-
-    // For Symbol or ZapfDingbats, use as-is
-    return {
-      regular: resolvedFont,
-      bold: resolvedFont,
-      italic: resolvedFont,
-      boldItalic: resolvedFont,
-    };
-  }
-
-  // It's a custom font file - register it with PDFKit
-  try {
-    doc.registerFont('CustomFont', resolvedFont);
-    return {
-      regular: 'CustomFont',
-      bold: 'CustomFont',
-      italic: 'CustomFont',
-      boldItalic: 'CustomFont',
-    };
-  } catch {
-    // Fall back to Helvetica on registration failure
-    return {
-      regular: 'Helvetica',
-      bold: 'Helvetica-Bold',
-      italic: 'Helvetica-Oblique',
-      boldItalic: 'Helvetica-BoldOblique',
-    };
-  }
-}
 
 /**
  * Merge partial typography options with defaults
  */
-function mergeTypography(defaults: TypographyOptions, overrides?: Partial<TypographyOptions>, fonts?: { regular: string; bold: string; italic: string; boldItalic: string }): TypographyOptions {
+function mergeTypography(defaults: TypographyOptions, overrides?: Partial<TypographyOptions>, fonts?: FontConfig): TypographyOptions {
   if (!overrides && !fonts) {
     return defaults;
   }
 
   const merged = { ...defaults };
 
-  // Apply font overrides
-  if (fonts) {
-    merged.fonts = fonts;
+  // Validate that all override keys exist in defaults
+  if (overrides) {
+    const validKeys = new Set(Object.keys(defaults));
+    const overrideKeys = Object.keys(overrides);
+    const unknownKeys = overrideKeys.filter((key) => !validKeys.has(key));
+
+    if (unknownKeys.length > 0) {
+      throw new Error(`Unknown typography properties: ${unknownKeys.join(', ')}`);
+    }
   }
 
-  // Apply typography overrides
+  // Apply typography overrides first
   if (overrides) {
     if (overrides.fonts) merged.fonts = { ...merged.fonts, ...overrides.fonts };
     if (overrides.header) merged.header = { ...merged.header, ...overrides.header };
@@ -170,6 +107,11 @@ function mergeTypography(defaults: TypographyOptions, overrides?: Partial<Typogr
     if (overrides.entryHeader) merged.entryHeader = { ...merged.entryHeader, ...overrides.entryHeader };
     if (overrides.quote) merged.quote = { ...merged.quote, ...overrides.quote };
     if (overrides.divider) merged.divider = { ...merged.divider, ...overrides.divider };
+  }
+
+  // Apply font overrides from setupFonts - these take priority over typography.fonts
+  if (fonts) {
+    merged.fonts = fonts;
   }
 
   return merged;
@@ -262,7 +204,7 @@ export async function generateResumePDFBuffer(resume: ResumeSchema, options: Ren
   };
 
   // Create render context
-  const renderCtx = createRenderContext(doc, typography, layoutDoc.fieldTemplates, emojiAvailable, options.parseMarkdownLinks ?? false, options.hyperlinkColor ?? '#0066CC');
+  const renderCtx = createRenderContext(doc, typography, layoutDoc.fieldTemplates, emojiAvailable, options.parseMarkdown ?? false, options.hyperlinkColor ?? '#0066CC');
 
   // Return a promise that resolves when the PDF is complete
   return new Promise<Buffer>((resolve, reject) => {

@@ -178,8 +178,8 @@ describe('Fine-grained pagination', () => {
     assert.ok(output.documentId, 'should have documentId');
     assert.ok(output.sizeBytes > 0, 'should have non-zero size');
     // Large resume with extensive content should be multiple pages
-    // The size threshold indicates multi-page content
-    assert.ok(output.sizeBytes > 30000, `should have substantial content size (got ${output.sizeBytes})`);
+    // The size threshold indicates multi-page content (8KB+ for Helvetica, 30KB+ for custom fonts)
+    assert.ok(output.sizeBytes > 8000, `should have substantial content size (got ${output.sizeBytes})`);
 
     console.log(`    📄 Multi-page resume created: ${output.sizeBytes} bytes`);
     console.log(`    📂 Output: ${testStorageDir}/${output.documentId}.pdf`);

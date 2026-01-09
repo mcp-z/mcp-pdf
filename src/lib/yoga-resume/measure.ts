@@ -27,6 +27,7 @@ import type {
   StructuredContentElement,
   TextElement,
 } from '../ir/types.ts';
+import { stripMarkdown } from '../markdown.ts';
 import type { TypographyOptions } from '../types/typography.ts';
 import { calculateEntryColumnWidths, type MeasureContext } from './types.ts';
 
@@ -69,14 +70,6 @@ function paragraphsFromContent(content: string | string[] | undefined): string[]
     .split(/\n\n+/)
     .map((p) => p.trim())
     .filter(Boolean);
-}
-
-/**
- * Strip markdown link syntax for accurate measurement.
- * Converts [text](url) to just text.
- */
-function stripMarkdownLinks(text: string): string {
-  return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1');
 }
 
 // =============================================================================
@@ -396,7 +389,7 @@ export function measureStructuredContent(ctx: MeasureContext, element: Structure
   // Measure actual wrapped text height for each summary paragraph
   // Strip markdown links to measure display text only (matches what gets rendered)
   for (const summary of summaries) {
-    const displayText = stripMarkdownLinks(summary);
+    const displayText = stripMarkdown(summary);
     doc.font(typography.fonts.regular).fontSize(content.fontSize);
     totalHeight += doc.heightOfString(displayText, { width, lineGap });
     totalHeight += paragraphMargin;
@@ -414,15 +407,17 @@ export function measureStructuredContent(ctx: MeasureContext, element: Structure
     // Measure actual wrapped text height for each bullet
     // Strip markdown links to measure display text only (matches what gets rendered)
     for (const bulletItem of element.bullets) {
-      const displayText = stripMarkdownLinks(bulletItem);
+      const displayText = stripMarkdown(bulletItem);
       const bulletText = `• ${displayText}`;
       totalHeight += doc.heightOfString(bulletText, { width: bulletWidth, lineGap });
       totalHeight += bulletMargin;
     }
   }
 
-  // Add marginBottom only if there's summary content (not for bullets-only elements)
-  if (hasSummary) {
+  // Add marginBottom only if there's summary content AND no bullets
+  // When element has bullets, the marginBottom is suppressed because bullets may continue
+  // in a subsequent element, and we don't want extra spacing between elements
+  if (hasSummary && !hasBullets) {
     totalHeight += content.marginBottom;
   }
 
