@@ -138,20 +138,56 @@ export function calculateNewPageOffset(nodeY: number, config: PageConfig): numbe
 }
 
 /**
+ * Flatten a node tree into paginatable units.
+ *
+ * For non-atomic groups, we need to paginate their children individually.
+ * Atomic groups and leaf nodes are kept as single units.
+ *
+ * @param nodes - Layout nodes to flatten
+ * @returns Flattened array of paginatable nodes
+ */
+function flattenToPaginatableUnits(nodes: ResumeLayoutNode[]): ResumeLayoutNode[] {
+  const result: ResumeLayoutNode[] = [];
+
+  for (const node of nodes) {
+    const isGroup = node.element.type === 'group';
+    const isAtomic = isAtomicGroup(node.element);
+
+    if (isGroup && !isAtomic && node.children && node.children.length > 0) {
+      // Non-atomic group: recursively flatten children
+      // The children already have their absolute Y positions from Yoga
+      result.push(...flattenToPaginatableUnits(node.children));
+    } else {
+      // Atomic group or leaf node: keep as single unit
+      result.push(node);
+    }
+  }
+
+  return result;
+}
+
+/**
  * Advanced pagination that handles atomic groups (wrap=false).
  *
  * When a group with wrap=false doesn't fit on the current page,
  * the entire group moves to the next page.
+ *
+ * For non-atomic groups, children are paginated individually to prevent
+ * content from overflowing the page bottom.
  */
 export function paginateLayoutWithAtomicGroups(nodes: ResumeLayoutNode[], config: PageConfig = DEFAULT_PAGE_CONFIG): Page[] {
   const contentHeight = getContentHeight(config);
   const pageBottom = config.margins.top + contentHeight;
 
+  // Flatten the node tree so we can paginate each unit individually
+  // Non-atomic groups are expanded to their children
+  const flattenedNodes = flattenToPaginatableUnits(nodes);
+
   const pages: Page[] = [{ number: 0, nodes: [] }];
   let currentPage = 0;
   let pageStartY = 0;
 
-  for (const node of nodes) {
+  for (const node of flattenedNodes) {
     const nodeTop = node.y;
     const nodeHeight = node.height;
     const isAtomic = isAtomicGroup(node.element);

@@ -215,7 +215,6 @@ function transformEntry(entry: EntryData, variant: 'work' | 'education', isFirst
     // First paragraph is the first line
     // Include first bullet with first summary paragraph if bullets exist
     const firstBullet = highlights.length > 0 ? [highlights[0]] : undefined;
-    const remainingBullets = highlights.length > 1 ? highlights.slice(1) : undefined;
 
     firstLine = {
       type: 'structured-content',
@@ -223,14 +222,20 @@ function transformEntry(entry: EntryData, variant: 'work' | 'education', isFirst
       bullets: firstBullet,
     };
 
-    // Remaining paragraphs (if any) + remaining bullets as separate elements
+    // Remaining paragraphs (if any) as separate element
     const remainingParagraphs = summaryParagraphs.slice(1);
-
-    if (remainingParagraphs.length > 0 || remainingBullets) {
+    if (remainingParagraphs.length > 0) {
       remainingLines.push({
         type: 'structured-content',
-        summary: remainingParagraphs.length > 0 ? remainingParagraphs : undefined,
-        bullets: remainingBullets,
+        summary: remainingParagraphs,
+      });
+    }
+
+    // Remaining bullets as INDIVIDUAL elements for fine-grained pagination
+    for (let i = 1; i < highlights.length; i++) {
+      remainingLines.push({
+        type: 'structured-content',
+        bullets: [highlights[i]],
       });
     }
   } else if (highlights.length > 0) {
@@ -240,11 +245,11 @@ function transformEntry(entry: EntryData, variant: 'work' | 'education', isFirst
       bullets: [highlights[0]],
     };
 
-    // Remaining bullets as separate element
-    if (highlights.length > 1) {
+    // Remaining bullets as INDIVIDUAL elements for fine-grained pagination
+    for (let i = 1; i < highlights.length; i++) {
       remainingLines.push({
         type: 'structured-content',
-        bullets: highlights.slice(1),
+        bullets: [highlights[i]],
       });
     }
   }

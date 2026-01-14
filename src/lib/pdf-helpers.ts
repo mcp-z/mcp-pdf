@@ -210,6 +210,120 @@ export function renderText(doc: PDFKit.PDFDocument, text: string, config: TextRe
 }
 
 /**
+ * Result from parsing markdown text for measurement/rendering
+ */
+interface ParsedMarkdownText {
+  plainText: string;
+  styleRanges: Array<{ start: number; end: number; bold: boolean; italic: boolean; isLink?: boolean; url?: string }>;
+  hasMarkdownContent: boolean;
+}
+
+/**
+ * Parse markdown text into plain text with style ranges.
+ * Single source of truth for markdown parsing - used by both measurement and rendering.
+ */
+function parseMarkdownText(text: string, parseMarkdown: boolean): ParsedMarkdownText {
+  const styledSegments = parseMarkdown ? tokensToStyledSegments(tokenizeMarkdown(text)) : null;
+  const hasMarkdownContent = styledSegments !== null && styledSegments.some((s) => s.bold || s.italic || s.type === 'link');
+
+  if (!hasMarkdownContent) {
+    const plainText = styledSegments ? styledSegments.map((s) => s.content).join('') : text;
+    return { plainText, styleRanges: [], hasMarkdownContent: false };
+  }
+
+  let plainText = '';
+  const styleRanges: ParsedMarkdownText['styleRanges'] = [];
+  for (const seg of styledSegments) {
+    const start = plainText.length;
+    plainText += seg.content;
+    const end = plainText.length;
+    styleRanges.push({ start, end, bold: seg.bold, italic: seg.italic, isLink: seg.type === 'link', url: seg.url });
+  }
+
+  return { plainText, styleRanges, hasMarkdownContent };
+}
+
+/**
+ * Calculate the rendered height of text with markdown formatting.
+ *
+ * This function uses the same algorithm as renderTextUnified to calculate
+ * how tall the text will be when rendered, accounting for:
+ * - Bold text being wider (causing more line wrapping)
+ * - Italic text
+ * - Mixed font styles within the same text
+ *
+ * This ensures measurement matches rendering exactly.
+ *
+ * @param doc - PDFKit document for font measurements
+ * @param text - Text with optional markdown formatting
+ * @param width - Available width for text wrapping
+ * @param fontSize - Font size in points
+ * @param lineGap - Extra space between lines
+ * @param fonts - Font configuration with regular/bold/italic variants
+ * @param parseMarkdown - Whether to parse markdown (default: true)
+ * @returns Height in points that the rendered text will occupy
+ */
+export function measureMarkdownTextHeight(doc: PDFKit.PDFDocument, text: string, width: number, fontSize: number, lineGap: number, fonts: FontConfig, parseMarkdown = true): number {
+  // Set base font for measurement
+  doc.font(fonts.regular).fontSize(fontSize);
+
+  // Parse markdown using shared helper
+  const { plainText, styleRanges, hasMarkdownContent } = parseMarkdownText(text, parseMarkdown);
+
+  // Plain text case - use simple heightOfString
+  if (!hasMarkdownContent) {
+    return doc.heightOfString(plainText, { width, lineGap });
+  }
+
+  // Complex case - calculate with proper font widths for each segment
+  const words: Array<{ width: number }> = [];
+  const textWords = plainText.split(/(\s+)/);
+  let charPosition = 0;
+
+  for (const word of textWords) {
+    if (word.length > 0) {
+      const charEnd = charPosition + word.length;
+      const styleInfo = styleRanges.find((range) => charPosition >= range.start && charPosition < range.end);
+      const isBold = styleInfo?.bold ?? false;
+      const isItalic = styleInfo?.italic ?? false;
+
+      // Measure with correct font
+      const resolved = resolveFontForStyle(fonts, isBold, isItalic);
+      doc.font(resolved.fontName).fontSize(fontSize);
+      const wordWidth = doc.widthOfString(word);
+
+      words.push({ width: wordWidth });
+      charPosition = charEnd;
+    }
+  }
+
+  // Wrap words into lines
+  let lineCount = 0;
+  let currentLineWidth = 0;
+
+  for (const word of words) {
+    if (currentLineWidth === 0) {
+      currentLineWidth = word.width;
+      lineCount = 1;
+    } else if (currentLineWidth + word.width <= width) {
+      currentLineWidth += word.width;
+    } else {
+      lineCount++;
+      currentLineWidth = word.width;
+    }
+  }
+
+  // Ensure at least one line for non-empty text
+  if (lineCount === 0 && plainText.length > 0) {
+    lineCount = 1;
+  }
+
+  // Calculate total height
+  const lineHeight = fontSize + lineGap;
+  return lineCount * lineHeight;
+}
+
+/**
  * Resolve font name based on bold/italic flags
  */
 function resolveFontForStyle(fonts: FontConfig, bold: boolean, italic: boolean): { fontName: string; applyOblique: boolean } {
@@ -246,9 +360,8 @@ function renderTextUnified(doc: PDFKit.PDFDocument, text: string, fontSize: numb
   // Apply typography settings
   doc.fontSize(fontSize).font(fontName);
 
-  // Parse markdown if enabled (always parse - let tokenizer handle plain text)
-  const styledSegments = shouldParseMarkdown ? tokensToStyledSegments(tokenizeMarkdown(text)) : null;
-  const hasMarkdownContent = styledSegments !== null && styledSegments.some((s) => s.bold || s.italic || s.type === 'link');
+  // Parse markdown using shared helper
+  const { plainText, styleRanges, hasMarkdownContent } = parseMarkdownText(text, shouldParseMarkdown);
 
   // Plain text case - simple and fast
   if (!hasEmojiContent && !hasMarkdownContent) {
@@ -278,28 +391,8 @@ function renderTextUnified(doc: PDFKit.PDFDocument, text: string, fontSize: numb
     throw new Error('width is required for complex text rendering (emoji or wrapping)');
   }
 
-  // Prepare text for rendering
-  let textToRender = text;
-  const styleRanges: Array<{ start: number; end: number; bold: boolean; italic: boolean; isLink: boolean; url?: string }> = [];
-
-  if (hasMarkdownContent && styledSegments) {
-    // Build plain text and track styling positions
-    let plainText = '';
-    for (const seg of styledSegments) {
-      const start = plainText.length;
-      plainText += seg.content;
-      const end = plainText.length;
-      styleRanges.push({
-        start,
-        end,
-        bold: seg.bold,
-        italic: seg.italic,
-        isLink: seg.type === 'link',
-        url: seg.url,
-      });
-    }
-    textToRender = plainText;
-  }
+  // Use parsed markdown results
+  const textToRender = hasMarkdownContent ? plainText : text;
 
   // Split into segments for rendering
   const segments = hasEmojiContent && emojiSegments ? emojiSegments : [{ type: 'text' as const, content: textToRender }];
