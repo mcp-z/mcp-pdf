@@ -83,15 +83,6 @@ export function tokenizeMarkdown(markdown: string): Token[] {
 }
 
 /**
- * Strip markdown syntax from text
- * Returns plain text without markdown formatting
- */
-export function stripMarkdown(text: string): string {
-  const tokens = tokenizeMarkdown(text);
-  return tokens.map((t) => t.text).join('');
-}
-
-/**
  * Styled segment for PDF rendering
  */
 export interface StyledSegment {
