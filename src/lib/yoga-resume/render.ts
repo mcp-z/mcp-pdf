@@ -8,8 +8,7 @@
 import type PDFKit from 'pdfkit';
 import { renderField } from '../formatting.ts';
 import type { CompanyHeaderElement, CredentialData, CredentialListElement, DividerElement, EntryData, EntryHeaderElement, FieldTemplates, GroupElement, HeaderElement, KeywordListElement, LanguageListElement, ReferenceListElement, SectionTitleElement, StructuredContentElement, TextElement } from '../ir/types.ts';
-import { stripMarkdown } from '../markdown.ts';
-import { renderText } from '../pdf-helpers.ts';
+import { measureMarkdownTextHeight, renderText } from '../pdf-helpers.ts';
 import type { TypographyOptions } from '../types/typography.ts';
 import { type ComputedPosition, calculateEntryColumnWidths, type Page, type PageNode, type RenderContext } from './types.ts';
 
@@ -628,9 +627,8 @@ export function renderStructuredContent(ctx: RenderContext, element: StructuredC
     });
 
     // Calculate the height of the rendered text and advance
-    // Strip markdown to measure display text only (matches what gets rendered)
-    const displayText = stripMarkdown(summary);
-    const summaryHeight = doc.heightOfString(displayText, { width: position.width, lineGap });
+    // Use measureMarkdownTextHeight to account for bold text width (same as rendering)
+    const summaryHeight = measureMarkdownTextHeight(doc, summary, position.width, content.fontSize, lineGap, fonts, ctx.parseMarkdown);
     currentY += summaryHeight + paragraphMargin;
   }
 
@@ -654,10 +652,8 @@ export function renderStructuredContent(ctx: RenderContext, element: StructuredC
       });
 
       // Calculate the height of the bullet text and advance
-      // Strip markdown to measure display text only (matches what gets rendered)
-      const displayText = stripMarkdown(bulletItem);
-      const displayBulletText = `• ${displayText}`;
-      const bulletHeight = doc.heightOfString(displayBulletText, { width: bulletWidth, lineGap });
+      // Use measureMarkdownTextHeight to account for bold text width (same as rendering)
+      const bulletHeight = measureMarkdownTextHeight(doc, bulletText, bulletWidth, content.fontSize, lineGap, fonts, ctx.parseMarkdown);
       currentY += bulletHeight + bulletMargin;
     }
   }

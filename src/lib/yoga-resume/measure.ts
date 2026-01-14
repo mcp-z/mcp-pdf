@@ -3,6 +3,11 @@
  *
  * These functions measure the height of each IR element type
  * for Yoga layout calculation. All measurements are in points.
+ *
+ * IMPORTANT: Text with markdown bold (**text**) is rendered with Helvetica-Bold,
+ * which is wider than Helvetica. This causes more line wrapping and taller output.
+ * Measurement functions must account for this by using bold font when markdown
+ * bold is present to avoid page overflow.
  */
 
 import type PDFKit from 'pdfkit';
@@ -27,7 +32,7 @@ import type {
   StructuredContentElement,
   TextElement,
 } from '../ir/types.ts';
-import { stripMarkdown } from '../markdown.ts';
+import { measureMarkdownTextHeight } from '../pdf-helpers.ts';
 import type { TypographyOptions } from '../types/typography.ts';
 import { calculateEntryColumnWidths, type MeasureContext } from './types.ts';
 
@@ -361,7 +366,7 @@ export function measureEntryHeader(ctx: MeasureContext, element: EntryHeaderElem
  */
 export function measureStructuredContent(ctx: MeasureContext, element: StructuredContentElement): number {
   const { doc, typography, width } = ctx;
-  const { content } = typography;
+  const { content, fonts } = typography;
 
   const indent = element.spacing?.bulletIndent ?? content.bulletIndent;
   const paragraphMargin = element.spacing?.paragraphMarginBottom ?? content.paragraphMarginBottom;
@@ -383,11 +388,9 @@ export function measureStructuredContent(ctx: MeasureContext, element: Structure
   }
 
   // Measure actual wrapped text height for each summary paragraph
-  // Strip markdown links to measure display text only (matches what gets rendered)
+  // Uses measureMarkdownTextHeight to account for bold text width differences
   for (const summary of summaries) {
-    const displayText = stripMarkdown(summary);
-    doc.font(typography.fonts.regular).fontSize(content.fontSize);
-    totalHeight += doc.heightOfString(displayText, { width, lineGap });
+    totalHeight += measureMarkdownTextHeight(doc, summary, width, content.fontSize, lineGap, fonts);
     totalHeight += paragraphMargin;
   }
 
@@ -396,14 +399,13 @@ export function measureStructuredContent(ctx: MeasureContext, element: Structure
 
   if (hasBullets) {
     const bulletWidth = width - indent;
-    doc.font(typography.fonts.regular).fontSize(content.fontSize);
 
     // Measure actual wrapped text height for each bullet
-    // Strip markdown links to measure display text only (matches what gets rendered)
+    // Uses measureMarkdownTextHeight to account for bold text width differences
     for (const bulletItem of element.bullets) {
-      const displayText = stripMarkdown(bulletItem);
-      const bulletText = `• ${displayText}`;
-      totalHeight += doc.heightOfString(bulletText, { width: bulletWidth, lineGap });
+      // Prepend bullet character for accurate width calculation
+      const bulletText = `• ${bulletItem}`;
+      totalHeight += measureMarkdownTextHeight(doc, bulletText, bulletWidth, content.fontSize, lineGap, fonts);
       totalHeight += bulletMargin;
     }
   }
