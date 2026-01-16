@@ -454,7 +454,13 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
     end: entry.endDate,
   });
 
-  let currentY = position.y;
+  // Apply marginTop for entry spacing (marginTop=0 means use entrySpacing from typography)
+  let marginTop = 0;
+  if (element.marginTop !== undefined) {
+    marginTop = element.marginTop === 0 ? typography.content.entrySpacing : element.marginTop;
+  }
+
+  let currentY = position.y + marginTop;
 
   if (element.variant === 'education') {
     // Education: Institution + Dates on first line, degree on second
