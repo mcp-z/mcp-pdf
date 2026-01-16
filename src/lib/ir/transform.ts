@@ -200,6 +200,8 @@ function transformEntry(entry: EntryData, variant: 'work' | 'education', isFirst
     entry,
     isGroupedPosition: false,
     showLocation: true,
+    // Add spacing before non-first entries - actual value applied in measure.ts
+    marginTop: isFirstEntry ? undefined : 0, // 0 = use entrySpacing from typography
   };
 
   const entryData = entry as Record<string, unknown>;

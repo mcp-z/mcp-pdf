@@ -88,6 +88,7 @@ export interface ContentStyle {
   bulletMarginBottom: number;
   bulletIndent: number;
   itemMarginBottom: number;
+  entrySpacing: number; // Space between entries (e.g., between Job 1 and Job 2)
 }
 
 // =============================================================================
@@ -178,6 +179,7 @@ export const DEFAULT_TYPOGRAPHY: TypographyOptions = {
     bulletMarginBottom: 2,
     bulletIndent: 12,
     itemMarginBottom: 4,
+    entrySpacing: 4, // Space between entries (e.g., between Job 1 and Job 2)
   },
   entryHeader: {
     lineSpacing: 2,

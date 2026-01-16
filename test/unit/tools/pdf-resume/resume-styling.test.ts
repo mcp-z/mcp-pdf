@@ -300,7 +300,7 @@ describe('Typography Property Validation', () => {
     const options: RenderOptions = {
       typography: {
         unknownProperty: 123,
-        content: { fontSize: 12, lineHeight: 1.3, marginTop: 6, marginBottom: 6, paragraphMarginBottom: 4, bulletGap: 2, bulletMarginBottom: 2, bulletIndent: 12, itemMarginBottom: 4 },
+        content: { fontSize: 12, lineHeight: 1.3, marginTop: 6, marginBottom: 6, paragraphMarginBottom: 4, bulletGap: 2, bulletMarginBottom: 2, bulletIndent: 12, itemMarginBottom: 4, entrySpacing: 8 },
       } as Partial<TypographyOptions>,
     };
 
@@ -310,7 +310,7 @@ describe('Typography Property Validation', () => {
   it('accepts all known typography properties', async () => {
     const options: RenderOptions = {
       typography: {
-        content: { fontSize: 12, lineHeight: 1.3, marginTop: 6, marginBottom: 6, paragraphMarginBottom: 4, bulletGap: 2, bulletMarginBottom: 2, bulletIndent: 12, itemMarginBottom: 4 },
+        content: { fontSize: 12, lineHeight: 1.3, marginTop: 6, marginBottom: 6, paragraphMarginBottom: 4, bulletGap: 2, bulletMarginBottom: 2, bulletIndent: 12, itemMarginBottom: 4, entrySpacing: 8 },
         sectionTitle: { fontSize: 14 },
         header: { name: { fontSize: 30 }, contact: { fontSize: 10 } },
       },
