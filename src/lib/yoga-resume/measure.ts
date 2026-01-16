@@ -295,6 +295,11 @@ export function measureEntryHeader(ctx: MeasureContext, element: EntryHeaderElem
 
   let totalHeight = 0;
 
+  // Add entry spacing for non-first entries (marginTop=0 means use entrySpacing from typography)
+  if (element.marginTop !== undefined) {
+    totalHeight += element.marginTop === 0 ? typography.content.entrySpacing : element.marginTop;
+  }
+
   if (element.variant === 'education') {
     // Education: Institution + Dates on first line, degree on second
     doc.font(typography.fonts.bold).fontSize(style.fontSize);
@@ -410,10 +415,9 @@ export function measureStructuredContent(ctx: MeasureContext, element: Structure
     }
   }
 
-  // Add marginBottom only if there's summary content AND no bullets
-  // When element has bullets, the marginBottom is suppressed because bullets may continue
-  // in a subsequent element, and we don't want extra spacing between elements
-  if (hasSummary && !hasBullets) totalHeight += content.marginBottom;
+  // NOTE: marginBottom is NOT added here. Spacing between entries is handled by
+  // entrySpacing on entry-header elements. Adding marginBottom here would cause
+  // inconsistent spacing between entries that end with summary vs those ending with bullets.
 
   return totalHeight;
 }

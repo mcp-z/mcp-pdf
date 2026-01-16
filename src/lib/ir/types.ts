@@ -249,6 +249,8 @@ export interface GroupElement extends BaseElement {
   wrap?: boolean;
   /** Child elements to render together */
   children: LayoutElement[];
+  /** Optional margin for spacing between groups */
+  margin?: { top?: number; bottom?: number };
 }
 
 /** Entry header element - company/position/dates without content (for fine-grained pagination) */
@@ -261,6 +263,8 @@ export interface EntryHeaderElement extends BaseElement {
   isGroupedPosition?: boolean;
   /** Whether to show location (for grouped entries where location varies) */
   showLocation?: boolean;
+  /** Optional margin top for spacing between entries */
+  marginTop?: number;
 }
 
 /** Company header element - for grouped entries with multiple positions at same company */
