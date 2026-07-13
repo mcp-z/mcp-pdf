@@ -108,6 +108,9 @@ export default function createTool() {
 
       for (const pngPage of pngPages) {
         const pngBuffer = pngPage.content;
+        if (!pngBuffer) {
+          throw new McpError(ErrorCode.InternalError, `Page content is missing for page ${pngPage.pageNumber}`);
+        }
         const pageNum = pngPage.pageNumber;
 
         // Generate output filename

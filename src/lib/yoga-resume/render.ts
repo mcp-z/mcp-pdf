@@ -647,7 +647,7 @@ export function renderStructuredContent(ctx: RenderContext, element: StructuredC
     const bulletWidth = position.width - indent;
     doc.font(fonts.regular).fontSize(content.fontSize).fillColor('#000000');
 
-    for (const bulletItem of element.bullets) {
+    for (const bulletItem of element.bullets ?? []) {
       const bulletText = `• ${bulletItem}`;
       renderText(doc, bulletText, {
         typography: { fontSize: content.fontSize, fontName: fonts.regular, fonts },
