@@ -109,6 +109,7 @@ export default function createTool() {
       for (const pngPage of pngPages) {
         const pngBuffer = pngPage.content;
         const pageNum = pngPage.pageNumber;
+        if (!pngBuffer) throw new McpError(ErrorCode.InternalError, `Failed to render page ${pageNum}.`);
 
         // Generate output filename
         const outputFilename = `${pdfBasename}-p${pageNum}.png`;
