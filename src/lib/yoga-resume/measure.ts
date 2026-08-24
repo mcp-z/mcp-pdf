@@ -145,7 +145,7 @@ export function measureHeader(ctx: MeasureContext, element: HeaderElement): numb
   if (element.contactItems.length > 0) {
     const contactTexts = element.contactItems
       .map((item) => {
-        return item ? renderField(fieldTemplates.location, item.location) : item.text;
+        return item.location ? renderField(fieldTemplates.location, item.location) : item.text;
       })
       .filter((text) => text.length > 0);
 
@@ -407,7 +407,7 @@ export function measureStructuredContent(ctx: MeasureContext, element: Structure
 
     // Measure actual wrapped text height for each bullet
     // Uses measureMarkdownTextHeight to account for bold text width differences
-    for (const bulletItem of element.bullets) {
+    for (const bulletItem of element.bullets ?? []) {
       // Prepend bullet character for accurate width calculation
       const bulletText = `• ${bulletItem}`;
       totalHeight += measureMarkdownTextHeight(doc, bulletText, bulletWidth, content.fontSize, lineGap, fonts);
