@@ -10,8 +10,7 @@ import * as path from 'path';
 import { join } from 'path';
 import * as url from 'url';
 
-// Import ajv-formats (CommonJS module - use createRequire for ESM compatibility)
-const __dirname = path.dirname(typeof __filename !== 'undefined' ? __filename : url.fileURLToPath(import.meta.url));
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const packageRoot = moduleRoot(__dirname);
 
 const ajv = new Ajv({
