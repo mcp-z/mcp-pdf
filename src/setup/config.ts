@@ -1,62 +1,23 @@
-import { findConfigPath, parseConfig as parseTransportConfig } from '@mcp-z/server';
-import * as fs from 'fs';
-import moduleRoot from 'module-root-sync';
+import type * as McpServer from '@mcp-z/server';
+import { Module } from 'module';
 import { homedir } from 'os';
 import * as path from 'path';
-import * as url from 'url';
 import { parseArgs } from 'util';
 import type { ServerConfig } from '../types.ts';
+import { readPkg } from './version-help.ts';
 
-const pkg = JSON.parse(fs.readFileSync(path.join(moduleRoot(url.fileURLToPath(import.meta.url)), 'package.json'), 'utf-8'));
+const pkg = readPkg();
 
-const HELP_TEXT = `
-Usage: mcp-pdf [options]
-
-MCP server for PDF document generation and processing.
-
-Options:
-  --version              Show version number
-  --help                 Show this help message
-  --base-url=<url>       Base URL for HTTP file serving
-  --log-level=<level>    Logging level (default: info)
-  --resource-store-uri=<uri>    Resource store URI for file storage (default: file://~/.mcp-z/mcp-pdf/files)
-
-Environment Variables:
-  BASE_URL               Base URL for HTTP file serving (optional)
-  LOG_LEVEL              Default logging level (optional)
-  RESOURCE_STORE_URI            Resource store URI (optional, file://)
-
-Examples:
-  mcp-pdf                           # Use default settings
-  mcp-pdf --port=3000               # HTTP transport on port 3000
-  mcp-pdf --resource-store-uri=file:///tmp/pdfs      # Custom resource store URI
-  LOG_LEVEL=debug mcp-pdf           # Set log level via env var
-`.trim();
-
-/**
- * Handle --version and --help flags before config parsing.
- * These should work without requiring any configuration.
- */
-export function handleVersionHelp(args: string[]): { handled: boolean; output?: string } {
-  const { values } = parseArgs({
-    args,
-    options: {
-      version: { type: 'boolean' },
-      help: { type: 'boolean' },
-    },
-    strict: false,
-  });
-
-  if (values.version) return { handled: true, output: pkg.version };
-  if (values.help) return { handled: true, output: HELP_TEXT };
-  return { handled: false };
-}
+// @mcp-z/server is requireable at the >=20 floor; deferred so --version/--help (handled via
+// version-help.ts, never this file) load neither it nor its transitive graph.
+const _require = typeof require === 'undefined' ? Module.createRequire(import.meta.url) : require;
 
 /**
  * Parse PDF server configuration from CLI arguments and environment.
  */
 export function parseConfig(args: string[], env: Record<string, string | undefined>): ServerConfig {
-  const transportConfig = parseTransportConfig(args, env);
+  const mcpServer = _require('@mcp-z/server') as typeof McpServer;
+  const transportConfig = mcpServer.parseConfig(args, env);
 
   // Parse application-level config (LOG_LEVEL, RESOURCE_STORE_URI, BASE_URL)
   const { values } = parseArgs({
@@ -73,7 +34,7 @@ export function parseConfig(args: string[], env: Record<string, string | undefin
   const name = pkg.name.replace(/^@[^/]+\//, '');
   let rootDir = homedir();
   try {
-    const configPath = findConfigPath({ config: '.mcp.json', cwd: process.cwd(), stopDir: homedir() });
+    const configPath = mcpServer.findConfigPath({ config: '.mcp.json', cwd: process.cwd(), stopDir: homedir() });
     rootDir = path.dirname(configPath);
   } catch {
     rootDir = homedir();
