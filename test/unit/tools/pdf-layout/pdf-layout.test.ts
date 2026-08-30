@@ -1,5 +1,6 @@
 import assert from 'assert';
-import { existsSync, mkdirSync, rmSync } from 'fs';
+import { existsSync, mkdirSync } from 'fs';
+import { safeRmSync } from 'fs-remove-compat';
 import { join } from 'path';
 import createTool, { type Input, type Output } from '../../../../src/mcp/tools/pdf-layout.ts';
 import type { ServerConfig } from '../../../../src/types.ts';
@@ -32,7 +33,7 @@ describe('pdf-layout tool', () => {
 
   after(() => {
     if (existsSync(testOutputDir)) {
-      rmSync(testOutputDir, { recursive: true, force: true });
+      safeRmSync(testOutputDir, { recursive: true, force: true });
     }
   });
 

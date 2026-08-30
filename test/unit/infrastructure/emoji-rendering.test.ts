@@ -1,5 +1,6 @@
 import assert from 'assert';
-import { createWriteStream, existsSync, mkdirSync, readFileSync, rmSync } from 'fs';
+import { createWriteStream, existsSync, mkdirSync, readFileSync } from 'fs';
+import { safeRmSync } from 'fs-remove-compat';
 import { join } from 'path';
 import PDFDocument from 'pdfkit';
 import { needsUnicodeFont, setupFonts } from '../../../src/lib/fonts.ts';
@@ -13,7 +14,7 @@ before(async () => {
 
 after(async () => {
   if (existsSync(testOutputDir)) {
-    rmSync(testOutputDir, { recursive: true, force: true });
+    safeRmSync(testOutputDir, { recursive: true, force: true });
   }
 });
 
