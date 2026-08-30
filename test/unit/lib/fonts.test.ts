@@ -1,5 +1,6 @@
 import assert from 'assert';
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { safeRmSync } from 'fs-remove-compat';
 import { join } from 'path';
 
 // Import functions from source with proper TypeScript types
@@ -213,7 +214,7 @@ describe('resolveFont', (): void => {
 
     after(() => {
       if (existsSync(testOutputDir)) {
-        rmSync(testOutputDir, { recursive: true, force: true });
+        safeRmSync(testOutputDir, { recursive: true, force: true });
       }
     });
 

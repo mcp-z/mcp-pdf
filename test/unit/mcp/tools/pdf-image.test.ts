@@ -3,7 +3,8 @@
  */
 
 import assert from 'assert';
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { safeRmSync } from 'fs-remove-compat';
 import { join } from 'path';
 import PDFDocument from 'pdfkit';
 import createTool from '../../../../src/mcp/tools/pdf-image.ts';
@@ -55,7 +56,7 @@ describe('pdf-image tool', () => {
 
   after(() => {
     if (existsSync(testOutputDir)) {
-      rmSync(testOutputDir, { recursive: true, force: true });
+      safeRmSync(testOutputDir, { recursive: true, force: true });
     }
   });
 
