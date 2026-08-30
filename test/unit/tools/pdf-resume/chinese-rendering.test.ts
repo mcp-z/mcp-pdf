@@ -1,5 +1,6 @@
 import assert from 'assert';
-import { createWriteStream, existsSync, mkdirSync, rmSync, statSync, unlinkSync } from 'fs';
+import { createWriteStream, existsSync, mkdirSync, statSync, unlinkSync } from 'fs';
+import { safeRmSync } from 'fs-remove-compat';
 import { join } from 'path';
 import PDFDocument from 'pdfkit';
 import { registerEmojiFont } from '../../../../src/lib/emoji-renderer.ts';
@@ -16,7 +17,7 @@ describe('Chinese/CJK Character Rendering', (): void => {
 
   after(() => {
     if (existsSync(testOutputDir)) {
-      rmSync(testOutputDir, { recursive: true, force: true });
+      safeRmSync(testOutputDir, { recursive: true, force: true });
     }
   });
 

@@ -1,6 +1,7 @@
 import { parseStoredName, writeFile } from '@mcp-z/server';
 import assert from 'assert';
-import { existsSync, rmSync } from 'fs';
+import { existsSync } from 'fs';
+import { safeRmSync } from 'fs-remove-compat';
 import { join, resolve } from 'path';
 
 describe('output-handler', () => {
@@ -23,7 +24,7 @@ describe('output-handler', () => {
       assert.ok(result.storedName.match(/^[0-9a-f-]+~test\.pdf$/));
 
       // Clean up
-      rmSync(testDir, { recursive: true, force: true });
+      safeRmSync(testDir, { recursive: true, force: true });
     });
 
     it('generates unique ID for each file', async () => {
@@ -37,7 +38,7 @@ describe('output-handler', () => {
       assert.ok(existsSync(result2.fullPath));
 
       // Clean up
-      rmSync(testDir, { recursive: true, force: true });
+      safeRmSync(testDir, { recursive: true, force: true });
     });
 
     it('creates directory if it does not exist', async () => {
@@ -50,7 +51,7 @@ describe('output-handler', () => {
       assert.ok(existsSync(result.fullPath));
 
       // Clean up
-      rmSync(newDir, { recursive: true, force: true });
+      safeRmSync(newDir, { recursive: true, force: true });
     });
   });
 
