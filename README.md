@@ -1,7 +1,6 @@
 # @mcp-z/mcp-pdf
 
-Docs: https://mcp-z.github.io/mcp-pdf
-PDF generation MCP server for documents, layouts, and image export.
+Docs: https://mcp-z.github.io/mcp-pdf PDF generation MCP server for documents, layouts, and image export.
 
 ## Common uses
 
