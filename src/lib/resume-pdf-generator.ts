@@ -130,10 +130,8 @@ export async function generateResumePDFBuffer(resume: ResumeSchema, options: Ren
   // Register emoji font for rendering
   const emojiAvailable = containsEmoji ? registerEmojiFont() : false;
 
-  // Warn about emoji if font not available
-  if (containsEmoji && !emojiAvailable) {
-    logger.warn('⚠️  EMOJI DETECTED but emoji font not available.\n' + '   Run: npm install (to download Noto Color Emoji)\n' + '   Emojis will be skipped in the PDF.');
-  } else if (containsEmoji && emojiAvailable) {
+  // Note when emoji support is active (font-missing failures are warned by registerEmojiFont)
+  if (containsEmoji && emojiAvailable) {
     logger.info('✅ Emoji support enabled - rendering emojis as inline images');
   }
 
