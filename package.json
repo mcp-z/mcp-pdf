@@ -42,14 +42,12 @@
   "bin": "bin/server.js",
   "files": [
     "dist",
-    "assets",
-    "scripts"
+    "assets"
   ],
   "scripts": {
     "build": "tsds build",
     "format": "tsds format",
     "generate:types": "json2ts assets/resume.schema.json assets/resume.d.ts --bannerComment \"/* eslint-disable */\n/* Auto-generated from assets/resume.schema.json - DO NOT EDIT */\"",
-    "postinstall": "node scripts/postinstall.cjs",
     "prepublish:check": "ncp",
     "prepublishOnly": "tsds validate",
     "test": "tsds test:node --no-timeouts",
@@ -66,7 +64,6 @@
     "emoji-regex": "^10.0.0",
     "express": "^5.0.0",
     "fontkit": "^2.0.0",
-    "image-size": "^2.0.0",
     "liquidjs": "^10.0.0",
     "mdast-util-from-markdown": "^2.0.2",
     "module-root-sync": "^2.0.0",
