@@ -8,12 +8,13 @@ import { fileURLToPath } from 'url';
 // Cross-platform __dirname (works in both CJS and ESM)
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Path to the downloaded emoji font (in .fonts/ directory at project root)
-// Use keyExists to ensure we find the actual package root, not a parent module
+// Path to the bundled emoji font (shipped with the package in assets/fonts/)
+// Use moduleRoot to ensure we find the actual package root, not a parent module
 const PROJECT_ROOT = moduleRoot(__dirname);
-const EMOJI_FONT_PATH = join(PROJECT_ROOT, '.fonts', 'NotoColorEmoji.ttf');
+const EMOJI_FONT_PATH = join(PROJECT_ROOT, 'assets', 'fonts', 'NotoColorEmoji.ttf');
 
 let emojiFontRegistered = false;
+let emojiFontWarned = false;
 
 /**
  * Register the emoji font with @napi-rs/canvas
@@ -26,6 +27,13 @@ export function registerEmojiFont(): boolean {
   }
 
   if (!existsSync(EMOJI_FONT_PATH)) {
+    if (!emojiFontWarned) {
+      emojiFontWarned = true;
+      console.warn(`⚠️  Emoji font not found at ${EMOJI_FONT_PATH}`);
+      console.warn('   The Noto Color Emoji font ships with this package (assets/fonts/NotoColorEmoji.ttf).');
+      console.warn('   If you are running from a git checkout, restore it with: git checkout -- assets/fonts/NotoColorEmoji.ttf');
+      console.warn('   Otherwise, try reinstalling the package. Emojis will be skipped in the PDF.');
+    }
     return false;
   }
 
@@ -33,7 +41,12 @@ export function registerEmojiFont(): boolean {
     GlobalFonts.registerFromPath(EMOJI_FONT_PATH, 'NotoColorEmoji');
     emojiFontRegistered = true;
     return true;
-  } catch {
+  } catch (err) {
+    if (!emojiFontWarned) {
+      emojiFontWarned = true;
+      console.warn(`⚠️  Failed to register emoji font ${EMOJI_FONT_PATH}: ${err instanceof Error ? err.message : String(err)}`);
+      console.warn('   Emojis will be skipped in the PDF.');
+    }
     return false;
   }
 }
