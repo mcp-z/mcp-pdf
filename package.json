@@ -91,12 +91,6 @@
   "engines": {
     "node": ">=22.13"
   },
-  "allowScripts": {
-    "node-filename-to-dist-paths": true,
-    "node-semvers": true,
-    "node-version-use": true,
-    "thread-sleep-compat": true
-  },
   "mcpName": "io.github.mcp-z/mcp-pdf",
   "tsds": {
     "source": "src/index.ts",
