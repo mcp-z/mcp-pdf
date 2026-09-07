@@ -1,4 +1,4 @@
-import { composeMiddleware, connectStdio, McpServer, registerPrompts, registerResources, registerTools } from '@mcp-z/server';
+import { composeMiddleware, connectStdio, defaultCacheHints, McpServer, registerPrompts, registerResources, registerTools } from '@mcp-z/server';
 import type { RuntimeOverrides, ServerConfig } from '../types.ts';
 import { createDefaultRuntime } from './runtime.ts';
 
@@ -15,7 +15,7 @@ export async function createStdioServer(config: ServerConfig, overrides?: Runtim
   // for the demonstrated mechanism (an instance's negotiated era, once set, pins every later
   // request or connection on that same object to it).
   const buildServer = () => {
-    const mcpServer = new McpServer({ name: config.name, version: config.version });
+    const mcpServer = new McpServer({ name: config.name, version: config.version }, { cacheHints: defaultCacheHints });
     registerTools(mcpServer, composed.tools);
     registerResources(mcpServer, composed.resources);
     registerPrompts(mcpServer, composed.prompts);

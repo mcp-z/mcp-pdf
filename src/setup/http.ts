@@ -1,4 +1,4 @@
-import { composeMiddleware, connectHttp, createFileServingRouter, McpServer, registerPrompts, registerResources, registerTools } from '@mcp-z/server';
+import { composeMiddleware, connectHttp, createFileServingRouter, defaultCacheHints, McpServer, registerPrompts, registerResources, registerTools } from '@mcp-z/server';
 import cors from 'cors';
 import express from 'express';
 import type { RuntimeOverrides, ServerConfig } from '../types.ts';
@@ -23,7 +23,7 @@ export async function createHTTPServer(config: ServerConfig, overrides?: Runtime
   // (fails) vs. a factory (passes), both with and without an app-level body parser upstream, run
   // repeatedly for determinism. A fresh instance per request means each negotiates its own era.
   const buildServer = () => {
-    const mcpServer = new McpServer({ name: config.name, version: config.version });
+    const mcpServer = new McpServer({ name: config.name, version: config.version }, { cacheHints: defaultCacheHints });
     registerTools(mcpServer, composed.tools);
     registerResources(mcpServer, composed.resources);
     registerPrompts(mcpServer, composed.prompts);

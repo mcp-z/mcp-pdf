@@ -55,7 +55,7 @@
     "version": "tsds version"
   },
   "dependencies": {
-    "@mcp-z/server": "^2.1.0",
+    "@mcp-z/server": "^2.2.0",
     "@napi-rs/canvas": "^1.0.7",
     "ajv": "^8.0.0",
     "ajv-formats": "^3.0.0",
