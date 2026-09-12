@@ -60,26 +60,28 @@
     "version": "tsds version"
   },
   "dependencies": {
-    "@mcpeasy/server": "^0.1.49",
-    "@modelcontextprotocol/sdk": "^1.24.1",
-    "@napi-rs/canvas": "^0.1.83",
-    "cors": "^2.8.5",
-    "emoji-regex": "^10.6.0",
-    "express": "^5.2.1",
-    "fontkit": "^2.0.4",
-    "module-root-sync": "^1.2.3",
-    "pdfkit": "^0.17.2",
-    "pino": "^10.1.0",
-    "zod": "^4.1.13"
+    "@mcpeasy/server": "*",
+    "@modelcontextprotocol/sdk": "*",
+    "@napi-rs/canvas": "*",
+    "cors": "*",
+    "emoji-regex": "*",
+    "express": "*",
+    "fontkit": "*",
+    "module-root-sync": "*",
+    "pdfkit": "*",
+    "pino": "*",
+    "zod": "*"
   },
   "devDependencies": {
     "@types/cors": "*",
-    "@types/express": "^5.0.6",
-    "@types/fontkit": "^2.0.8",
+    "@types/express": "*",
+    "@types/fontkit": "*",
     "@types/mocha": "*",
-    "@types/node": "^24.10.1",
-    "@types/pdfkit": "^0.17.4",
-    "typescript": "^5.9.3"
+    "@types/node": "*",
+    "@types/pdfkit": "*",
+    "node-version-use": "*",
+    "ts-dev-stack": "*",
+    "typescript": "*"
   },
   "engines": {
     "node": ">=20"
