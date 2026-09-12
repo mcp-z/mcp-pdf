@@ -109,14 +109,6 @@ function measureLinesWithEmoji(doc: PDFKit.PDFDocument, text: string, fontSize: 
 }
 
 /**
- * Measure the height of a heading element.
- * Headings default to larger font size and typically include spacing.
- */
-export function measureHeadingHeight(doc: PDFKit.PDFDocument, text: string, fontSize: number, fontName: string, emojiAvailable: boolean, options: PDFTextOptions = {}): number {
-  return measureTextHeight(doc, text, fontSize, fontName, emojiAvailable, options);
-}
-
-/**
  * Measure the natural width of text content (for row layouts).
  *
  * @param doc - PDFKit document (used for font metrics)
@@ -187,7 +179,10 @@ export function createWidthMeasurer(doc: PDFKit.PDFDocument, regularFont: string
     const text = content.text as string;
     if (!text) return 0;
 
-    const fontSize = content.type === 'heading' ? ((content.fontSize as number) ?? 24) : ((content.fontSize as number) ?? 12);
+    const fontSize = content.fontSize as number;
+    if (fontSize === undefined || fontSize === null) {
+      throw new Error(`fontSize is required for measuring ${content.type} content`);
+    }
 
     const fontName = content.bold ? boldFont : regularFont;
 
@@ -219,8 +214,8 @@ export function measureImageHeight(specifiedHeight?: number, specifiedWidth?: nu
     return naturalHeight;
   }
 
-  // Default fallback for images without known dimensions
-  return 100;
+  // No dimensions available - caller must provide dimensions
+  return 0;
 }
 
 /**
