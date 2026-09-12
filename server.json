@@ -42,7 +42,8 @@
           "placeholder": "info",
           "choices": ["debug", "info", "warn", "error"],
           "isRequired": false,
-          "isSecret": false
+          "isSecret": false,
+          "isMandatoryForMatrix": false
         }
       ],
       "packageArguments": [
@@ -100,7 +101,8 @@
           "placeholder": "info",
           "choices": ["debug", "info", "warn", "error"],
           "isRequired": false,
-          "isSecret": false
+          "isSecret": false,
+          "isMandatoryForMatrix": false
         }
       ],
       "packageArguments": [
