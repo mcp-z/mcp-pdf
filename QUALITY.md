@@ -1859,9 +1859,9 @@ This encompasses violations where tests:
 ```typescript
 // ✅ COMPLIANT: Uses established createMiddleware() pattern
 test('tool operations', async () => {
-  const middleware = await createMiddleware();
+  const {withAuth} = await createMiddleware();
   const tool = createTool();
-  const wrappedTool = middleware.withAuth(tool);
+  const wrappedTool = withAuth.forTool(tool);
   // Strongly typed middleware with all necessary setup
 });
 ```
