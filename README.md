@@ -1,6 +1,6 @@
 # @mcp-z/mcp-pdf
 
-Docs: https://mcp-z.github.io/mcp-pdf PDF generation MCP server for documents, layouts, and image export.
+MCP server for creative PDF generation with full emoji, Unicode, and offline support
 
 ## Common uses
 
@@ -511,3 +511,7 @@ None.
 - PDFKit Documentation
 - JSON Resume Schema
 - JSON Resume Editor
+
+### Documentation
+
+[API Docs](https://mcp-z.github.io/mcp-pdf)
