@@ -2478,7 +2478,7 @@ This encompasses violations where test placement:
 ### Example 4: Shared Test Utilities Location
 ```typescript
 // ✅ COMPLIANT: Shared utilities in appropriate location
-// test/lib/create-middleware.ts - Common test setup utilities
+// test/lib/create-middleware-context.ts - Common test setup utilities
 // test/lib/create-extra.ts - Test context helpers
 ```
 
