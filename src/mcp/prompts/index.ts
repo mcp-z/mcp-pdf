@@ -1,1 +1,1 @@
-export { default as pdfInstructions } from './pdf-instructions.ts';
+export { default as pdfInstructions } from './instructions.ts';

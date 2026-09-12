@@ -197,7 +197,7 @@ export default function createTool(): ToolModule {
 ```typescript
 // Use this pattern for all tool tests
 import assert from 'assert';
-import { createMiddleware, createExtra } from '../lib/create-middleware.ts';
+import { createMiddleware, createExtra } from '../lib/create-middleware-context.ts';
 
 it('tool behaves as expected (service-backed)', async () => {
   const middleware = await createMiddleware();
@@ -213,7 +213,7 @@ it('tool behaves as expected (service-backed)', async () => {
 **Test Helper Pattern**: Use the standard test helpers in `test/lib/` directory:
 
 ```typescript
-import { createMiddleware, createExtra } from './lib/create-middleware.ts';
+import { createMiddleware, createExtra } from './lib/create-middleware-context.ts';
 
 describe('tool tests', () => {
   let middleware: Awaited<ReturnType<typeof createMiddleware>>;
@@ -340,7 +340,7 @@ await fs.promises.mkdir(tempDir, { recursive: true });
 - Assume all tests need multi-account support
 
 **References**:
-- Test helpers: `test/lib/create-middleware.ts`
+- Test helpers: `test/lib/create-middleware-context.ts`
 - Generic server examples: `test/lib/servers/`
 
 ### Critical Test Configuration Rules
@@ -359,7 +359,7 @@ Most packages use **LoopbackOAuthProvider**:
 
 **When writing tests:**
 - Use `HEADLESS=true` to prevent browser popups
-- Check `test/lib/create-middleware.ts` for actual patterns used
+- Check `test/lib/create-middleware-context.ts` for actual patterns used
 - See `.env.test.example` for required environment variables
 
 **Common Test Configuration Pitfalls**:

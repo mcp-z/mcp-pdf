@@ -11,7 +11,7 @@ export default function createPrompt(): PromptModule {
   type Args = z.infer<z.ZodObject<typeof config.argsSchema>>;
 
   return {
-    name: 'pdf-instructions',
+    name: 'instructions',
     config,
     handler: async (_args: Args) => {
       return {
