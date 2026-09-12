@@ -147,9 +147,9 @@ async function createPdfWithEnhancements(options: {
   return await pdfPromise;
 }
 
-describe('Enhanced API - Backward Compatibility', () => {
-  it('old-style JSON works identically (no new features)', async () => {
-    // Old-style content - no pageSetup, no colors, no shapes
+describe('Enhanced API - Optional Parameters', () => {
+  it('basic content works without enhanced features', async () => {
+    // Basic content - no pageSetup, no colors, no shapes
     const pdfBuffer = await createPdfWithEnhancements({
       content: [
         { type: 'heading', text: 'Business Letter' },
@@ -162,7 +162,7 @@ describe('Enhanced API - Backward Compatibility', () => {
     assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
     assert.ok(pdfBuffer.length > 0, 'PDF should have content');
     assert.ok(pdfBuffer.toString('utf8', 0, 4) === '%PDF', 'Should be a valid PDF');
-    console.log(`    ✅ Backward compatible: (${pdfBuffer.length} bytes)`);
+    console.log(`    ✅ Optional parameters work: (${pdfBuffer.length} bytes)`);
   });
 });
 
