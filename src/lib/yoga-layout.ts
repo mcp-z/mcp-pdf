@@ -88,10 +88,7 @@ export interface LayoutContent {
   padding?: number | { top?: number; right?: number; bottom?: number; left?: number };
   /** Children for group type */
   children?: LayoutContent[];
-  /** Visual properties */
-  background?: string;
-  border?: { color: string; width: number };
-  /** Allow any other properties */
+  /** Allow any other properties (visual props, text content, etc.) */
   [key: string]: unknown;
 }
 
@@ -380,7 +377,8 @@ function buildYogaTree(
     const gap = content.gap ?? 0;
 
     for (let i = 0; i < content.children.length; i++) {
-      const childContent = content.children[i]!;
+      const childContent = content.children[i];
+      if (!childContent) continue;
 
       // For row containers with flex children, estimate width for accurate height measurement
       let effectiveChildWidth = childParentWidth;
@@ -512,7 +510,7 @@ function freeYogaTree(tree: YogaTreeNode) {
  * @param measureWidth - Optional function to measure content width (for row layouts with space-between)
  * @returns Layout tree with computed positions
  */
-export async function calculateLayout(content: LayoutContent[], pageWidth: number, pageHeight: number | undefined, measureHeight: HeightMeasurer, margins: { top: number; right: number; bottom: number; left: number } = { top: 50, right: 54, bottom: 50, left: 54 }, measureWidth?: WidthMeasurer): Promise<LayoutNode[]> {
+export async function calculateLayout(content: LayoutContent[], pageWidth: number, pageHeight: number | undefined, measureHeight: HeightMeasurer, margins: { top: number; right: number; bottom: number; left: number }, measureWidth?: WidthMeasurer): Promise<LayoutNode[]> {
   const yoga = await getYoga();
   const { default: Yoga, FlexDirection, Direction, Align, Justify, Edge } = yoga;
 

@@ -191,7 +191,8 @@ describe('Chinese/CJK Character Rendering', (): void => {
 
       // Chinese with emoji
       const mixedText = '你好 👋 世界 🌍';
-      renderTextWithEmoji(doc, mixedText, 12, fonts.regular, emojiAvailable);
+      const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+      renderTextWithEmoji(doc, mixedText, 12, fonts.regular, emojiAvailable, { width: pageWidth });
 
       doc.end();
 
