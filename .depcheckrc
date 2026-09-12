@@ -1,1 +1,1 @@
-ignores: ["node-version-use", "ts-dev-stack", "@biomejs/biome", "npm-check-prepublish", "@types/node", "@types/mocha", "typescript"]
+ignores: ["node-version-use", "ts-dev-stack", "@biomejs/biome", "@types/node", "@types/mocha", "typescript"]
