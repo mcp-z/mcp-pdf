@@ -14,7 +14,7 @@ npm install -g ts-dev-stack
 
 Run before committing:
 ```bash
-npm run format && tsds validate
+tsds validate
 ```
 
 ## Package Development
