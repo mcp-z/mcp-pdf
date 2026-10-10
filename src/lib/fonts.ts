@@ -1,12 +1,12 @@
 import emojiRegexFactory from 'emoji-regex';
 import { type Font, openSync as fontkitOpenSync } from 'fontkit';
 import { existsSync } from 'fs';
-import { mkdir, writeFile } from 'fs/promises';
-import { tmpdir } from 'os';
-import { basename, extname, join } from 'path';
+import { basename, extname } from 'path';
 import type PDFKit from 'pdfkit';
+import { downloadFile, FONT_CACHE_DIR } from './download.ts';
 import type { FontConfig } from './types/typography.ts';
 
+export { FONT_CACHE_DIR, IMAGE_CACHE_DIR, MAX_DOWNLOAD_BYTES } from './download.ts';
 export type { FontConfig } from './types/typography.ts';
 
 // All 14 PDF Standard Fonts (built into PDF spec, no files needed)
@@ -83,44 +83,19 @@ export function getSystemFont(): string | null {
   return null;
 }
 
-/**
- * Download font from URL to temp directory
- * Returns path to downloaded font
- * Caches downloads - if the file already exists, returns cached path
- * Throws error if download fails
- */
-async function downloadToTemp(url: string): Promise<string> {
-  const tempDir = join(tmpdir(), 'mcp-pdf-fonts');
-  await mkdir(tempDir, { recursive: true });
-
-  // Extract filename from URL or generate one
-  const urlPath = new URL(url).pathname;
-  const filename = urlPath.split('/').pop() || `font-${Date.now()}.woff2`;
-  const tempPath = join(tempDir, filename);
-
-  // Check if already cached
-  if (existsSync(tempPath)) {
-    return tempPath;
-  }
-
-  // Download if not cached
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Font download failed (HTTP ${response.status}): ${response.statusText}`);
-  }
-
-  const buffer = await response.arrayBuffer();
-  await writeFile(tempPath, Buffer.from(buffer));
-  return tempPath;
+export interface FontOptions {
+  /** Cache for fonts downloaded from URLs (default: FONT_CACHE_DIR) */
+  fontCacheDir?: string;
 }
 
 /**
  * Resolve font specification to actual font path or name
- * Supports: PDF standard fonts, absolute paths, URLs, 'auto' detection
+ * Supports: PDF standard fonts, absolute paths, https URLs on public hosts, 'auto' detection
  * Returns null if font cannot be resolved (caller should use fallback)
- * Throws error if URL download fails
+ * Throws if a URL is refused or its download fails
  */
-export async function resolveFont(fontSpec: string): Promise<string | null> {
+
+export async function resolveFont(fontSpec: string, options: FontOptions = {}): Promise<string | null> {
   // 1. Check if it's a PDF standard font (built-in, no file needed)
   if (isPDFStandardFont(fontSpec)) {
     return fontSpec;
@@ -136,9 +111,9 @@ export async function resolveFont(fontSpec: string): Promise<string | null> {
     return existsSync(fontSpec) ? fontSpec : null;
   }
 
-  // 4. URL (http/https) - throws on download failure
+  // 4. URL - downloaded into the font cache; http and non-public hosts are refused
   if (fontSpec.startsWith('http://') || fontSpec.startsWith('https://')) {
-    return await downloadToTemp(fontSpec);
+    return await downloadFile(fontSpec, options.fontCacheDir ?? FONT_CACHE_DIR);
   }
 
   // Unknown font specification
@@ -202,9 +177,9 @@ function registerFontFile(doc: PDFKit.PDFDocument, fontPath: string): FontConfig
  * Resolves font specification and registers its faces with PDFKit
  * Falls back to Helvetica if the font cannot be resolved
  */
-export async function setupFonts(doc: PDFKit.PDFDocument, fontSpec: string | undefined): Promise<FontConfig> {
+export async function setupFonts(doc: PDFKit.PDFDocument, fontSpec: string | undefined, options: FontOptions = {}): Promise<FontConfig> {
   // Resolve the font (may throw on URL download failure)
-  const resolvedFont = await resolveFont(fontSpec || 'auto');
+  const resolvedFont = await resolveFont(fontSpec || 'auto', options);
   if (!resolvedFont) return standardFonts('Helvetica');
   if (isPDFStandardFont(resolvedFont)) return standardFonts(resolvedFont);
   return registerFontFile(doc, resolvedFont);

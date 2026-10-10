@@ -245,11 +245,19 @@ describe('fonts.resolveFont', (): void => {
     it('downloads font from valid URL', async (): Promise<void> => {
       // This will actually download - use a small font
       const url: string = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@5.0.0/files/noto-sans-latin-400-normal.woff2';
-      const result: string | null = await fonts.resolveFont(url);
+      const fontCacheDir = join(process.cwd(), '.tmp', 'fonts-url-cache');
+      try {
+        const result: string | null = await fonts.resolveFont(url, { fontCacheDir });
+        assert.ok(result?.startsWith(fontCacheDir), 'Should download into the given cache');
+        assert.ok(result && existsSync(result), 'Downloaded font should exist');
+      } finally {
+        safeRmSync(fontCacheDir, { recursive: true, force: true });
+      }
+    });
 
-      assert.ok(result !== null, 'Should download font');
-      assert.ok(typeof result === 'string', 'Should return path string');
-      assert.ok(existsSync(result), 'Downloaded font should exist');
+    it('refuses http and non-public hosts', async (): Promise<void> => {
+      await assert.rejects(fonts.resolveFont('http://cdn.jsdelivr.net/font.ttf'), /https/);
+      await assert.rejects(fonts.resolveFont('https://127.0.0.1/font.ttf'), /not a public address/);
     });
 
     it('throws error for invalid URL', async (): Promise<void> => {

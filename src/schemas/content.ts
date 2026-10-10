@@ -12,7 +12,7 @@ export const flowingContentItemSchema = z.union([
   textBaseSchema.extend({ type: z.literal('heading') }),
   z.object({
     type: z.literal('image'),
-    imagePath: z.string().describe('Path to image file'),
+    imagePath: z.string().describe('PNG or JPEG image: an https URL on a public host, or a local file path when the server runs over stdio'),
     width: z.number().optional().describe('Image width in points (default: natural width, max: page width)'),
     height: z.number().optional().describe('Image height in points (default: natural height or aspect-ratio scaled)'),
     align: z.enum(['left', 'center', 'right']).optional().describe('Image alignment (default: left)'),
@@ -49,7 +49,7 @@ export const baseContentItemSchema = z.union([
   positionedTextSchema.extend({ type: z.literal('heading') }),
   z.object({
     type: z.literal('image'),
-    imagePath: z.string().describe('Path to image file'),
+    imagePath: z.string().describe('PNG or JPEG image: an https URL on a public host, or a local file path when the server runs over stdio'),
     page: z.number().int().min(1).optional().describe('Target page (default: 1). Pages are created as needed.'),
     left: z.number().optional().describe('Horizontal position in points from page left edge.'),
     top: z.number().optional().describe('Vertical position in points from page top edge.'),

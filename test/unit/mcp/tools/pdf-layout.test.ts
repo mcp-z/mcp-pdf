@@ -6,7 +6,7 @@
 
 import { mcp } from '@mcp-z/mcp-pdf';
 import assert from 'assert';
-import { existsSync, mkdirSync, readFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { safeRmSync } from 'fs-remove-compat';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
@@ -842,5 +842,41 @@ describe('pdf-layout text options', () => {
   it('applies link', async () => {
     const pdf = await pdfFor({ font: 'Helvetica', content: [{ type: 'text', text: 'Site', link: 'https://example.com/' }] });
     assert.match(pdf.toString('latin1'), /\/URI \(https:\/\/example\.com\/\)/);
+  });
+});
+
+describe('pdf-layout images', () => {
+  const testOutputDir = join(process.cwd(), '.tmp', 'pdf-layout-image-tests');
+  const testStorageDir = join(testOutputDir, 'storage');
+  const tool = mcp.toolFactories.pdfLayout();
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+  const localImage = join(testOutputDir, 'pixel.png');
+
+  before(() => {
+    mkdirSync(testStorageDir, { recursive: true });
+    writeFileSync(localImage, png);
+  });
+  after(() => {
+    if (existsSync(testOutputDir)) safeRmSync(testOutputDir, { recursive: true, force: true });
+  });
+
+  it('embeds a local image over stdio', async () => {
+    const extra = createExtra(createTestConfig(testOutputDir, testStorageDir));
+    const result = await tool.handler({ content: [{ type: 'image', imagePath: localImage, width: 20 }] }, extra);
+    const pdf = readFileSync(fileURLToPath((result.structuredContent as { result: Output }).result.uri)).toString('latin1');
+    assert.match(pdf, /\/Subtype \/Image/);
+  });
+
+  it('embeds an image from an https URL', async () => {
+    const extra = createExtra(createTestConfig(testOutputDir, testStorageDir));
+    const imagePath = 'https://cdn.jsdelivr.net/npm/zod-to-json-schema@3.25.2/.github/CR_logotype-full-color.png';
+    const result = await tool.handler({ content: [{ type: 'image', imagePath, width: 100 }] }, extra);
+    const pdf = readFileSync(fileURLToPath((result.structuredContent as { result: Output }).result.uri)).toString('latin1');
+    assert.match(pdf, /\/Subtype \/Image/);
+  });
+
+  it('refuses a local image over http', async () => {
+    const extra = createExtra(createTestConfig(testOutputDir, testStorageDir, { type: 'http', port: 1 }));
+    await assert.rejects(tool.handler({ content: [{ type: 'image', imagePath: localImage, width: 20 }] }, extra), /only available when the server runs over stdio/);
   });
 });

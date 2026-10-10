@@ -15,6 +15,7 @@ import { z } from 'zod';
 import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE, type Margins, type PageSizePreset } from '../../constants.ts';
 import { createWidthMeasurer, measureTextHeight } from '../../lib/content-measure.ts';
 import { resolveImageDimensions } from '../../lib/image-dimensions.ts';
+import { resolveContentImages } from '../../lib/image-source.ts';
 import { createPDFDocument, FONT_OPTION_DESCRIPTION, MARKDOWN_OPTION_DESCRIPTION, type PDFOutput, pdfOutputSchema, textItemConfig, validateContentText } from '../../lib/pdf-core.ts';
 import { renderText } from '../../lib/pdf-helpers.ts';
 import { selectFace } from '../../lib/text-style.ts';
@@ -94,12 +95,15 @@ export default function createTool() {
   async function handler(args: Input, extra: StorageExtra): Promise<CallToolResult> {
     const { storageContext } = extra;
     const { resourceStoreUri, baseUrl, transport } = storageContext;
-    const { filename = 'document.pdf', title, author, font, markdown, color, layout, pageSetup, content } = args;
+    const { filename = 'document.pdf', title, author, font, markdown, color, layout, pageSetup, content: requestedContent } = args;
     const parseMarkdown = markdown ?? true;
     const hyperlinkColor = color?.hyperlink ?? '#0066CC';
     const overflowBehavior = layout?.overflow ?? 'auto';
 
     try {
+      // Images become local files first: URLs are downloaded, local paths are honored over stdio only
+      const content = await resolveContentImages(requestedContent, transport.type);
+
       // Create PDF document with shared utilities
       const contentText = JSON.stringify(content);
       const setup = await createPDFDocument(

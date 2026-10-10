@@ -1,9 +1,8 @@
 /**
  * Image dimension utilities for PDF generation.
  *
- * Follows the React Native pattern:
- * - Local files: Read intrinsic dimensions from file headers
- * - Network images: Require explicit dimensions (throw error otherwise)
+ * Reads intrinsic dimensions from local file headers; images given by URL are downloaded to a local file first
+ * (see image-source.ts).
  *
  * Only PNG and JPEG are supported: those are the only image formats PDFKit
  * 0.20.2 can embed. PDFImage.open gates on exactly two byte prefixes:
@@ -41,13 +40,6 @@ import * as path from 'path';
 export interface ImageDimensions {
   width: number;
   height: number;
-}
-
-/**
- * Check if a path is a URL (http:// or https://)
- */
-function isUrl(imagePath: string): boolean {
-  return imagePath.startsWith('http://') || imagePath.startsWith('https://');
 }
 
 /**
@@ -198,25 +190,6 @@ function getLocalImageDimensions(imagePath: string): ImageDimensions | null {
 }
 
 /**
- * Get image dimensions with appropriate handling for local vs network images.
- *
- * - For local files: Returns intrinsic dimensions from file headers
- * - For network URLs: Returns null (caller must provide explicit dimensions)
- *
- * @param imagePath - Path or URL to image
- * @returns Dimensions or null if unavailable
- */
-function getImageDimensions(imagePath: string): ImageDimensions | null {
-  if (isUrl(imagePath)) {
-    // Network images require explicit dimensions (React Native pattern)
-    // Return null so caller knows dimensions must be provided
-    return null;
-  }
-
-  return getLocalImageDimensions(imagePath);
-}
-
-/**
  * Resolve image dimensions with explicit overrides.
  *
  * Priority:
@@ -227,7 +200,7 @@ function getImageDimensions(imagePath: string): ImageDimensions | null {
  * If only width or height is provided, the other is calculated from aspect ratio
  * (if intrinsic dimensions are available).
  *
- * @param imagePath - Path or URL to image
+ * @param imagePath - Path to a local image file (URLs are downloaded before layout)
  * @param explicitWidth - User-provided width (optional)
  * @param explicitHeight - User-provided height (optional)
  * @returns Resolved dimensions
@@ -240,7 +213,7 @@ export function resolveImageDimensions(imagePath: string, explicitWidth?: number
   }
 
   // Try to get intrinsic dimensions
-  const intrinsic = getImageDimensions(imagePath);
+  const intrinsic = getLocalImageDimensions(imagePath);
 
   // Only width provided - calculate height from aspect ratio
   if (explicitWidth !== undefined && intrinsic) {
@@ -260,9 +233,5 @@ export function resolveImageDimensions(imagePath: string, explicitWidth?: number
   }
 
   // Cannot determine dimensions
-  if (isUrl(imagePath)) {
-    throw new Error(`Image dimensions required for network images. Please provide explicit width and height for: ${imagePath}`);
-  }
-
   throw new Error(`Cannot determine image dimensions for: ${imagePath}. File may not exist or format is unsupported. Please provide explicit width and height.`);
 }

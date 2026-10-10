@@ -241,9 +241,12 @@ Shapes:
 Images and pages:
 
 ```ts
-{ type: 'image', imagePath: '/path/to/image.png', width: 200, height: 150, x: 100, y: 200 }
+{ type: 'image', imagePath: 'https://example.com/logo.png', width: 200, x: 100, y: 200 }
+{ type: 'image', imagePath: '/path/to/image.png', width: 200, height: 150 }
 { type: 'pageBreak' }
 ```
+
+`imagePath` is a PNG or JPEG. An https URL on a public host works over either transport and is downloaded once into `~/.mcp-z/mcp-pdf/cache/images/` (at most 20 MB, redirects checked). A local file path works only when the server runs over stdio; over HTTP it is refused, so remote callers cannot read the server's files. Omitted width or height comes from the image's own size.
 
 #### Flexbox layout engine
 
@@ -444,7 +447,7 @@ Measure text width and height before layout.
 
 - `auto` (default) - a Unicode system font, such as Arial Unicode on macOS or Noto Sans on Linux
 - `Helvetica`, `Times-Roman`, `Courier` - built into every PDF reader, Latin-1 characters only
-- a path or URL to a `.ttf`, `.otf` or `.ttc` file - renders every script the font covers
+- a path or URL to a `.ttf`, `.otf` or `.ttc` file - renders every script the font covers. URLs must be https on a public host (redirects are checked the same way), at most 20 MB; each URL is downloaded once into `~/.mcp-z/mcp-pdf/cache/fonts/`
 
 Bold and italic use the font's own faces when it has them: the built-in fonts do, and a `.ttc` collection supplies whichever bold and italic faces it contains. A font file with a single style gets synthesized bold (thickened outlines) and italic (slanted), as browsers do.
 

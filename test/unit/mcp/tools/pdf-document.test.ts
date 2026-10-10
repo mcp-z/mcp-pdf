@@ -1,6 +1,6 @@
 import { mcp } from '@mcp-z/mcp-pdf';
 import assert from 'assert';
-import { existsSync, mkdirSync, readFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { safeRmSync } from 'fs-remove-compat';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
@@ -38,6 +38,10 @@ describe('pdf-document font option', () => {
       output.warnings?.some((w) => w.includes('"你"') && w.includes('DejaVuSans')),
       `warnings: ${JSON.stringify(output.warnings)}`
     );
+  });
+
+  it('refuses a font URL on a non-public address', async () => {
+    await assert.rejects(tool.handler({ font: 'https://169.254.169.254/latest/font.ttf', content: [{ type: 'text', text: 'x' }] }, extra), /not a public address/);
   });
 
   it('warns that a standard font cannot render Cyrillic', async () => {
@@ -157,5 +161,33 @@ describe('pdf-document text options', () => {
   it('applies link', async () => {
     const pdf = await pdfFor({ font: 'Helvetica', content: [{ type: 'text', text: 'Site', link: 'https://example.com/' }] });
     assert.match(pdf.toString('latin1'), /\/URI \(https:\/\/example\.com\/\)/);
+  });
+});
+
+describe('pdf-document images', () => {
+  const testOutputDir = join(process.cwd(), '.tmp', 'pdf-document-image-tests');
+  const testStorageDir = join(testOutputDir, 'storage');
+  const tool = mcp.toolFactories.pdfDocument();
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+  const localImage = join(testOutputDir, 'pixel.png');
+
+  before(() => {
+    mkdirSync(testStorageDir, { recursive: true });
+    writeFileSync(localImage, png);
+  });
+  after(() => {
+    if (existsSync(testOutputDir)) safeRmSync(testOutputDir, { recursive: true, force: true });
+  });
+
+  it('embeds a local image over stdio', async () => {
+    const extra = createExtra(createTestConfig(testOutputDir, testStorageDir));
+    const result = await tool.handler({ content: [{ type: 'image', imagePath: localImage, width: 20 }] }, extra);
+    const pdf = readFileSync(fileURLToPath((result.structuredContent as { result: Output }).result.uri)).toString('latin1');
+    assert.match(pdf, /\/Subtype \/Image/);
+  });
+
+  it('refuses a local image over http', async () => {
+    const extra = createExtra(createTestConfig(testOutputDir, testStorageDir, { type: 'http', port: 1 }));
+    await assert.rejects(tool.handler({ content: [{ type: 'image', imagePath: localImage, width: 20 }] }, extra), /only available when the server runs over stdio/);
   });
 });
