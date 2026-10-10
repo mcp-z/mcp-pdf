@@ -13,7 +13,8 @@ Parameters:
 - `sections` (object, optional) - Section ordering and field templates
 - `layout` (object, optional) - Spatial arrangement (single-column or two-column)
 - `styling` (object, optional) - Typography and spacing options
-- `font` (string, optional) - Custom font
+- `font` (string, optional) - Font; see [Fonts](#fonts)
+- `markdown` (boolean, optional) - Parse inline markdown in free text; see [Markdown](#markdown) (default: true)
 - `pageSize` (string, optional) - Page size (default: "LETTER")
 - `backgroundColor` (string, optional) - Page background color
 
@@ -83,17 +84,18 @@ await client.callTool('pdf-resume', {
 
 #### Field templates
 
-Field templates use LiquidJS syntax to customize how fields are rendered.
+Field templates use LiquidJS syntax to customize how fields are rendered. A template produces markdown, so `**bold**`, `*italic*` and `[links](url)` in the template itself are formatted whatever the `markdown` setting. Every inserted value is escaped and prints as written; `| raw` inserts a value that is already markdown. Empty values count as missing, so `{% if field %}` skips them. An invalid template fails the call with an error naming it.
 
 Available field templates:
 
 - `location` - `{{ city }}{% if region %}, {{ region }}{% endif %}`
-- `dateRange` - `{{ start | date: 'MMM YYYY' }} - {{ end | date: 'MMM YYYY' | default: 'Present' }}`
+- `dateRange` - `{{ start | date: 'MMM YYYY' }}{% if start %} – {% endif %}{{ end | date: 'MMM YYYY' | default: 'Present' }}`
 - `degree` - `{{ studyType }}{% if area %}, {{ area }}{% endif %}`
-- `credential` - `{{ title | default: name }}{% if awarder %}, {{ awarder }}{% endif %}`
+- `credential` - `{{ title | default: name }}{% if awarder %}, {{ awarder }}{% endif %}{% if issuer %}, {{ issuer }}{% endif %}{% if publisher %}, {{ publisher }}{% endif %}`
 - `language` - `{{ language }}{% if fluency %} ({{ fluency }}){% endif %}`
-- `skill` - `{{ name }}: {{ keywords | join: ', ' }}`
-- `contactLine` - `{{ items | join: ' | ' }}`
+- `skill` - `**{{ name }}**{% if level %} ({{ level }}){% endif %}: {{ keywords | join: ', ' }}`
+- `url` - `[{{ text }}]({{ url }})`
+- `contactLine` - `{{ items | join: ' | ' | raw }}` (items are already markdown: locations, links and escaped text)
 
 Date format tokens:
 
@@ -190,6 +192,8 @@ Parameters:
 - `filename` (string, optional) - Filename for the PDF (defaults to "document.pdf")
 - `title` (string, optional) - Document metadata
 - `author` (string, optional) - Document metadata
+- `font` (string, optional) - Font; see [Fonts](#fonts)
+- `markdown` (boolean, optional) - Parse inline markdown in text; see [Markdown](#markdown) (default: true)
 - `pageSetup` (object, optional) - Page configuration
 - `content` (array, required) - Content items
 - `layout` (object, optional) - Layout options
@@ -411,7 +415,7 @@ await client.callTool('pdf-layout', {
 
 #### Emoji and Unicode support
 
-Color emoji render as inline images. Unicode text is supported across major scripts.
+Color emoji render as inline images. Text renders in every script the font covers; the default `auto` font is a Unicode system font. A character the font lacks is reported in the result's `warnings`.
 
 ```json
 {
@@ -424,7 +428,7 @@ Color emoji render as inline images. Unicode text is supported across major scri
 
 ### pdf-document
 
-Create a flowing PDF document with automatic pagination.
+Create a flowing PDF document with automatic pagination. Takes the same `font` and `markdown` options as pdf-layout.
 
 ### pdf-image
 
@@ -433,3 +437,18 @@ Render PDF pages to PNG images for previews or export.
 ### text-measure
 
 Measure text width and height before layout.
+
+### Fonts
+
+`font` is the same for every tool that draws or measures text:
+
+- `auto` (default) - a Unicode system font, such as Arial Unicode on macOS or Noto Sans on Linux
+- `Helvetica`, `Times-Roman`, `Courier` - built into every PDF reader, Latin-1 characters only
+- a path or URL to a `.ttf`, `.otf` or `.ttc` file - renders every script the font covers
+
+Bold and italic use the font's own faces when it has them: the built-in fonts do, and a `.ttc` collection supplies whichever bold and italic faces it contains. A font file with a single style gets synthesized bold (thickened outlines) and italic (slanted), as browsers do.
+
+### Markdown
+
+With `markdown` on (the default), text is formatted inline: `**bold**`, `*italic*`, `***both***`, `[links](https://example.com)`, `` `code` `` (drawn as plain text) and backslash escapes such as `\*`. Line-start syntax stays literal, so `1. Led the team`, `- item` and `# C# expert` print as written, and line breaks are kept. Pass `markdown: false` to draw text exactly as written.
+

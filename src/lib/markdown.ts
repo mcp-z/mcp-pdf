@@ -3,7 +3,7 @@
  * Provides robust markdown tokenization for PDF rendering
  */
 
-import { fromMarkdown } from 'mdast-util-from-markdown';
+import { fromMarkdown, type Options } from 'mdast-util-from-markdown';
 import type { Node } from 'unist';
 import { visit } from 'unist-util-visit';
 
@@ -11,6 +11,11 @@ import { visit } from 'unist-util-visit';
  * Token types for styled text segments
  */
 export type Token = { type: 'text'; text: string } | { type: 'bold'; text: string } | { type: 'italic'; text: string } | { type: 'boldItalic'; text: string } | { type: 'link'; text: string; url: string };
+
+// Text is formatted inline only: line-start syntax (lists, headings, quotes, code blocks), raw HTML and images stay literal.
+const INLINE_ONLY: NonNullable<Options['extensions']>[number] = {
+  disable: { null: ['blockQuote', 'codeFenced', 'codeIndented', 'definition', 'headingAtx', 'htmlFlow', 'htmlText', 'labelStartImage', 'list', 'setextUnderline', 'thematicBreak'] },
+};
 
 /**
  * Tokenize markdown text into styled tokens using micromark
@@ -20,12 +25,14 @@ export type Token = { type: 'text'; text: string } | { type: 'bold'; text: strin
  * - *italic* or _italic_
  * - ***bold+italic*** or ___bold+italic___
  * - [link text](url)
+ * - `code`, drawn as plain text
+ * - backslash escapes; paragraphs and line breaks are kept
  *
  * @param markdown - Text with markdown syntax
  * @returns Array of tokens
  */
 export function tokenizeMarkdown(markdown: string): Token[] {
-  const tree = fromMarkdown(markdown);
+  const tree = fromMarkdown(markdown, { extensions: [INLINE_ONLY] });
   const tokens: Token[] = [];
 
   // Helper to extract text recursively from node
@@ -39,9 +46,18 @@ export function tokenizeMarkdown(markdown: string): Token[] {
     return '';
   };
 
-  visit(tree, (node: Node, _index, parent: Node | undefined) => {
+  visit(tree, (node: Node, index, parent: Node | undefined) => {
+    if (node.type === 'paragraph') {
+      if (index) tokens.push({ type: 'text', text: '\n\n' });
+      return;
+    }
+    if (node.type === 'break') {
+      tokens.push({ type: 'text', text: '\n' });
+      return;
+    }
+
     // Skip text nodes that are children of styled nodes (link, strong, emphasis)
-    if (node.type === 'text') {
+    if (node.type === 'text' || node.type === 'inlineCode') {
       // Only add text if parent is not a styled node
       if (parent?.type !== 'link' && parent?.type !== 'strong' && parent?.type !== 'emphasis') {
         if ('value' in node && typeof node.value === 'string') {
@@ -110,4 +126,11 @@ export function tokensToStyledSegments(tokens: Token[]): StyledSegment[] {
     };
     return segment;
   });
+}
+
+/**
+ * Escapes a value so markdown renders it as itself, for inserting data into markdown templates.
+ */
+export function escapeMarkdown(value: string): string {
+  return value.replace(/[\\`*_[\]<>&!]/g, '\\$&');
 }

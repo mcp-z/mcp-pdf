@@ -15,6 +15,7 @@
 import { type CallToolResult, getFileUri, ProtocolError, ProtocolErrorCode, type ToolModule, writeFile } from '@mcp-z/server';
 import { z } from 'zod';
 import type { Margins, PageSizePreset } from '../../constants.ts';
+import { FONT_OPTION_DESCRIPTION, MARKDOWN_OPTION_DESCRIPTION } from '../../lib/pdf-core.ts';
 import { generateResumePDFBuffer, type RenderOptions, type TypographyOptions } from '../../lib/resume-pdf-generator.ts';
 import { validateResume } from '../../lib/validator.ts';
 import { resumeLayoutSchema, sectionsConfigSchema, stylingSchema } from '../../schemas/resume.ts';
@@ -29,8 +30,8 @@ const resumeInputSchema = z.record(z.string(), z.any()).describe('Resume data in
 const inputSchema = z.object({
   filename: z.string().optional().describe('Optional logical filename (metadata only). Storage uses UUID. Defaults to "resume.pdf".'),
   resume: resumeInputSchema,
-  font: z.string().optional().describe('Font for the PDF. Defaults to "auto" (system font detection). Built-ins are limited to ASCII; provide a path or URL for full Unicode.'),
-  markdown: z.boolean().optional().describe('Enable markdown parsing (links, **bold**, *italic*). Default: false.'),
+  font: z.string().optional().describe(FONT_OPTION_DESCRIPTION),
+  markdown: z.boolean().optional().describe(MARKDOWN_OPTION_DESCRIPTION),
   color: z
     .object({
       background: z.string().optional().describe('Page background color (hex like "#000000" or named color). Default: white.'),
@@ -166,7 +167,7 @@ export default function createTool() {
         pageSize: pageSize as PageSizePreset | undefined,
         backgroundColor: color?.background,
         margins: margins,
-        parseMarkdown: markdown ?? false,
+        parseMarkdown: markdown ?? true,
         hyperlinkColor: color?.hyperlink ?? '#0066CC',
       };
 

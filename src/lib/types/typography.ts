@@ -109,6 +109,10 @@ export interface FontConfig {
   bold: string;
   italic: string;
   boldItalic?: string;
+  /** Styles with no face of their own, drawn by synthesizing from another face */
+  synthetic?: { bold: boolean; italic: boolean };
+  /** Font file the faces come from; absent for standard PDF fonts */
+  file?: string;
 }
 
 // =============================================================================

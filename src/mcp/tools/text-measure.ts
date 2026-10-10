@@ -13,6 +13,8 @@ import { DEFAULT_TEXT_FONT_SIZE } from '../../constants.ts';
 import { measureTextHeight, measureTextWidth } from '../../lib/content-measure.ts';
 import { registerEmojiFont } from '../../lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts } from '../../lib/fonts.ts';
+import { FONT_OPTION_DESCRIPTION } from '../../lib/pdf-core.ts';
+import { styleFace } from '../../lib/text-style.ts';
 
 // ============================================================================
 // Schemas
@@ -28,7 +30,7 @@ const textItemSchema = z.object({
 
 const inputSchema = z.object({
   items: z.array(textItemSchema).describe('Array of text items to measure'),
-  font: z.string().optional().describe('Font specification (default: auto). Built-ins: Helvetica, Times-Roman, Courier. Use a path or URL for custom fonts.'),
+  font: z.string().optional().describe(FONT_OPTION_DESCRIPTION),
 });
 
 const measurementResultSchema = z.object({
@@ -74,20 +76,19 @@ export default function createTool() {
       const containsEmoji = hasEmoji(contentText);
       const emojiAvailable = containsEmoji ? registerEmojiFont() : false;
       const fonts = await setupFonts(doc, font);
-      const { regular: regularFont, bold: boldFont } = fonts;
 
       // Measure each item
       const measurements: z.infer<typeof measurementResultSchema>[] = [];
 
       for (const item of items) {
         const fontSize = item.fontSize ?? DEFAULT_TEXT_FONT_SIZE;
-        const fontName = item.bold ? boldFont : regularFont;
+        const style = { bold: item.bold === true };
 
         // Measure natural width (single line)
-        const width = measureTextWidth(doc, item.text, fontSize, fontName, emojiAvailable);
+        const width = measureTextWidth(doc, item.text, fontSize, fonts, style, emojiAvailable);
 
         // Measure height (accounts for wrapping if width specified)
-        const height = measureTextHeight(doc, item.text, fontSize, fontName, emojiAvailable, {
+        const height = measureTextHeight(doc, item.text, fontSize, fonts, style, emojiAvailable, {
           width: item.width,
           lineGap: item.lineGap,
         });
@@ -97,7 +98,7 @@ export default function createTool() {
           width: Math.round(width * 100) / 100, // Round to 2 decimal places
           height: Math.round(height * 100) / 100,
           fontSize,
-          font: fontName,
+          font: styleFace(fonts, style),
         });
       }
 
@@ -106,7 +107,7 @@ export default function createTool() {
 
       const result: Output = {
         measurements,
-        font: regularFont,
+        font: fonts.regular,
       };
 
       return {

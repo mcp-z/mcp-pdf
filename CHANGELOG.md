@@ -1,5 +1,33 @@
 # Changelog
 
+## [3.3.0] - 2026-10-09
+
+### Added
+
+- Bold and italic in any font: a font's own bold and italic faces are used when it has them, and a font file with a single style gets synthesized ones (thickened outlines, slanted text), as browsers do.
+- `.ttc` font collections can be passed as `font`; each collection supplies whichever regular, bold and italic faces it contains, matched by style flags or weight.
+- `fonts.standardFonts(name)` returns the faces of a built-in font family, and `fonts.createFontValidator(fonts)` checks text against a font set from `fonts.setupFonts`. `FontConfig` gains `synthetic` (styles drawn without a face of their own) and `file`.
+
+### Changed
+
+- Inline markdown is parsed by default in `pdf-document`, `pdf-layout` and `pdf-resume`: `**bold**`, `*italic*`, `[links](url)`, `` `code` `` and backslash escapes. Line-start syntax stays literal, so `1. Led the team` or `# C# expert` prints as written, and line breaks are kept. Text that relies on literal `*`, `_` or `[..](..)` needs `markdown: false` or backslash escapes.
+- The `font` option is honored: the default `auto` system font and font file paths or URLs render in that font. Previously every font other than Helvetica, Times-Roman and Courier was replaced by Helvetica, so non-Latin text did not render; default output now uses the system Unicode font.
+- Resume field templates produce markdown, and every value inserted into one is escaped so it prints as written; `| raw` inserts a value that is already markdown. Template formatting applies whatever the `markdown` setting.
+- Skills render through the `skill` field template like every other section. The default, `**{{ name }}**{% if level %} ({{ level }}){% endif %}: {{ keywords | join: ', ' }}`, bolds the name only and now includes the level.
+- An invalid field template fails the call with an error naming the template instead of printing its source.
+
+### Fixed
+
+- Award, certificate and publication detail lines printed raw template code; they show the title and its awarder, issuer or publisher.
+- Text item `color`, `oblique`, `underline`, `strike`, `link`, `continued` and `lineBreak` were accepted but ignored by `pdf-document` and `pdf-layout`.
+- Bold and italic markdown spans were always drawn black, ignoring the text color.
+- Text containing both emoji and markdown drew the literal `**` and link markup and styled the wrong words.
+- Bold or italic ending inside a word (`**Tools**:`) styled the whole word.
+- Wrapped markdown text was measured shorter than it was drawn, so resume summaries could overlap the next block.
+- A partial nested resume `typography` override, such as `header.name.marginBottom`, discarded its sibling defaults such as the name's font size.
+- Empty template values counted as present, so a skill without a level printed `()`.
+- Character warnings for a font file check the glyphs that font actually has.
+
 ## [3.2.0] - 2026-09-07
 
 ### Changed

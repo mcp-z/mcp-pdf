@@ -64,17 +64,11 @@ export interface RenderOptions {
   backgroundColor?: string;
   /** Explicit margins (if provided, overrides default resume margins) */
   margins?: Margins;
-  /** Whether to parse markdown */
+  /** Whether to parse markdown in free text (default: true); field templates are always markdown */
   parseMarkdown?: boolean;
   /** Color for hyperlink text (default: #0066CC) */
   hyperlinkColor?: string;
 }
-
-/**
- * Setup fonts for the PDF document
- * Returns a FontConfig compatible with TypographyOptions (includes italic variants)
- * Falls back to Helvetica if font resolution or registration fails
- */
 
 /**
  * Merge partial typography options with defaults
@@ -83,8 +77,6 @@ function mergeTypography(defaults: TypographyOptions, overrides?: Partial<Typogr
   if (!overrides && !fonts) {
     return defaults;
   }
-
-  const merged = { ...defaults };
 
   // Validate that all override keys exist in defaults
   if (overrides) {
@@ -97,24 +89,25 @@ function mergeTypography(defaults: TypographyOptions, overrides?: Partial<Typogr
     }
   }
 
-  // Apply typography overrides first
-  if (overrides) {
-    if (overrides.fonts) merged.fonts = { ...merged.fonts, ...overrides.fonts };
-    if (overrides.header) merged.header = { ...merged.header, ...overrides.header };
-    if (overrides.sectionTitle) merged.sectionTitle = { ...merged.sectionTitle, ...overrides.sectionTitle };
-    if (overrides.entry) merged.entry = { ...merged.entry, ...overrides.entry };
-    if (overrides.content) merged.content = { ...merged.content, ...overrides.content };
-    if (overrides.entryHeader) merged.entryHeader = { ...merged.entryHeader, ...overrides.entryHeader };
-    if (overrides.quote) merged.quote = { ...merged.quote, ...overrides.quote };
-    if (overrides.divider) merged.divider = { ...merged.divider, ...overrides.divider };
-  }
+  const merged = mergeDeep(defaults, overrides ?? {}) as TypographyOptions;
 
-  // Apply font overrides from setupFonts - these take priority over typography.fonts
+  // Fonts from setupFonts take priority over typography.fonts
   if (fonts) {
     merged.fonts = fonts;
   }
 
   return merged;
+}
+
+/** Merges plain-object overrides into defaults at every depth, so a partial nested override keeps its siblings. */
+function mergeDeep(base: object, overrides: object): object {
+  const result: Record<string, unknown> = { ...base };
+  for (const [key, value] of Object.entries(overrides)) {
+    const current = result[key];
+    const bothObjects = value !== null && typeof value === 'object' && !Array.isArray(value) && current !== null && typeof current === 'object' && !Array.isArray(current);
+    if (value !== undefined) result[key] = bothObjects ? mergeDeep(current, value) : value;
+  }
+  return result;
 }
 
 /**
@@ -202,7 +195,7 @@ export async function generateResumePDFBuffer(resume: ResumeSchema, options: Ren
   };
 
   // Create render context
-  const renderCtx = createRenderContext(doc, typography, layoutDoc.fieldTemplates, emojiAvailable, options.parseMarkdown ?? false, options.hyperlinkColor ?? '#0066CC');
+  const renderCtx = createRenderContext(doc, typography, layoutDoc.fieldTemplates, emojiAvailable, options.parseMarkdown ?? true, options.hyperlinkColor ?? '#0066CC');
 
   // Return a promise that resolves when the PDF is complete
   return new Promise<Buffer>((resolve, reject) => {

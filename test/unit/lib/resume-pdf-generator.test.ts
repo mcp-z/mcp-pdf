@@ -1,7 +1,8 @@
 import type { Logger } from '@mcp-z/mcp-pdf';
 import assert from 'assert';
 import { generateResumePDFBuffer, type RenderOptions, type ResumeSchema } from '../../../src/lib/resume-pdf-generator.ts';
-import type { TypographyOptions } from '../../../src/lib/types/typography.ts';
+import { DEFAULT_TYPOGRAPHY, type TypographyOptions } from '../../../src/lib/types/typography.ts';
+import { pageContents } from '../../lib/fixture-fonts.ts';
 
 // Silent logger for tests
 const silentLogger: Logger = {
@@ -157,6 +158,17 @@ describe('Resume Styling Options', () => {
     assert.ok(pdfBuffer instanceof Buffer, 'Should return a Buffer');
     assert.ok(pdfBuffer.length > 0, 'PDF should have content');
     console.log(`    📄 Created: (${pdfBuffer.length} bytes)`);
+  });
+
+  it('keeps default values beside a partial nested override', async () => {
+    const options: RenderOptions = {
+      font: 'Helvetica',
+      typography: { header: { name: { marginBottom: 10 } } } as RenderOptions['typography'],
+    };
+
+    const pdf = await generateResumePDFBuffer(sampleResume, options, silentLogger);
+    const firstSize = /\/F\d+ (\S+) Tf/.exec(pageContents(pdf).join('\n'))?.[1];
+    assert.strictEqual(Number(firstSize), DEFAULT_TYPOGRAPHY.header.name.fontSize, 'name keeps the default font size');
   });
 
   it('generates resume with custom spacing', async () => {

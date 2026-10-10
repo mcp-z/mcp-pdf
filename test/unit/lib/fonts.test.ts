@@ -6,6 +6,7 @@ import { join } from 'path';
 import PDFDocument from 'pdfkit';
 import { registerEmojiFont } from '../../../src/lib/emoji-renderer.ts';
 import { renderText } from '../../../src/lib/pdf-helpers.ts';
+import { DEJAVU_SANS, embeddedFontNames, writeDejaVuCollection } from '../../lib/fixture-fonts.ts';
 
 // Use .tmp/ in package root, never os.tmpdir() (testing-standards)
 const testOutputDir = join(process.cwd(), '.tmp', 'fonts-tests');
@@ -332,14 +333,14 @@ describe('Chinese/CJK Character Rendering', (): void => {
       // Render Chinese text
       const chineseText = '測試中文字符渲染';
       renderText(doc, chineseText, {
-        typography: { fontSize: 12, fontName: fontSet.regular },
+        typography: { fontSize: 12, fonts: fontSet },
         features: { enableEmoji: false },
       });
 
       // Render mixed text
       const mixedText = 'Hello 世界 World';
       renderText(doc, mixedText, {
-        typography: { fontSize: 12, fontName: fontSet.regular },
+        typography: { fontSize: 12, fonts: fontSet },
         features: { enableEmoji: false },
       });
 
@@ -421,7 +422,7 @@ describe('Chinese/CJK Character Rendering', (): void => {
       // Hiragana and Kanji
       const japaneseText = 'こんにちは世界。これはテストです。';
       renderText(doc, japaneseText, {
-        typography: { fontSize: 12, fontName: fontSet.regular },
+        typography: { fontSize: 12, fonts: fontSet },
         features: { enableEmoji: false },
       });
 
@@ -451,7 +452,7 @@ describe('Chinese/CJK Character Rendering', (): void => {
 
       const koreanText = '안녕하세요 세계. 이것은 테스트입니다.';
       renderText(doc, koreanText, {
-        typography: { fontSize: 12, fontName: fontSet.regular },
+        typography: { fontSize: 12, fonts: fontSet },
         features: { enableEmoji: false },
       });
 
@@ -486,7 +487,7 @@ describe('Chinese/CJK Character Rendering', (): void => {
       const mixedText = '你好 👋 世界 🌍';
       const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
       renderText(doc, mixedText, {
-        typography: { fontSize: 12, fontName: fontSet.regular },
+        typography: { fontSize: 12, fonts: fontSet },
         features: { enableEmoji: emojiAvailable },
         layout: { width: pageWidth },
       });
@@ -677,5 +678,78 @@ Achievements:
   it('print test output directory', (): void => {
     console.log(`\n📁 Test PDFs generated in: ${testOutputDir}`);
     console.log('   Open these files to visually verify emoji rendering\n');
+  });
+});
+
+describe('fonts.setupFonts with a font file', (): void => {
+  async function renderToBuffer(fontSpec: string, text: string): Promise<Buffer> {
+    const doc = new PDFDocument();
+    const chunks: Buffer[] = [];
+    doc.on('data', (c: Buffer) => chunks.push(c));
+    const done = new Promise<Buffer>((resolve) => doc.on('end', () => resolve(Buffer.concat(chunks))));
+    const fontSet = await fonts.setupFonts(doc, fontSpec);
+    renderText(doc, text, {
+      typography: { fontSize: 12, fonts: fontSet },
+      layout: { width: 400 },
+      features: { enableEmoji: false, markdown: true },
+    });
+    doc.end();
+    return done;
+  }
+
+  it('embeds the font file for plain text', async (): Promise<void> => {
+    const names = embeddedFontNames(await renderToBuffer(DEJAVU_SANS, 'Привет мир'));
+    assert.deepStrictEqual([...new Set(names)], ['DejaVuSans']);
+  });
+
+  it('embeds the font file for bold and italic markdown', async (): Promise<void> => {
+    const names = embeddedFontNames(await renderToBuffer(DEJAVU_SANS, 'Привет **жирный** и *курсив* текст'));
+    assert.ok(names.length > 0 && names.every((n) => n === 'DejaVuSans'), `expected only DejaVuSans, got ${names.join(', ')}`);
+  });
+
+  it('embeds the auto-detected system font', async function (): Promise<void> {
+    if (!fonts.getSystemFont()) this.skip();
+    const names = embeddedFontNames(await renderToBuffer('auto', 'Привет мир'));
+    assert.ok(names.length > 0 && !names.includes('Helvetica'), `expected the system font, got ${names.join(', ')}`);
+  });
+});
+
+describe('fonts.validateTextForFont with a font file', (): void => {
+  it('accepts characters the font covers', (): void => {
+    const result = fonts.validateTextForFont('Привет мир', 'DejaVuSans', DEJAVU_SANS);
+    assert.strictEqual(result.hasUnsupportedCharacters, false);
+  });
+
+  it('reports characters the font lacks', (): void => {
+    const result = fonts.validateTextForFont('Hello 你好', 'DejaVuSans', DEJAVU_SANS);
+    assert.deepStrictEqual(Array.from(result.unsupportedChars.keys()), ['你', '好']);
+  });
+});
+
+describe('fonts.setupFonts styles', (): void => {
+  const fixtureDir = join(process.cwd(), '.tmp', 'fonts-styles-tests');
+  after(() => safeRmSync(fixtureDir, { recursive: true, force: true }));
+
+  it('marks bold and italic synthetic for a font file with one style', async (): Promise<void> => {
+    const fontSet = await fonts.setupFonts(new PDFDocument(), DEJAVU_SANS);
+    assert.deepStrictEqual(fontSet.synthetic, { bold: true, italic: true });
+    assert.strictEqual(fontSet.file, DEJAVU_SANS);
+  });
+
+  it('registers the real faces of a collection', async (): Promise<void> => {
+    const collection = writeDejaVuCollection(fixtureDir);
+    const fontSet = await fonts.setupFonts(new PDFDocument(), collection);
+    assert.deepStrictEqual(fontSet.synthetic, { bold: false, italic: false });
+    assert.strictEqual(new Set([fontSet.regular, fontSet.bold, fontSet.italic, fontSet.boldItalic]).size, 4);
+  });
+
+  it('identifies faces by weight and italic angle when style flags are absent', async (): Promise<void> => {
+    const collection = writeDejaVuCollection(fixtureDir, { faces: ['DejaVuSans-ExtraLight.ttf', 'DejaVuSans.ttf', 'DejaVuSans-Bold.ttf', 'DejaVuSans-Oblique.ttf'], clearStyleFlags: true, name: 'DejaVuSans-weights' });
+    const fontSet = await fonts.setupFonts(new PDFDocument(), collection);
+    assert.deepStrictEqual({ regular: fontSet.regular, bold: fontSet.bold, italic: fontSet.italic, synthetic: fontSet.synthetic }, { regular: 'DejaVuSans', bold: 'DejaVuSans-Bold', italic: 'DejaVuSans-Oblique', synthetic: { bold: false, italic: false } });
+  });
+
+  it('returns the built-in faces of a standard font', (): void => {
+    assert.deepStrictEqual(fonts.standardFonts('Times-Roman'), { regular: 'Times-Roman', bold: 'Times-Bold', italic: 'Times-Italic', boldItalic: 'Times-BoldItalic' });
   });
 });

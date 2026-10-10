@@ -1,9 +1,9 @@
 import emojiRegexFactory from 'emoji-regex';
-import { openSync as fontkitOpenSync } from 'fontkit';
+import { type Font, openSync as fontkitOpenSync } from 'fontkit';
 import { existsSync } from 'fs';
 import { mkdir, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
-import { join } from 'path';
+import { basename, extname, join } from 'path';
 import type PDFKit from 'pdfkit';
 import type { FontConfig } from './types/typography.ts';
 
@@ -146,82 +146,126 @@ export async function resolveFont(fontSpec: string): Promise<string | null> {
 }
 
 /**
- * Setup fonts for PDF document
- * Resolves font specification and registers with PDFKit
- * Returns FontConfig with regular/bold/oblique variants
- * Falls back to Helvetica if font resolution or registration fails
+ * Faces of a standard PDF font family. Symbol and ZapfDingbats have one face, used for every style.
  */
-export async function setupFonts(_doc: PDFKit.PDFDocument, fontSpec: string | undefined): Promise<FontConfig> {
-  // Default to auto-detect if not specified
-  const spec = fontSpec || 'auto';
+export function standardFonts(font: PDFStandardFont): FontConfig {
+  if (font.startsWith('Helvetica')) return { regular: 'Helvetica', bold: 'Helvetica-Bold', italic: 'Helvetica-Oblique', boldItalic: 'Helvetica-BoldOblique' };
+  if (font.startsWith('Times')) return { regular: 'Times-Roman', bold: 'Times-Bold', italic: 'Times-Italic', boldItalic: 'Times-BoldItalic' };
+  if (font.startsWith('Courier')) return { regular: 'Courier', bold: 'Courier-Bold', italic: 'Courier-Oblique', boldItalic: 'Courier-BoldOblique' };
+  return { regular: font, bold: font, italic: font, boldItalic: font };
+}
 
-  // Resolve the font (may throw on URL download failure)
-  const resolvedFont = await resolveFont(spec);
+const REGULAR_WEIGHT = 400;
+const BOLD_WEIGHT = 700;
 
-  // Fall back to Helvetica if resolution failed
-  if (!resolvedFont) {
-    return {
-      regular: 'Helvetica',
-      bold: 'Helvetica-Bold',
-      italic: 'Helvetica-Oblique',
-      boldItalic: 'Helvetica-BoldOblique',
-    };
-  }
+const faceWeight = (face: Font): number => face['OS/2']?.usWeightClass ?? REGULAR_WEIGHT;
+const isBoldFace = (face: Font): boolean => Boolean(face['OS/2']?.fsSelection.bold) || faceWeight(face) >= BOLD_WEIGHT;
+const isItalicFace = (face: Font): boolean => Boolean(face['OS/2']?.fsSelection.italic) || face.italicAngle !== 0;
 
-  // If it's a standard PDF font, use its variants
-  if (isPDFStandardFont(resolvedFont)) {
-    // Map to standard font families
-    if (resolvedFont.startsWith('Helvetica')) {
-      return {
-        regular: 'Helvetica',
-        bold: 'Helvetica-Bold',
-        italic: 'Helvetica-Oblique',
-        boldItalic: 'Helvetica-BoldOblique',
-      };
-    }
-    if (resolvedFont.startsWith('Times')) {
-      return {
-        regular: 'Times-Roman',
-        bold: 'Times-Bold',
-        italic: 'Times-Italic',
-        boldItalic: 'Times-BoldItalic',
-      };
-    }
-    if (resolvedFont.startsWith('Courier')) {
-      return {
-        regular: 'Courier',
-        bold: 'Courier-Bold',
-        italic: 'Courier-Oblique',
-        boldItalic: 'Courier-BoldOblique',
-      };
-    }
-
-    // For Symbol or ZapfDingbats, just use as-is for all variants
-    return {
-      regular: resolvedFont,
-      bold: resolvedFont,
-      italic: resolvedFont,
-      boldItalic: resolvedFont,
-    };
-  }
-
-  // It's a custom font file path (from auto-detect or explicit path)
-  // Custom fonts typically don't have separate bold/italic files readily available,
-  // so we fall back to Helvetica which has all variants built-in.
-  // This ensures bold/italic markdown styling works correctly.
-  // Note: We intentionally do NOT register the custom font since we won't use it.
-  return {
-    regular: 'Helvetica',
-    bold: 'Helvetica-Bold',
-    italic: 'Helvetica-Oblique',
-    boldItalic: 'Helvetica-BoldOblique',
+/**
+ * Registers the faces of a font file with the document. A collection (.ttc) contributes a face per style it
+ * contains: bold by flag or weight 700+, italic by flag or slant, nearest to weight 400 or 700. Styles without
+ * a face are marked synthetic.
+ */
+function registerFontFile(doc: PDFKit.PDFDocument, fontPath: string): FontConfig {
+  const opened = fontkitOpenSync(fontPath);
+  const isCollection = 'fonts' in opened;
+  const faces = isCollection ? opened.fonts : [opened];
+  const find = (bold: boolean, italic: boolean): Font | undefined => {
+    const target = bold ? BOLD_WEIGHT : REGULAR_WEIGHT;
+    const distance = (face: Font): number => Math.abs(faceWeight(face) - target);
+    return faces.filter((f) => isBoldFace(f) === bold && isItalicFace(f) === italic).sort((a, b) => distance(a) - distance(b))[0];
   };
+  const register = (face: Font): string => {
+    doc.registerFont(face.postscriptName, fontPath, isCollection ? face.postscriptName : undefined);
+    return face.postscriptName;
+  };
+
+  const regularFace = find(false, false) ?? faces[0];
+  if (!regularFace) throw new Error(`Font collection ${fontPath} contains no fonts`);
+  const boldFace = find(true, false);
+  const italicFace = find(false, true);
+  const boldItalicFace = find(true, true);
+  const regular = register(regularFace);
+  return {
+    regular,
+    bold: boldFace ? register(boldFace) : regular,
+    italic: italicFace ? register(italicFace) : regular,
+    ...(boldItalicFace && { boldItalic: register(boldItalicFace) }),
+    synthetic: { bold: !boldFace, italic: !italicFace },
+    file: fontPath,
+  };
+}
+
+/**
+ * Setup fonts for PDF document
+ * Resolves font specification and registers its faces with PDFKit
+ * Falls back to Helvetica if the font cannot be resolved
+ */
+export async function setupFonts(doc: PDFKit.PDFDocument, fontSpec: string | undefined): Promise<FontConfig> {
+  // Resolve the font (may throw on URL download failure)
+  const resolvedFont = await resolveFont(fontSpec || 'auto');
+  if (!resolvedFont) return standardFonts('Helvetica');
+  if (isPDFStandardFont(resolvedFont)) return standardFonts(resolvedFont);
+  return registerFontFile(doc, resolvedFont);
 }
 
 export interface CharacterValidationResult {
   hasUnsupportedCharacters: boolean;
   warnings: string[];
   unsupportedChars: Map<string, number>; // char -> codePoint
+}
+
+function describeChars(unsupportedChars: Map<string, number>): string {
+  const chars = Array.from(unsupportedChars.entries())
+    .slice(0, 5)
+    .map(([char, code]) => `"${char}" (U+${code.toString(16).toUpperCase().padStart(4, '0')})`)
+    .join(', ');
+  const more = unsupportedChars.size > 5 ? ` and ${unsupportedChars.size - 5} more` : '';
+  return `${chars}${more}`;
+}
+
+function isStandardFontName(fontName: string): boolean {
+  return PDF_STANDARD_FONTS.some((f) => {
+    const baseName = f.split('-')[0];
+    return baseName && fontName.startsWith(baseName);
+  });
+}
+
+function validateStandardFont(text: string, fontName: string): CharacterValidationResult {
+  const unsupportedChars = new Map<string, number>();
+  for (const char of text) {
+    const code = char.charCodeAt(0);
+    if (code < 0x20 || code > 0xff) unsupportedChars.set(char, code);
+  }
+  if (unsupportedChars.size === 0) return { hasUnsupportedCharacters: false, warnings: [], unsupportedChars };
+  return {
+    hasUnsupportedCharacters: true,
+    warnings: [`Characters ${describeChars(unsupportedChars)} won't render in ${fontName}. Standard PDF fonts only support WinAnsi encoding (0x20-0xFF). Consider using a custom Unicode font or alternative characters.`],
+    unsupportedChars,
+  };
+}
+
+function validateFontFile(text: string, fontName: string, font: Font): CharacterValidationResult {
+  const unsupportedChars = new Map<string, number>();
+  for (const char of text) {
+    const codePoint = char.codePointAt(0);
+    if (codePoint && !font.hasGlyphForCodePoint(codePoint)) unsupportedChars.set(char, codePoint);
+  }
+  if (unsupportedChars.size === 0) return { hasUnsupportedCharacters: false, warnings: [], unsupportedChars };
+  return {
+    hasUnsupportedCharacters: true,
+    warnings: [`Characters ${describeChars(unsupportedChars)} are not supported by font ${fontName}. Consider using a different font or alternative characters.`],
+    unsupportedChars,
+  };
+}
+
+/** Opens a font file with fontkit; a collection (TTC) yields its first font. */
+function openFontFile(fontPath: string): Font {
+  const fontOrCollection = fontkitOpenSync(fontPath);
+  const font = 'fonts' in fontOrCollection ? fontOrCollection.fonts[0] : fontOrCollection;
+  if (!font) throw new Error(`Font collection ${fontPath} contains no fonts`);
+  return font;
 }
 
 /**
@@ -231,80 +275,27 @@ export interface CharacterValidationResult {
  * For custom fonts: uses fontkit to check actual glyph support
  *
  * @param text - Text to validate
- * @param fontName - Font name (e.g., 'Helvetica', 'CustomFont')
+ * @param fontName - Font name used in warnings (e.g., 'Helvetica')
  * @param fontPath - Path to font file (required for custom fonts)
  * @returns Validation result with warnings
  */
 export function validateTextForFont(text: string, fontName: string, fontPath: string | undefined): CharacterValidationResult {
-  const result: CharacterValidationResult = {
-    hasUnsupportedCharacters: false,
-    warnings: [],
-    unsupportedChars: new Map(),
+  if (isStandardFontName(fontName)) return validateStandardFont(text, fontName);
+  if (!fontPath) return { hasUnsupportedCharacters: false, warnings: [], unsupportedChars: new Map() };
+  return validateFontFile(text, fontName, openFontFile(fontPath));
+}
+
+/**
+ * Returns a validator for text drawn with `fonts` (as returned by setupFonts).
+ * A font file is opened on first use and held only as long as the validator.
+ */
+export function createFontValidator(fonts: FontConfig): (text: string) => CharacterValidationResult {
+  const fontFile = fonts.file;
+  if (!fontFile) return (text) => (isStandardFontName(fonts.regular) ? validateStandardFont(text, fonts.regular) : { hasUnsupportedCharacters: false, warnings: [], unsupportedChars: new Map() });
+  const fontName = basename(fontFile, extname(fontFile));
+  let font: Font | undefined;
+  return (text) => {
+    font ??= openFontFile(fontFile);
+    return validateFontFile(text, fontName, font);
   };
-
-  // Check if it's a standard PDF font
-  const isStandardFont = PDF_STANDARD_FONTS.some((f) => {
-    const baseName = f.split('-')[0];
-    return baseName && fontName.startsWith(baseName);
-  });
-
-  if (isStandardFont) {
-    // Standard PDF fonts only support WinAnsi encoding (0x20-0xFF)
-    for (const char of text) {
-      const code = char.charCodeAt(0);
-
-      if (code < 0x20 || code > 0xff) {
-        result.hasUnsupportedCharacters = true;
-        result.unsupportedChars.set(char, code);
-      }
-    }
-
-    if (result.hasUnsupportedCharacters) {
-      const chars = Array.from(result.unsupportedChars.entries())
-        .slice(0, 5)
-        .map(([char, code]) => `"${char}" (U+${code.toString(16).toUpperCase().padStart(4, '0')})`)
-        .join(', ');
-      const more = result.unsupportedChars.size > 5 ? ` and ${result.unsupportedChars.size - 5} more` : '';
-
-      result.warnings.push(`Characters ${chars}${more} won't render in ${fontName}. Standard PDF fonts only support WinAnsi encoding (0x20-0xFF). Consider using a custom Unicode font or alternative characters.`);
-    }
-  } else if (fontPath && !fontName.startsWith('CustomFont')) {
-    // Custom font - check actual glyph coverage using fontkit
-    try {
-      const fontOrCollection = fontkitOpenSync(fontPath);
-
-      // Handle font collections (TTC files) - use first font
-      const font = 'fonts' in fontOrCollection ? fontOrCollection.fonts[0] : fontOrCollection;
-
-      if (!font) {
-        // Font collection is empty - can't validate
-        return result;
-      }
-
-      for (const char of text) {
-        const codePoint = char.codePointAt(0);
-        if (codePoint && !font.hasGlyphForCodePoint(codePoint)) {
-          result.hasUnsupportedCharacters = true;
-          result.unsupportedChars.set(char, codePoint);
-        }
-      }
-
-      if (result.hasUnsupportedCharacters) {
-        const chars = Array.from(result.unsupportedChars.entries())
-          .slice(0, 5)
-          .map(([char, code]) => `"${char}" (U+${code.toString(16).toUpperCase().padStart(4, '0')})`)
-          .join(', ');
-        const more = result.unsupportedChars.size > 5 ? ` and ${result.unsupportedChars.size - 5} more` : '';
-
-        result.warnings.push(`Characters ${chars}${more} are not supported by font ${fontName}. Consider using a different font or alternative characters.`);
-      }
-    } catch (_err) {
-      // If we can't load the font, we can't validate - remain silent (no false positives)
-    }
-  }
-
-  // For unknown fonts or when we can't determine support, remain silent
-  // (no false positives)
-
-  return result;
 }

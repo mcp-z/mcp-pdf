@@ -1,5 +1,6 @@
+import { createCanvas } from '@napi-rs/canvas';
 import assert from 'assert';
-import { splitTextAndEmoji } from '../../../src/lib/emoji-renderer.ts';
+import { measureEmoji, registerEmojiFont, renderEmojiToBuffer, splitTextAndEmoji } from '../../../src/lib/emoji-renderer.ts';
 
 describe('splitTextAndEmoji', (): void => {
   it('returns single text segment for ASCII-only text', (): void => {
@@ -137,5 +138,39 @@ describe('splitTextAndEmoji', (): void => {
       result.some((seg) => seg.type === 'emoji'),
       'Should detect emoji in sequence'
     );
+  });
+});
+
+describe('measureEmoji', (): void => {
+  before(() => {
+    if (!registerEmojiFont()) throw new Error('assets/fonts/NotoColorEmoji.ttf is required for emoji measurement');
+  });
+
+  function freshMeasure(emoji: string, fontSize: number): { width: number; height: number } {
+    const ctx = createCanvas(1, 1).getContext('2d');
+    ctx.font = `${fontSize}px NotoColorEmoji`;
+    const m = ctx.measureText(emoji);
+    return { width: m.width, height: m.actualBoundingBoxAscent + m.actualBoundingBoxDescent };
+  }
+
+  it('matches a fresh canvas across interleaved emoji and sizes', (): void => {
+    const cases: Array<[string, number]> = [
+      ['😀', 12],
+      ['👨‍💼', 48],
+      ['😀', 8],
+      ['🇺🇸', 30],
+      ['😀', 12],
+    ];
+    for (const [emoji, size] of cases) {
+      const { width, height, baselineOffset } = measureEmoji(emoji, size);
+      assert.deepStrictEqual({ width, height }, freshMeasure(emoji, size), `${emoji} at ${size}`);
+      assert.strictEqual(baselineOffset, size * 0.125);
+    }
+  });
+
+  it('is unaffected by rendering between measurements', (): void => {
+    const before = measureEmoji('🚀', 20);
+    assert.ok(renderEmojiToBuffer('🚀', 64), 'render should produce a PNG');
+    assert.deepStrictEqual(measureEmoji('🚀', 20), before);
   });
 });

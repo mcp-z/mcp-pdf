@@ -1,4 +1,4 @@
-import { createCanvas, GlobalFonts } from '@napi-rs/canvas';
+import { createCanvas, GlobalFonts, type SKRSContext2D } from '@napi-rs/canvas';
 import emojiRegexFactory from 'emoji-regex';
 import { existsSync } from 'fs';
 import moduleRoot from 'module-root-sync';
@@ -15,6 +15,8 @@ const EMOJI_FONT_PATH = join(PROJECT_ROOT, 'assets', 'fonts', 'NotoColorEmoji.tt
 
 let emojiFontRegistered = false;
 let emojiFontWarned = false;
+// Measurement only sets font before measureText, so one context serves every call.
+let measureContext: SKRSContext2D | null = null;
 
 /**
  * Register the emoji font with @napi-rs/canvas
@@ -76,9 +78,8 @@ export function measureEmoji(emoji: string, fontSize: number): EmojiMetrics {
   }
 
   try {
-    // Create a small canvas just for measurement
-    const canvas = createCanvas(1, 1);
-    const ctx = canvas.getContext('2d');
+    measureContext ??= createCanvas(1, 1).getContext('2d');
+    const ctx = measureContext;
     ctx.font = `${fontSize}px NotoColorEmoji`;
 
     const metrics = ctx.measureText(emoji);

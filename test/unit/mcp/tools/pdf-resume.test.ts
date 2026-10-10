@@ -1,11 +1,13 @@
 import { mcp } from '@mcp-z/mcp-pdf';
 import assert from 'assert';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync } from 'fs';
 import { safeRmSync } from 'fs-remove-compat';
 import { join } from 'path';
+import { fileURLToPath } from 'url';
 import type { Input, Output } from '../../../../src/mcp/tools/pdf-resume.ts';
 import { createExtra } from '../../../lib/create-extra.ts';
 import { createTestConfig } from '../../../lib/create-test-config.ts';
+import { DEJAVU_SANS, textRuns, writeDejaVuCollection } from '../../../lib/fixture-fonts.ts';
 
 // Use .tmp/ in package root, never os.tmpdir() (testing-standards)
 describe('pdf-resume tool', () => {
@@ -696,5 +698,116 @@ describe('pdf-resume two-column layout', () => {
     assert.ok(output.documentId, 'should have documentId');
     assert.ok(output.sizeBytes > 0, 'should have non-zero size');
     console.log(`    📄 Single-column (default) resume created: ${output.sizeBytes} bytes`);
+  });
+});
+
+describe('pdf-resume bold and italic', () => {
+  const testOutputDir = join(process.cwd(), '.tmp', 'pdf-resume-style-tests');
+  const testStorageDir = join(testOutputDir, 'storage');
+  const tool = mcp.toolFactories.pdfResume();
+  const extra = createExtra(createTestConfig(testOutputDir, testStorageDir));
+  const resume = {
+    basics: { name: 'Ada Lovelace', label: 'Engineer', summary: 'Builds **engines**.' },
+    work: [{ name: 'Engines Ltd', position: 'Lead', startDate: '2020-01', highlights: ['Shipped'] }],
+    education: [{ institution: 'Uni', area: 'Math', studyType: 'BSc', startDate: '2010-01', endDate: '2014-01' }],
+    skills: [{ name: 'Languages', keywords: ['TS', 'Go'] }],
+  };
+  let collection: string;
+
+  before(() => {
+    mkdirSync(testStorageDir, { recursive: true });
+    collection = writeDejaVuCollection(testOutputDir);
+  });
+  after(() => {
+    if (existsSync(testOutputDir)) safeRmSync(testOutputDir, { recursive: true, force: true });
+  });
+
+  async function runs(font: string) {
+    const result = await tool.handler({ resume, font, markdown: true }, extra);
+    return textRuns(readFileSync(fileURLToPath((result.structuredContent as { result: Output }).result.uri)));
+  }
+
+  it('fakes bold and italic with a one-style font', async () => {
+    const drawn = await runs(DEJAVU_SANS);
+    assert.ok(
+      drawn.some((r) => r.mode === 2),
+      'name, section titles and positions are bold'
+    );
+    assert.ok(
+      drawn.some((r) => r.mode === 0 && !r.oblique),
+      'body text is regular'
+    );
+    assert.ok(drawn.every((r) => r.font === 'DejaVuSans'));
+  });
+
+  it('uses real faces from a collection', async () => {
+    const drawn = await runs(collection);
+    assert.ok(drawn.some((r) => r.font === 'DejaVuSans-Bold'));
+    assert.ok(drawn.some((r) => r.font === 'DejaVuSans'));
+    assert.ok(
+      drawn.every((r) => r.mode === 0 && !r.oblique),
+      'nothing is faked'
+    );
+  });
+});
+
+describe('pdf-resume markdown', () => {
+  const testOutputDir = join(process.cwd(), '.tmp', 'pdf-resume-markdown-tests');
+  const testStorageDir = join(testOutputDir, 'storage');
+  const tool = mcp.toolFactories.pdfResume();
+  const extra = createExtra(createTestConfig(testOutputDir, testStorageDir));
+  const resume = {
+    basics: { name: 'Ada', url: 'https://ada.example/', summary: 'Builds **engines** daily.' },
+    skills: [
+      { name: 'Languages', level: 'Expert', keywords: ['TS', 'Go'] },
+      { name: 'Tools', keywords: ['Git'] },
+    ],
+  };
+
+  before(() => mkdirSync(testStorageDir, { recursive: true }));
+  after(() => {
+    if (existsSync(testOutputDir)) safeRmSync(testOutputDir, { recursive: true, force: true });
+  });
+
+  async function pdfFor(markdown?: boolean): Promise<Buffer> {
+    const result = await tool.handler({ resume, font: 'Helvetica', ...(markdown === undefined ? {} : { markdown }) }, extra);
+    return readFileSync(fileURLToPath((result.structuredContent as { result: Output }).result.uri));
+  }
+
+  it('parses markdown in free text by default', async () => {
+    const runs = textRuns(await pdfFor());
+    assert.ok(runs.some((r) => r.font === 'Helvetica-Bold' && r.text === 'engines'));
+    assert.ok(!runs.some((r) => r.text.includes('**')));
+  });
+
+  it('draws free text literally with markdown: false', async () => {
+    const runs = textRuns(await pdfFor(false));
+    assert.ok(runs.some((r) => r.text.includes('**engines**')));
+  });
+
+  it('draws each skill from the skill template, with the level', async () => {
+    for (const markdown of [undefined, false]) {
+      const runs = textRuns(await pdfFor(markdown)).map((r) => [r.font, r.text]);
+      assert.ok(
+        runs.some(([font, text]) => font === 'Helvetica-Bold' && text === 'Languages'),
+        `bold name (markdown ${markdown})`
+      );
+      assert.ok(
+        runs.some(([font, text]) => font === 'Helvetica' && text?.includes('(Expert): TS, Go')),
+        `level and keywords (markdown ${markdown})`
+      );
+      assert.ok(
+        runs.some(([font, text]) => font === 'Helvetica' && text === ': Git'),
+        `no empty level (markdown ${markdown})`
+      );
+    }
+  });
+
+  it('draws the contact link as a link, not markdown source', async () => {
+    for (const markdown of [undefined, false]) {
+      const pdf = await pdfFor(markdown);
+      assert.ok(!textRuns(pdf).some((r) => r.text.includes('](')), `no raw link (markdown ${markdown})`);
+      assert.match(pdf.toString('latin1'), /\/URI \(https:\/\/ada\.example\/\)/);
+    }
   });
 });

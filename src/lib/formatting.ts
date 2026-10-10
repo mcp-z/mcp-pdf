@@ -5,20 +5,22 @@
  * Handlers use these for field-level rendering while maintaining structural layout.
  */
 
-import type { FieldTemplates } from './ir/types.ts';
+import type { ContactItem, FieldTemplates } from './ir/types.ts';
+import { escapeMarkdown } from './markdown.ts';
 import { registerFilter, render } from './template.ts';
 
 /**
- * Default field templates
+ * Default field templates. Templates produce markdown and inserted values are escaped; `contactLine` joins items
+ * that are already markdown, so it inserts them `raw`.
  */
 export const DEFAULT_FIELD_TEMPLATES: Required<FieldTemplates> = {
   location: '{{ city }}{% if region %}, {{ region }}{% endif %}',
   dateRange: "{{ start | date: 'MMM YYYY' }}{% if start %} – {% endif %}{{ end | date: 'MMM YYYY' | default: 'Present' }}",
   degree: '{{ studyType }}{% if area %}, {{ area }}{% endif %}',
-  contactLine: "{{ items | join: ' | ' }}",
-  credential: '{{ title | default: name }}{% if awarder %}, {{ awarder }}{% endif %}{% if issuer %}, {{ issuer %}{% endif %}{% if publisher %}, {{ publisher %}{% endif %}',
+  contactLine: "{{ items | join: ' | ' | raw }}",
+  credential: '{{ title | default: name }}{% if awarder %}, {{ awarder }}{% endif %}{% if issuer %}, {{ issuer }}{% endif %}{% if publisher %}, {{ publisher }}{% endif %}',
   language: '{{ language }}{% if fluency %} ({{ fluency }}){% endif %}',
-  skill: "{{ name }}: {{ keywords | join: ', ' }}",
+  skill: "**{{ name }}**{% if level %} ({{ level }}){% endif %}: {{ keywords | join: ', ' }}",
   url: '[{{ text }}]({{ url }})',
 };
 
@@ -174,7 +176,24 @@ export function mergeFieldTemplates(userTemplates?: FieldTemplates): Required<Fi
  * Render a field template with the given context
  */
 export function renderField(template: string, context: Record<string, unknown>): string {
-  return render(template, context).trim();
+  // Liquid treats '' as true, so empty values are dropped and `{% if field %}` skips them
+  const present = Object.fromEntries(Object.entries(context).filter(([, value]) => value !== ''));
+  return render(template, present).trim();
+}
+
+/**
+ * The header contact line as markdown: locations and links from their templates, other items escaped, joined by
+ * the contactLine template.
+ */
+export function renderContactLine(templates: Required<FieldTemplates>, items: ContactItem[]): string {
+  const texts = items
+    .map((item) => {
+      if (item.location) return renderField(templates.location, item.location);
+      if (item.url) return renderField(templates.url, { text: item.text, url: item.url });
+      return escapeMarkdown(item.text);
+    })
+    .filter((text) => text.length > 0);
+  return renderField(templates.contactLine, { items: texts });
 }
 
 // Flag to track if filters are registered

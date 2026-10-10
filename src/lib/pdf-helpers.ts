@@ -2,6 +2,7 @@ import type PDFKit from 'pdfkit';
 import { measureEmoji, renderEmojiToBuffer, splitTextAndEmoji } from './emoji-renderer.ts';
 import { hasEmoji } from './fonts.ts';
 import { tokenizeMarkdown, tokensToStyledSegments } from './markdown.ts';
+import { drawText, selectFace, type TextPaint, type TextStyle } from './text-style.ts';
 import type { FontConfig } from './types/typography.ts';
 
 /**
@@ -32,9 +33,8 @@ export interface PDFTextOptions {
 
 export interface TypographyConfig {
   fontSize: number;
-  fontName: string;
-  fonts?: FontConfig;
-  bold?: boolean;
+  fonts: FontConfig;
+  style?: TextStyle;
   underline?: boolean;
   strike?: boolean;
   oblique?: boolean | number;
@@ -86,105 +86,14 @@ export interface TextRenderConfig {
 // ============================================================================
 
 /**
- * Segment types for text with markdown links
- */
-interface TextSegment {
-  type: 'text';
-  content: string;
-}
-
-interface LinkSegment {
-  type: 'link';
-  text: string;
-  url: string;
-}
-
-type MarkdownSegment = TextSegment | LinkSegment;
-
-/**
- * Parse markdown links from text and return segments
- * Converts [text](url) into segments with link metadata
- */
-function _parseMarkdownLinks(text: string): MarkdownSegment[] {
-  const segments: MarkdownSegment[] = [];
-  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null = linkRegex.exec(text);
-
-  while (match !== null) {
-    // Add text before the link
-    if (match.index > lastIndex) {
-      segments.push({
-        type: 'text',
-        content: text.substring(lastIndex, match.index),
-      });
-    }
-
-    // Add the link
-    segments.push({
-      type: 'link',
-      text: match[1],
-      url: match[2],
-    });
-
-    lastIndex = match.index + match[0].length;
-    match = linkRegex.exec(text);
-  }
-
-  // Add remaining text after the last link
-  if (lastIndex < text.length) {
-    segments.push({
-      type: 'text',
-      content: text.substring(lastIndex),
-    });
-  }
-
-  // If no links were found, return the original text as a single segment
-  if (segments.length === 0) {
-    segments.push({
-      type: 'text',
-      content: text,
-    });
-  }
-
-  return segments;
-}
-
-/**
- * Check if text contains markdown links
- */
-function _hasMarkdownLinks(text: string): boolean {
-  return /\[([^\]]+)\]\(([^)]+)\)/.test(text);
-}
-
-/**
- * Render text with inline emoji support and markdown links
- *
- * If emoji font is available and text contains emoji, renders emoji as inline images.
- * If text contains markdown links [text](url), renders them as clickable links.
- * Otherwise, renders text normally using PDFKit.
- *
- * Supports both single-line and multi-line/wrapped text with emoji and links.
- *
- * @param doc - PDFKit document
- * @param text - Text to render (may contain emoji and markdown links)
- * @param fontSize - Font size in points
- * @param fontName - Font name to use for text
- * @param emojiAvailable - Whether emoji font is available
- * @param enableMarkdownLinks - Whether to parse and render markdown links as clickable
- * @param hyperlinkColor - Color for hyperlink text (default: #0066CC)
- * @param options - Additional PDFKit text options
- */
-
-/**
  * Render text with grouped configuration options.
  * New API that groups related options together for better organization.
  */
 export function renderText(doc: PDFKit.PDFDocument, text: string, config: TextRenderConfig): void {
   const { typography, color = {}, features = {}, layout = {}, spacing = {}, annotation = {} } = config;
 
-  const { fontSize, fontName, fonts } = typography;
-  const { hyperlinkColor = '#0066CC' } = color;
+  const { fontSize, fonts, style = {}, underline, strike, oblique } = typography;
+  const { fillColor = 'black', hyperlinkColor = '#0066CC' } = color;
   const { enableEmoji = false, markdown: shouldParseMarkdown = false } = features;
   const { x, y, width, align = 'left', indent = 0 } = layout;
   const { lineGap = 0, paragraphGap = 0, moveDown, characterSpacing = 0, wordSpacing = 0, continued = false, lineBreak = true } = spacing;
@@ -204,9 +113,12 @@ export function renderText(doc: PDFKit.PDFDocument, text: string, config: TextRe
     lineBreak,
     moveDown,
     link,
+    underline,
+    strike,
+    oblique,
   };
 
-  renderTextUnified(doc, text, fontSize, fontName, fonts ?? null, enableEmoji, shouldParseMarkdown, hyperlinkColor, options);
+  renderTextUnified(doc, text, { fonts, style, fontSize, color: fillColor }, enableEmoji, shouldParseMarkdown, hyperlinkColor, options);
 }
 
 /**
@@ -244,6 +156,19 @@ function parseMarkdownText(text: string, parseMarkdown: boolean): ParsedMarkdown
 }
 
 /**
+ * Returns a lookup for the style range covering a character position.
+ * Ranges are contiguous and in text order and callers ask in increasing position, so the cursor only moves forward.
+ */
+function styleCursor(styleRanges: ParsedMarkdownText['styleRanges']): (position: number) => ParsedMarkdownText['styleRanges'][number] | undefined {
+  let index = 0;
+  return (position) => {
+    let range = styleRanges[index];
+    while (range && range.end <= position) range = styleRanges[++index];
+    return range && position >= range.start ? range : undefined;
+  };
+}
+
+/**
  * Calculate the rendered height of text with markdown formatting.
  *
  * This function uses the same algorithm as renderTextUnified to calculate
@@ -263,9 +188,8 @@ function parseMarkdownText(text: string, parseMarkdown: boolean): ParsedMarkdown
  * @param parseMarkdown - Whether to parse markdown (default: true)
  * @returns Height in points that the rendered text will occupy
  */
-export function measureMarkdownTextHeight(doc: PDFKit.PDFDocument, text: string, width: number, fontSize: number, lineGap: number, fonts: FontConfig, parseMarkdown = true): number {
-  // Set base font for measurement
-  doc.font(fonts.regular).fontSize(fontSize);
+export function measureMarkdownTextHeight(doc: PDFKit.PDFDocument, text: string, width: number, fontSize: number, lineGap: number, fonts: FontConfig, parseMarkdown = true, style: TextStyle = {}): number {
+  selectFace(doc, fonts, style).fontSize(fontSize);
 
   // Parse markdown using shared helper
   const { plainText, styleRanges, hasMarkdownContent } = parseMarkdownText(text, parseMarkdown);
@@ -275,72 +199,73 @@ export function measureMarkdownTextHeight(doc: PDFKit.PDFDocument, text: string,
     return doc.heightOfString(plainText, { width, lineGap });
   }
 
-  // Complex case - calculate with proper font widths for each segment
-  const words: Array<{ width: number }> = [];
-  const textWords = plainText.split(/(\s+)/);
-  let charPosition = 0;
-
-  for (const word of textWords) {
-    if (word.length > 0) {
-      const charEnd = charPosition + word.length;
-      const styleInfo = styleRanges.find((range) => charPosition >= range.start && charPosition < range.end);
-      const isBold = styleInfo?.bold ?? false;
-      const isItalic = styleInfo?.italic ?? false;
-
-      // Measure with correct font
-      const resolved = resolveFontForStyle(fonts, isBold, isItalic);
-      doc.font(resolved.fontName).fontSize(fontSize);
-      const wordWidth = doc.widthOfString(word);
-
-      words.push({ width: wordWidth });
-      charPosition = charEnd;
-    }
-  }
-
-  // Wrap words into lines
-  let lineCount = 0;
-  let currentLineWidth = 0;
-
-  for (const word of words) {
-    if (currentLineWidth === 0) {
-      currentLineWidth = word.width;
-      lineCount = 1;
-    } else if (currentLineWidth + word.width <= width) {
-      currentLineWidth += word.width;
-    } else {
-      lineCount++;
-      currentLineWidth = word.width;
-    }
-  }
-
-  // Ensure at least one line for non-empty text
-  if (lineCount === 0 && plainText.length > 0) {
-    lineCount = 1;
-  }
-
-  // Calculate total height
-  const lineHeight = fontSize + lineGap;
-  return lineCount * lineHeight;
+  const { lines, lineHeight } = layoutStyledText(doc, plainText, styleRanges, { fonts, style, fontSize, color: 'black' }, false, { width, lineGap });
+  return lines.length * lineHeight;
 }
 
+/** Combines the base style with a markdown range's bold and italic. */
+function withMarkdownStyle(style: TextStyle, range?: { bold: boolean; italic: boolean }): TextStyle {
+  return { bold: style.bold || range?.bold, italic: style.italic || range?.italic };
+}
+
+type StyledWord = { type: 'text' | 'emoji'; content: string; width: number; isLink: boolean; linkUrl?: string; bold: boolean; italic: boolean };
+type StyledLine = { words: StyledWord[]; width: number };
+
 /**
- * Resolve font name based on bold/italic flags
+ * Splits styled text into words measured in their own faces and wraps them into lines; line breaks in the text
+ * start new lines. Drawing and measuring both use this, so measured heights match drawn output.
  */
-function resolveFontForStyle(fonts: FontConfig, bold: boolean, italic: boolean): { fontName: string; applyOblique: boolean } {
-  if (bold && italic) {
-    if (fonts.boldItalic) {
-      return { fontName: fonts.boldItalic, applyOblique: false };
+function layoutStyledText(doc: PDFKit.PDFDocument, text: string, styleRanges: ParsedMarkdownText['styleRanges'], paint: TextPaint, withEmoji: boolean, options: { width: number; indent?: number; wordSpacing?: number; lineGap?: number }): { lines: StyledLine[]; lineHeight: number } {
+  const { fonts, style, fontSize } = paint;
+  const lineHeight = selectFace(doc, fonts, style).fontSize(fontSize).currentLineHeight(true) + (options.lineGap ?? 0);
+  const segments = withEmoji ? splitTextAndEmoji(text) : [{ type: 'text' as const, content: text }];
+  const styleAt = styleCursor(styleRanges);
+  const wordSpacing = options.wordSpacing ?? 0;
+
+  const lines: StyledLine[] = [];
+  let line: StyledLine = { words: [], width: 0 };
+  const endLine = (): void => {
+    lines.push(line);
+    line = { words: [], width: 0 };
+  };
+  // A word is placed whole; its parts in different styles stay together on one line
+  const place = (parts: StyledWord[]): void => {
+    const advance = parts.reduce((sum, part) => sum + part.width, 0) + wordSpacing;
+    if (line.words.length > 0 && line.width + advance > options.width - (options.indent ?? 0)) endLine();
+    line.words.push(...parts);
+    line.width += advance;
+  };
+  const measure = (type: StyledWord['type'], content: string, range: ParsedMarkdownText['styleRanges'][number] | undefined): StyledWord => {
+    let width = type === 'emoji' ? measureEmoji(content, fontSize).width : selectFace(doc, fonts, withMarkdownStyle(style, range)).fontSize(fontSize).widthOfString(content);
+    // Fallback when a measurement fails: an emoji is about one em, a character about half
+    if (!Number.isFinite(width)) width = type === 'emoji' ? fontSize : fontSize * 0.5 * content.length;
+    return { type, content, width, isLink: range?.isLink ?? false, linkUrl: range?.url, bold: range?.bold ?? false, italic: range?.italic ?? false };
+  };
+
+  let charPosition = 0;
+  for (const segment of segments) {
+    const pieces = segment.type === 'emoji' ? [segment.content] : segment.content.split(/(\s+)/).filter((w) => w.length > 0);
+    for (const piece of pieces) {
+      const breaks = segment.type === 'text' ? (piece.match(/\n/g)?.length ?? 0) : 0;
+      if (breaks > 0) {
+        charPosition += piece.length;
+        for (let i = 0; i < breaks; i++) endLine();
+        continue;
+      }
+      const parts: StyledWord[] = [];
+      for (let offset = 0; offset < piece.length; ) {
+        const range = styleAt(charPosition + offset);
+        const end = segment.type === 'text' && range ? Math.min(piece.length, range.end - charPosition) : piece.length;
+        parts.push(measure(segment.type, piece.slice(offset, end), range));
+        offset = end;
+      }
+      charPosition += piece.length;
+      place(parts);
     }
-    // Fallback: bold + PDFKit oblique
-    return { fontName: fonts.bold, applyOblique: true };
   }
-  if (bold) {
-    return { fontName: fonts.bold, applyOblique: false };
-  }
-  if (italic) {
-    return { fontName: fonts.italic, applyOblique: false };
-  }
-  return { fontName: fonts.regular, applyOblique: false };
+  if (line.words.length > 0 || lines.length > 0) endLine();
+  selectFace(doc, fonts, style).fontSize(fontSize);
+  return { lines, lineHeight };
 }
 
 /**
@@ -353,31 +278,21 @@ function resolveFontForStyle(fonts: FontConfig, bold: boolean, italic: boolean):
  *
  * This is the single unified function that replaces renderTextWithEmoji and renderTextWithLinks
  */
-function renderTextUnified(doc: PDFKit.PDFDocument, text: string, fontSize: number, fontName: string, fonts: FontConfig | null, enableEmoji: boolean, shouldParseMarkdown: boolean, hyperlinkColor: string, options: PDFTextOptions): void {
+function renderTextUnified(doc: PDFKit.PDFDocument, text: string, paint: TextPaint, enableEmoji: boolean, shouldParseMarkdown: boolean, hyperlinkColor: string, options: PDFTextOptions): void {
+  const { fonts, style, fontSize } = paint;
   // Detect content features
   const hasEmojiContent = enableEmoji && hasEmoji(text);
 
-  // Apply typography settings
-  doc.fontSize(fontSize).font(fontName);
+  selectFace(doc, fonts, style).fontSize(fontSize);
 
   // Parse markdown using shared helper
   const { plainText, styleRanges, hasMarkdownContent } = parseMarkdownText(text, shouldParseMarkdown);
 
   // Plain text case - simple and fast
   if (!hasEmojiContent && !hasMarkdownContent) {
-    if (options.x !== undefined || options.y !== undefined) {
-      const textOptions = { ...options };
-      delete textOptions.x;
-      delete textOptions.y;
-      doc.text(text, options.x, options.y, textOptions);
-    } else {
-      doc.text(text, options);
-    }
+    drawText(doc, plainText, paint, options);
     return;
   }
-
-  // Parse content
-  const emojiSegments = hasEmojiContent ? splitTextAndEmoji(text) : null;
 
   // Handle markdown without width - for now require width for markdown
   if (hasMarkdownContent && !hasEmojiContent && options.width === undefined) {
@@ -391,115 +306,18 @@ function renderTextUnified(doc: PDFKit.PDFDocument, text: string, fontSize: numb
     throw new Error('width is required for complex text rendering (emoji or wrapping)');
   }
 
-  // Use parsed markdown results
-  const textToRender = hasMarkdownContent ? plainText : text;
-
-  // Split into segments for rendering
-  const segments = hasEmojiContent && emojiSegments ? emojiSegments : [{ type: 'text' as const, content: textToRender }];
-
-  // Calculate word positions and wrap
-  const words: Array<{ type: 'text' | 'emoji'; content: string; width: number; charStart: number; charEnd: number; isLink?: boolean; linkUrl?: string; bold?: boolean; italic?: boolean }> = [];
-  let charPosition = 0;
-
-  for (const segment of segments) {
-    if (segment.type === 'emoji') {
-      const emojiMetrics = measureEmoji(segment.content, fontSize);
-      const charEnd = charPosition + segment.content.length;
-
-      // Check styling for this emoji
-      const styleInfo = styleRanges.find((range) => charPosition >= range.start && charPosition < range.end);
-
-      // Safety: validate width to prevent layout issues if emoji measurement fails
-      const emojiWidth = Number.isNaN(emojiMetrics.width) || !Number.isFinite(emojiMetrics.width) ? fontSize : emojiMetrics.width;
-
-      words.push({
-        type: 'emoji',
-        content: segment.content,
-        width: emojiWidth,
-        charStart: charPosition,
-        charEnd,
-        isLink: styleInfo?.isLink ?? false,
-        linkUrl: styleInfo?.url,
-        bold: styleInfo?.bold ?? false,
-        italic: styleInfo?.italic ?? false,
-      });
-      charPosition = charEnd;
-    } else {
-      // Split text segment into words
-      const textWords = segment.content.split(/(\s+)/);
-      for (const word of textWords) {
-        if (word.length > 0) {
-          const charEnd = charPosition + word.length;
-
-          // Check styling for this word
-          const styleInfo = styleRanges.find((range) => charPosition >= range.start && charPosition < range.end);
-          const isBold = styleInfo?.bold ?? false;
-          const isItalic = styleInfo?.italic ?? false;
-
-          // Calculate width with the correct font
-          let wordWidth: number;
-          if (fonts && (isBold || isItalic)) {
-            const resolved = resolveFontForStyle(fonts, isBold, isItalic);
-            doc.font(resolved.fontName);
-            wordWidth = doc.widthOfString(word);
-            doc.font(fontName); // Restore to base font
-          } else {
-            wordWidth = doc.widthOfString(word);
-          }
-
-          // Safety: validate width to prevent layout issues if font measurement fails
-          if (Number.isNaN(wordWidth) || !Number.isFinite(wordWidth)) {
-            // Fallback: estimate based on fontSize (average char width ~0.5 * fontSize)
-            wordWidth = fontSize * 0.5 * word.length;
-          }
-
-          words.push({
-            type: 'text',
-            content: word,
-            width: wordWidth,
-            charStart: charPosition,
-            charEnd,
-            isLink: styleInfo?.isLink ?? false,
-            linkUrl: styleInfo?.url,
-            bold: isBold,
-            italic: isItalic,
-          });
-          charPosition = charEnd;
-        }
-      }
-    }
-  }
-
-  // Wrap words into lines
-  const lines: Array<{ words: typeof words; width: number }> = [];
-  let currentLineWords: typeof words = [];
-  let currentLineWidth = 0;
-
-  for (const word of words) {
-    const wordWidth = word.width + (options.wordSpacing || 0);
-
-    if (currentLineWords.length === 0) {
-      currentLineWords.push(word);
-      currentLineWidth = wordWidth;
-    } else if (currentLineWidth + wordWidth <= effectiveWidth - (options.indent || 0)) {
-      currentLineWords.push(word);
-      currentLineWidth += wordWidth;
-    } else {
-      lines.push({ words: currentLineWords, width: currentLineWidth });
-      currentLineWords = [word];
-      currentLineWidth = wordWidth;
-    }
-  }
-
-  if (currentLineWords.length > 0) {
-    lines.push({ words: currentLineWords, width: currentLineWidth });
-  }
+  // Style ranges index the markdown-stripped text, so emoji are split out of that same text
+  const { lines, lineHeight: layoutLineHeight } = layoutStyledText(doc, hasMarkdownContent ? plainText : text, styleRanges, paint, hasEmojiContent, {
+    width: effectiveWidth,
+    indent: options.indent,
+    wordSpacing: options.wordSpacing,
+    lineGap: options.lineGap,
+  });
 
   // Calculate starting position with safety validation
   let startX = options.x ?? doc.x;
   let currentY = options.y ?? doc.y;
-  const lineGap = options.lineGap ?? 0;
-  let lineHeight = doc.currentLineHeight(true) + lineGap;
+  let lineHeight = layoutLineHeight;
 
   // Safety: validate critical positioning values
   if (Number.isNaN(startX) || !Number.isFinite(startX)) {
@@ -575,32 +393,11 @@ function renderTextUnified(doc: PDFKit.PDFDocument, text: string, fontSize: numb
         const spacingAdjustment = (options.wordSpacing || 0) * wordCount;
         mergedWidth += spacingAdjustment;
 
-        // Determine font for this span
-        let spanFontName = fontName;
-        let applyOblique = false;
-
-        if (fonts && (isBold || isItalic)) {
-          const resolved = resolveFontForStyle(fonts, isBold ?? false, isItalic ?? false);
-          spanFontName = resolved.fontName;
-          applyOblique = resolved.applyOblique;
-        }
-
-        // Set color for this span
-        if (isLink) {
-          doc.fillColor(hyperlinkColor);
-        } else {
-          doc.fillColor('black');
-        }
-
-        // Apply font
-        doc.font(spanFontName);
-
-        // Render merged text span
         const textOptions: PDFTextOptions = {
           continued: false,
           lineBreak: false,
           underline: isLink || options.underline,
-          oblique: applyOblique || undefined,
+          oblique: options.oblique,
         };
         if (options.strike) {
           textOptions.strike = true;
@@ -616,11 +413,10 @@ function renderTextUnified(doc: PDFKit.PDFDocument, text: string, fontSize: numb
         const safeX = Number.isNaN(spanStartX) || !Number.isFinite(spanStartX) ? startX : spanStartX;
         const safeY = Number.isNaN(currentY) || !Number.isFinite(currentY) ? doc.page.margins.top : currentY;
 
-        doc.text(mergedText, safeX, safeY, textOptions);
-
-        // Reset to base font and color
-        doc.font(fontName);
-        doc.fillColor('black');
+        const spanStyle = withMarkdownStyle(style, { bold: isBold ?? false, italic: isItalic ?? false });
+        drawText(doc, mergedText, { ...paint, style: spanStyle, color: isLink ? hyperlinkColor : paint.color }, { ...textOptions, x: safeX, y: safeY });
+        selectFace(doc, fonts, style);
+        doc.fillColor(paint.color);
 
         // Add link annotation for the entire span
         if (isLink && word.linkUrl) {
@@ -643,43 +439,4 @@ function renderTextUnified(doc: PDFKit.PDFDocument, text: string, fontSize: numb
   if (options.moveDown !== undefined) {
     doc.moveDown(options.moveDown);
   }
-}
-
-/**
- * Simple path for rendering links without width constraint
- */
-function _renderTextWithLinksSimple(doc: PDFKit.PDFDocument, segments: MarkdownSegment[], fontName: string, hyperlinkColor: string, x?: number, y?: number, _fontSize?: number): void {
-  doc.font(fontName);
-
-  const startX = x ?? doc.x;
-  const startY = y ?? doc.y;
-  let currentX = startX;
-  const currentY = startY;
-
-  for (const segment of segments) {
-    if (segment.type === 'text') {
-      doc.text(segment.content, currentX, currentY, { continued: true, lineBreak: false });
-      currentX += doc.widthOfString(segment.content);
-    } else {
-      // Render link text with blue color (PDFKit's underline will use fillColor)
-      const linkText = segment.text;
-      const linkWidth = doc.widthOfString(linkText);
-      const currentLineHeight = doc.currentLineHeight(true);
-
-      // Set fillColor to hyperlink color - PDFKit's underline will use this color
-      doc.fillColor(hyperlinkColor);
-      doc.text(linkText, currentX, currentY, {
-        continued: true,
-        lineBreak: false,
-        underline: true,
-      });
-      doc.fillColor('black');
-
-      // Add clickable link annotation
-      doc.link(currentX, currentY, linkWidth, currentLineHeight, segment.url);
-      currentX += linkWidth;
-    }
-  }
-
-  doc.text('', { continued: false }); // End the continued text
 }

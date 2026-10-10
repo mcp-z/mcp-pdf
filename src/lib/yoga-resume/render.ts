@@ -6,15 +6,20 @@
  */
 
 import type PDFKit from 'pdfkit';
-import { renderField } from '../formatting.ts';
+import { renderContactLine, renderField } from '../formatting.ts';
 import type { CompanyHeaderElement, CredentialData, CredentialListElement, DividerElement, EntryData, EntryHeaderElement, FieldTemplates, GroupElement, HeaderElement, KeywordListElement, LanguageListElement, ReferenceListElement, SectionTitleElement, StructuredContentElement, TextElement } from '../ir/types.ts';
 import { measureMarkdownTextHeight, renderText } from '../pdf-helpers.ts';
+import { drawText, selectFace, type TextStyle } from '../text-style.ts';
 import type { TypographyOptions } from '../types/typography.ts';
 import { type ComputedPosition, calculateEntryColumnWidths, type Page, type PageNode, type RenderContext } from './types.ts';
 
 // =============================================================================
 // Helper Functions
 // =============================================================================
+
+const REGULAR: TextStyle = {};
+const BOLD: TextStyle = { bold: true };
+const ITALIC: TextStyle = { italic: true };
 
 /**
  * Ensure a value is a string.
@@ -51,6 +56,20 @@ function paragraphsFromContent(content: string | string[] | undefined): string[]
     .filter(Boolean);
 }
 
+/**
+ * Draw field-template output (always markdown, values escaped by the template) and return its height.
+ */
+function drawField(ctx: RenderContext, text: string, paint: { style: TextStyle; fontSize: number; color?: string }, layout: { x: number; y: number; width: number; align?: 'left' | 'right'; lineGap?: number }): number {
+  renderText(ctx.doc, text, {
+    typography: { fontSize: paint.fontSize, fonts: ctx.fonts, style: paint.style },
+    features: { enableEmoji: ctx.emojiAvailable, markdown: true },
+    color: { fillColor: paint.color, hyperlinkColor: ctx.hyperlinkColor },
+    layout: { x: layout.x, y: layout.y, width: layout.width, align: layout.align },
+    spacing: { lineGap: layout.lineGap },
+  });
+  return measureMarkdownTextHeight(ctx.doc, text, layout.width, paint.fontSize, layout.lineGap ?? 0, ctx.fonts, true, paint.style);
+}
+
 // =============================================================================
 // Element Renderers
 // =============================================================================
@@ -71,7 +90,7 @@ export function renderTextElement(ctx: RenderContext, element: TextElement, posi
 
   for (let i = 0; i < paragraphs.length; i++) {
     renderText(doc, paragraphs[i], {
-      typography: { fontSize: style.fontSize, fontName: fonts.regular, fonts },
+      typography: { fontSize: style.fontSize, fonts, style: REGULAR },
       features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
       color: { hyperlinkColor: ctx.hyperlinkColor },
       layout: { x: position.x, y: currentY, width: position.width, align: 'justify' },
@@ -104,9 +123,9 @@ export function renderSectionTitle(ctx: RenderContext, element: SectionTitleElem
   let currentY = position.y + marginTop;
 
   // Draw title with emoji support
-  doc.font(fonts.bold).fontSize(sectionTitle.fontSize).fillColor('#000000');
+  selectFace(doc, fonts, BOLD).fontSize(sectionTitle.fontSize);
   renderText(doc, element.title.toUpperCase(), {
-    typography: { fontSize: sectionTitle.fontSize, fontName: fonts.bold, fonts },
+    typography: { fontSize: sectionTitle.fontSize, fonts, style: BOLD },
     features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
     color: { hyperlinkColor: ctx.hyperlinkColor },
     layout: { x: position.x, y: currentY, width: position.width },
@@ -136,11 +155,11 @@ export function renderHeader(ctx: RenderContext, element: HeaderElement, positio
   let currentY = position.y;
 
   // Name
-  doc.font(fonts.bold).fontSize(header.name.fontSize);
+  selectFace(doc, fonts, BOLD).fontSize(header.name.fontSize);
   const nameHeight = doc.heightOfString(element.name.toUpperCase(), { width: position.width, align: 'center' });
 
   renderText(doc, element.name.toUpperCase(), {
-    typography: { fontSize: header.name.fontSize, fontName: fonts.bold, fonts },
+    typography: { fontSize: header.name.fontSize, fonts, style: BOLD },
     features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
     color: { hyperlinkColor: ctx.hyperlinkColor },
     layout: { x: position.x, y: currentY, width: position.width, align: 'center' },
@@ -150,37 +169,14 @@ export function renderHeader(ctx: RenderContext, element: HeaderElement, positio
 
   // Contact line
   if (element.contactItems.length > 0) {
-    doc.font(fonts.regular).fontSize(header.contact.fontSize).fillColor('#000000');
-
-    const contactTexts = element.contactItems
-      .map((item) => {
-        if (item.location) {
-          return renderField(fieldTemplates.location, item.location);
-        }
-        if (item.url) {
-          return renderField(fieldTemplates.url, { text: item.text, url: item.url });
-        }
-        return item.text;
-      })
-      .filter((text) => text.length > 0);
-
-    const contactText = renderField(fieldTemplates.contactLine, { items: contactTexts });
-    const _contactHeight = doc.heightOfString(contactText, { width: position.width, align: 'center' });
-
-    // Calculate text position for link annotations
-    const textWidth = doc.widthOfString(contactText);
-    const _textX = position.x + (position.width - textWidth) / 2;
-    const textY = currentY;
-
+    const contactText = renderContactLine(fieldTemplates, element.contactItems);
     renderText(doc, contactText, {
-      typography: { fontSize: header.contact.fontSize, fontName: fonts.regular, fonts },
-      features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
+      typography: { fontSize: header.contact.fontSize, fonts, style: REGULAR },
+      features: { enableEmoji: emojiAvailable, markdown: true },
       color: { hyperlinkColor: ctx.hyperlinkColor },
-      layout: { x: position.x, y: textY, width: position.width, align: 'center' },
+      layout: { x: position.x, y: currentY, width: position.width, align: 'center' },
       spacing: { characterSpacing: header.contact.letterSpacing ?? 0 },
     });
-
-    // URLs are now handled through field templates and renderTextWithEmoji
   }
 }
 
@@ -207,7 +203,7 @@ export function renderDivider(ctx: RenderContext, element: DividerElement, posit
  * Render keyword list element at computed position.
  */
 export function renderKeywordList(ctx: RenderContext, element: KeywordListElement, position: ComputedPosition): void {
-  const { doc, typography, fieldTemplates, fonts } = ctx;
+  const { doc, typography, fieldTemplates, emojiAvailable, fonts } = ctx;
   const style = getResolvedStyle(typography);
 
   if (element.items.length === 0) return;
@@ -220,27 +216,15 @@ export function renderKeywordList(ctx: RenderContext, element: KeywordListElemen
     const keywords = skill.keywords || [];
 
     const fullText = renderField(fieldTemplates.skill, { name, level, keywords });
-    const prefix = level ? `${name} (${level}): ` : `${name}: `;
-    const keywordsText = keywords.join(', ');
-
-    doc.font(fonts.regular).fontSize(style.fontSize);
-    const textHeight = doc.heightOfString(fullText, { width: position.width, lineGap: style.lineGap });
-
-    // Draw category name in bold using continued mode
-    doc.font(fonts.bold).fontSize(style.fontSize);
-    doc.text(prefix, position.x, currentY, {
-      continued: true,
-      lineGap: style.lineGap,
+    renderText(doc, fullText, {
+      typography: { fontSize: style.fontSize, fonts, style: REGULAR },
+      features: { enableEmoji: emojiAvailable, markdown: true },
+      color: { hyperlinkColor: ctx.hyperlinkColor },
+      layout: { x: position.x, y: currentY, width: position.width },
+      spacing: { lineGap: style.lineGap },
     });
 
-    // Draw keywords in regular font
-    doc.font(fonts.regular).fontSize(style.fontSize);
-    doc.text(keywordsText, {
-      width: position.width,
-      lineGap: style.lineGap,
-    });
-
-    currentY += textHeight + style.itemMarginBottom;
+    currentY += measureMarkdownTextHeight(doc, fullText, position.width, style.fontSize, style.lineGap, fonts) + style.itemMarginBottom;
   }
 }
 
@@ -256,10 +240,9 @@ export function renderLanguageList(ctx: RenderContext, element: LanguageListElem
   const languageTexts = element.items.map((item) => renderField(fieldTemplates.language, item)).filter(Boolean);
   const fullText = languageTexts.join(', ');
 
-  doc.font(fonts.regular).fontSize(style.fontSize).fillColor('#000000');
   renderText(doc, fullText, {
-    typography: { fontSize: style.fontSize, fontName: fonts.regular, fonts },
-    features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
+    typography: { fontSize: style.fontSize, fonts, style: REGULAR },
+    features: { enableEmoji: emojiAvailable, markdown: true },
     color: { hyperlinkColor: ctx.hyperlinkColor },
     layout: { x: position.x, y: position.y, width: position.width },
     spacing: { lineGap: style.lineGap },
@@ -292,10 +275,10 @@ export function renderCredentialList(ctx: RenderContext, element: CredentialList
     });
 
     // Render title (bold)
-    doc.font(fonts.bold).fontSize(style.fontSize).fillColor('#000000');
+    selectFace(doc, fonts, BOLD).fontSize(style.fontSize);
     const titleHeight = doc.heightOfString(title, { width: position.width });
     renderText(doc, title, {
-      typography: { fontSize: style.fontSize, fontName: fonts.bold, fonts },
+      typography: { fontSize: style.fontSize, fonts, style: BOLD },
       features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
       color: { hyperlinkColor: ctx.hyperlinkColor },
       layout: { x: position.x, y: currentY, width: position.width },
@@ -304,28 +287,23 @@ export function renderCredentialList(ctx: RenderContext, element: CredentialList
 
     // Render metadata line (italic, gray)
     if (metaLine) {
-      doc.font(fonts.italic).fontSize(style.fontSize).fillColor('#444444');
-      const metaHeight = doc.heightOfString(metaLine, { width: position.width });
-      doc.text(metaLine, position.x, currentY, { width: position.width });
-      currentY += metaHeight;
-      doc.fillColor('#000000');
+      currentY += drawField(ctx, metaLine, { style: ITALIC, fontSize: style.fontSize, color: '#444444' }, { x: position.x, y: currentY, width: position.width });
     }
 
     // Render summary if present
     const summaryParagraphs = paragraphsFromContent(ensureString(item.summary));
     if (summaryParagraphs.length > 0) {
       currentY += style.paragraphMarginBottom;
-      doc.font(fonts.regular).fillColor('#000000');
 
       for (const para of summaryParagraphs) {
         renderText(doc, para, {
-          typography: { fontSize: style.fontSize, fontName: fonts.regular, fonts },
+          typography: { fontSize: style.fontSize, fonts, style: REGULAR },
           features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
           color: { hyperlinkColor: ctx.hyperlinkColor },
           layout: { x: position.x, y: currentY, width: position.width, align: 'justify' },
           spacing: { lineGap: style.lineGap },
         });
-        doc.font(fonts.regular).fontSize(style.fontSize);
+        selectFace(doc, fonts, REGULAR).fontSize(style.fontSize);
         const paraHeight = doc.heightOfString(para, { width: position.width, lineGap: style.lineGap });
         currentY += paraHeight + style.paragraphMarginBottom;
       }
@@ -354,10 +332,10 @@ export function renderReferenceList(ctx: RenderContext, element: ReferenceListEl
 
     // Name line (bold)
     if (name) {
-      doc.font(fonts.bold).fontSize(style.fontSize).fillColor('#000000');
+      selectFace(doc, fonts, BOLD).fontSize(style.fontSize);
       const nameHeight = doc.heightOfString(name, { width: position.width });
       renderText(doc, name, {
-        typography: { fontSize: style.fontSize, fontName: fonts.bold, fonts },
+        typography: { fontSize: style.fontSize, fonts, style: BOLD },
         features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
         color: { hyperlinkColor: ctx.hyperlinkColor },
         layout: { x: position.x, y: currentY, width: position.width },
@@ -368,11 +346,11 @@ export function renderReferenceList(ctx: RenderContext, element: ReferenceListEl
     // Quote text (italic, indented)
     if (reference) {
       const quoteWidth = position.width - quote.indent;
-      doc.font(fonts.italic).fontSize(style.fontSize).fillColor('#000000');
+      selectFace(doc, fonts, ITALIC).fontSize(style.fontSize);
       const quoteText = `"${reference}"`;
       const quoteHeight = doc.heightOfString(quoteText, { width: quoteWidth, lineGap: style.lineGap });
       renderText(doc, quoteText, {
-        typography: { fontSize: style.fontSize, fontName: fonts.italic, fonts },
+        typography: { fontSize: style.fontSize, fonts, style: ITALIC },
         features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
         color: { hyperlinkColor: ctx.hyperlinkColor },
         layout: { x: position.x + quote.indent, y: currentY, width: quoteWidth },
@@ -464,22 +442,17 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
 
   if (element.variant === 'education') {
     // Education: Institution + Dates on first line, degree on second
-    doc.font(fonts.bold).fontSize(style.fontSize).fillColor('#000000');
+    selectFace(doc, fonts, BOLD).fontSize(style.fontSize);
     const institutionHeight = doc.heightOfString(company, { width: leftWidth });
     renderText(doc, company, {
-      typography: { fontSize: style.fontSize, fontName: fonts.bold, fonts },
+      typography: { fontSize: style.fontSize, fonts, style: BOLD },
       features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
       color: { hyperlinkColor: ctx.hyperlinkColor },
       layout: { x: position.x, y: currentY, width: leftWidth },
     });
 
     if (dateText) {
-      doc
-        .font(fonts.regular)
-        .fontSize(entryStyle.company.fontSize)
-        .fillColor(entryStyle.company.color ?? '#666666');
-      doc.text(dateText, position.x + position.width - rightWidth, currentY, { width: rightWidth, align: 'right' });
-      doc.fillColor('#000000');
+      drawField(ctx, dateText, { style: REGULAR, fontSize: entryStyle.company.fontSize, color: entryStyle.company.color ?? '#666666' }, { x: position.x + position.width - rightWidth, y: currentY, width: rightWidth, align: 'right' });
     }
 
     currentY += institutionHeight;
@@ -493,16 +466,7 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
     // Add lineSpacing after institution only if degree or GPA follows
     if (degreeParts || entry.score) currentY += typography.entryHeader.lineSpacing;
     if (degreeParts) {
-      doc.font(fonts.italic).fontSize(style.fontSize).fillColor('#000000');
-      renderText(doc, degreeParts, {
-        typography: { fontSize: style.fontSize, fontName: fonts.italic, fonts },
-        features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
-        color: { hyperlinkColor: ctx.hyperlinkColor },
-        layout: { x: position.x, y: currentY, width: position.width },
-        spacing: { lineGap: style.lineGap },
-      });
-      const degreeHeight = doc.heightOfString(degreeParts, { width: position.width, lineGap: style.lineGap });
-      currentY += degreeHeight;
+      currentY += drawField(ctx, degreeParts, { style: ITALIC, fontSize: style.fontSize }, { x: position.x, y: currentY, width: position.width, lineGap: style.lineGap });
 
       // Only add lineSpacing if GPA follows
       if (entry.score) {
@@ -512,59 +476,44 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
 
     // GPA line
     if (entry.score) {
-      doc
-        .font(fonts.regular)
-        .fontSize(style.fontSize)
-        .fillColor(entryStyle.location.color ?? '#444444');
       const gpaText = `GPA: ${entry.score}`;
-      doc.text(gpaText, position.x, currentY, { width: position.width, lineGap: style.lineGap });
-      doc.fillColor('#000000');
+      drawText(doc, gpaText, { fonts, style: REGULAR, fontSize: style.fontSize, color: entryStyle.location.color ?? '#444444' }, { x: position.x, y: currentY, width: position.width, lineGap: style.lineGap });
     }
   } else if (element.isGroupedPosition) {
     // Grouped work entry: Position + Dates (company is in separate CompanyHeaderElement)
-    doc.font(fonts.italic).fontSize(entryStyle.position.fontSize).fillColor('#000000');
+    selectFace(doc, fonts, ITALIC).fontSize(entryStyle.position.fontSize);
     const positionHeight = doc.heightOfString(positionText, { width: leftWidth });
     renderText(doc, positionText, {
-      typography: { fontSize: entryStyle.position.fontSize, fontName: fonts.italic, fonts },
+      typography: { fontSize: entryStyle.position.fontSize, fonts, style: ITALIC },
       features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
       color: { hyperlinkColor: ctx.hyperlinkColor },
       layout: { x: position.x, y: currentY, width: leftWidth },
     });
 
     if (dateText) {
-      doc
-        .font(fonts.italic)
-        .fontSize(entryStyle.company.fontSize)
-        .fillColor(entryStyle.company.color ?? '#444444');
-      doc.text(dateText, position.x + position.width - rightWidth, currentY, { width: rightWidth, align: 'right' });
-      doc.fillColor('#000000');
+      drawField(ctx, dateText, { style: ITALIC, fontSize: entryStyle.company.fontSize, color: entryStyle.company.color ?? '#444444' }, { x: position.x + position.width - rightWidth, y: currentY, width: rightWidth, align: 'right' });
     }
 
     currentY += positionHeight;
 
     // Location line (if shown for grouped entries with different locations)
     if (location) {
-      doc
-        .font(fonts.regular)
-        .fontSize(entryStyle.location.fontSize)
-        .fillColor(entryStyle.location.color ?? '#444444');
-      doc.text(location, position.x, currentY, { width: position.width });
-      doc.fillColor('#000000');
+      drawText(doc, location, { fonts, style: REGULAR, fontSize: entryStyle.location.fontSize, color: entryStyle.location.color ?? '#444444' }, { x: position.x, y: currentY, width: position.width });
     }
   } else {
     // Single work entry: Company + Location on first line, Position + Dates on second
-    doc.font(fonts.bold).fontSize(entryStyle.position.fontSize).fillColor('#000000');
+    selectFace(doc, fonts, BOLD).fontSize(entryStyle.position.fontSize);
     const companyHeight = company ? doc.heightOfString(company, { width: leftWidth }) : 0;
 
     // Measure location height using correct font before rendering
-    doc.font(fonts.bold).fontSize(entryStyle.location.fontSize);
+    selectFace(doc, fonts, BOLD).fontSize(entryStyle.location.fontSize);
     const locationHeight = location ? doc.heightOfString(location, { width: rightWidth }) : 0;
 
     // Render company
     if (company) {
-      doc.font(fonts.bold).fontSize(entryStyle.position.fontSize).fillColor('#000000');
+      selectFace(doc, fonts, BOLD).fontSize(entryStyle.position.fontSize);
       renderText(doc, company, {
-        typography: { fontSize: entryStyle.position.fontSize, fontName: fonts.bold, fonts },
+        typography: { fontSize: entryStyle.position.fontSize, fonts, style: BOLD },
         features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
         color: { hyperlinkColor: ctx.hyperlinkColor },
         layout: { x: position.x, y: currentY, width: leftWidth },
@@ -573,29 +522,23 @@ export function renderEntryHeader(ctx: RenderContext, element: EntryHeaderElemen
 
     // Render location
     if (location) {
-      doc.font(fonts.bold).fontSize(entryStyle.location.fontSize);
-      doc.text(location, position.x + position.width - rightWidth, currentY, { width: rightWidth, align: 'right' });
+      drawText(doc, location, { fonts, style: BOLD, fontSize: entryStyle.location.fontSize, color: '#000000' }, { x: position.x + position.width - rightWidth, y: currentY, width: rightWidth, align: 'right' });
     }
 
     // Use maximum of company and location heights to prevent overlap
     currentY += Math.max(companyHeight, locationHeight) + typography.entryHeader.lineSpacing;
 
     // Position + Dates line
-    doc.font(fonts.italic).fontSize(entryStyle.position.fontSize).fillColor('#000000');
+    selectFace(doc, fonts, ITALIC).fontSize(entryStyle.position.fontSize);
     renderText(doc, positionText, {
-      typography: { fontSize: entryStyle.position.fontSize, fontName: fonts.italic, fonts },
+      typography: { fontSize: entryStyle.position.fontSize, fonts, style: ITALIC },
       features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
       color: { hyperlinkColor: ctx.hyperlinkColor },
       layout: { x: position.x, y: currentY, width: leftWidth },
     });
 
     if (dateText) {
-      doc
-        .font(fonts.italic)
-        .fontSize(entryStyle.company.fontSize)
-        .fillColor(entryStyle.company.color ?? '#444444');
-      doc.text(dateText, position.x + position.width - rightWidth, currentY, { width: rightWidth, align: 'right' });
-      doc.fillColor('#000000');
+      drawField(ctx, dateText, { style: ITALIC, fontSize: entryStyle.company.fontSize, color: entryStyle.company.color ?? '#444444' }, { x: position.x + position.width - rightWidth, y: currentY, width: rightWidth, align: 'right' });
     }
   }
 }
@@ -623,9 +566,9 @@ export function renderStructuredContent(ctx: RenderContext, element: StructuredC
   let currentY = position.y + (hasSummary ? content.marginTop : 0);
 
   for (const summary of summaries) {
-    doc.font(fonts.regular).fontSize(content.fontSize).fillColor('#000000');
+    selectFace(doc, fonts, REGULAR).fontSize(content.fontSize);
     renderText(doc, summary, {
-      typography: { fontSize: content.fontSize, fontName: fonts.regular, fonts },
+      typography: { fontSize: content.fontSize, fonts, style: REGULAR },
       features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
       color: { hyperlinkColor: ctx.hyperlinkColor },
       layout: { x: position.x, y: currentY, width: position.width, align: 'justify' },
@@ -645,12 +588,12 @@ export function renderStructuredContent(ctx: RenderContext, element: StructuredC
 
   if (hasBullets) {
     const bulletWidth = position.width - indent;
-    doc.font(fonts.regular).fontSize(content.fontSize).fillColor('#000000');
+    selectFace(doc, fonts, REGULAR).fontSize(content.fontSize);
 
     for (const bulletItem of element.bullets ?? []) {
       const bulletText = `• ${bulletItem}`;
       renderText(doc, bulletText, {
-        typography: { fontSize: content.fontSize, fontName: fonts.regular, fonts },
+        typography: { fontSize: content.fontSize, fonts, style: REGULAR },
         features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
         color: { hyperlinkColor: ctx.hyperlinkColor },
         layout: { x: position.x + indent, y: currentY, width: bulletWidth },
@@ -678,17 +621,16 @@ export function renderCompanyHeader(ctx: RenderContext, element: CompanyHeaderEl
 
   const { leftWidth, rightWidth } = calculateEntryColumnWidths(position.width, entryStyle.date.width);
 
-  doc.font(fonts.bold).fontSize(entryStyle.position.fontSize).fillColor('#000000');
+  selectFace(doc, fonts, BOLD).fontSize(entryStyle.position.fontSize);
   renderText(doc, element.company, {
-    typography: { fontSize: entryStyle.position.fontSize, fontName: fonts.bold, fonts },
+    typography: { fontSize: entryStyle.position.fontSize, fonts, style: BOLD },
     features: { enableEmoji: emojiAvailable, markdown: ctx.parseMarkdown },
     color: { hyperlinkColor: ctx.hyperlinkColor },
     layout: { x: position.x, y: position.y, width: leftWidth },
   });
 
   if (element.location) {
-    doc.font(fonts.bold).fontSize(entryStyle.location.fontSize);
-    doc.text(element.location, position.x + position.width - rightWidth, position.y, { width: rightWidth, align: 'right' });
+    drawText(doc, element.location, { fonts, style: BOLD, fontSize: entryStyle.location.fontSize, color: '#000000' }, { x: position.x + position.width - rightWidth, y: position.y, width: rightWidth, align: 'right' });
   }
 }
 

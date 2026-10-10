@@ -8,12 +8,24 @@ import PDFDocument from 'pdfkit';
 import { z } from 'zod';
 import { DEFAULT_PAGE_SIZE, PAGE_SIZES, type PageSize, type PageSizePreset } from '../constants.ts';
 import { registerEmojiFont } from './emoji-renderer.ts';
-import { hasEmoji, setupFonts } from './fonts.ts';
+import { createFontValidator, hasEmoji, setupFonts } from './fonts.ts';
+import type { TextRenderConfig } from './pdf-helpers.ts';
 import type { FontConfig } from './types/typography.ts';
 
 // ============================================================================
 // Schemas - Shared content schemas used across tools
 // ============================================================================
+
+/**
+ * Description of the `font` input shared by every tool that draws or measures text
+ */
+export const FONT_OPTION_DESCRIPTION =
+  'Font (default: auto, a Unicode system font). Built-ins Helvetica, Times-Roman and Courier cover Latin-1 only. A path or URL to a .ttf, .otf or .ttc file renders every script the font covers; a .ttc collection supplies its own bold and italic faces, and bold or italic the font lacks is synthesized.';
+
+/**
+ * Description of the `markdown` input shared by every tool that draws text
+ */
+export const MARKDOWN_OPTION_DESCRIPTION = 'Parse inline markdown in text: **bold**, *italic*, [links](url), `code`, and backslash escapes. Line-start syntax such as "1." or "#" stays literal. Default: true; pass false to draw text exactly as written.';
 
 /**
  * Text base properties shared between text and heading items
@@ -176,59 +188,55 @@ export async function createPDFDocument(options: PDFDocumentOptions, font: strin
 }
 
 // ============================================================================
-// Text Options Extraction
+// Text Item Rendering
 // ============================================================================
 
-import type { PDFTextOptions } from './pdf-helpers.ts';
+export interface TextItemContext {
+  fonts: FontConfig;
+  fontSize: number;
+  bold: boolean;
+  emojiAvailable: boolean;
+  markdown: boolean;
+  hyperlinkColor: string;
+  x?: number;
+  y?: number;
+  width?: number;
+}
 
 /**
- * Extract PDFKit text options from a text/heading content item.
+ * Builds the renderText configuration for a text or heading item, carrying every option the item schema offers.
  */
-export function extractTextOptions(item: TextBaseItem): PDFTextOptions {
-  const options: PDFTextOptions = {};
-
-  if (item.textAlign !== undefined) options.align = item.textAlign;
-  if (item.indent !== undefined) options.indent = item.indent;
-  if (item.lineGap !== undefined) options.lineGap = item.lineGap;
-  if (item.paragraphGap !== undefined) options.paragraphGap = item.paragraphGap;
-  if (item.width !== undefined) options.width = item.width;
-  if (item.underline !== undefined) options.underline = item.underline;
-  if (item.strike !== undefined) options.strike = item.strike;
-  if (item.oblique !== undefined) options.oblique = item.oblique;
-  if (item.link !== undefined) options.link = item.link;
-  if (item.characterSpacing !== undefined) options.characterSpacing = item.characterSpacing;
-  if (item.wordSpacing !== undefined) options.wordSpacing = item.wordSpacing;
-  if (item.continued !== undefined) options.continued = item.continued;
-  if (item.lineBreak !== undefined) options.lineBreak = item.lineBreak;
-
-  return options;
+export function textItemConfig(item: TextBaseItem, context: TextItemContext): TextRenderConfig {
+  return {
+    typography: { fontSize: context.fontSize, fonts: context.fonts, style: { bold: context.bold }, underline: item.underline, strike: item.strike, oblique: item.oblique },
+    features: { enableEmoji: context.emojiAvailable, markdown: context.markdown },
+    color: { fillColor: item.color, hyperlinkColor: context.hyperlinkColor },
+    layout: { x: context.x, y: context.y, width: context.width ?? item.width, align: item.textAlign, indent: item.indent },
+    spacing: { lineGap: item.lineGap, paragraphGap: item.paragraphGap, characterSpacing: item.characterSpacing, wordSpacing: item.wordSpacing, continued: item.continued, lineBreak: item.lineBreak },
+    annotation: { link: item.link },
+  };
 }
 
 // ============================================================================
 // Content Validation
 // ============================================================================
 
-import { validateTextForFont } from './fonts.ts';
-
 /**
  * Validate text content against font capabilities.
  *
  * @param items - Array of content items to validate
- * @param regularFont - Regular font name
- * @param boldFont - Bold font name
+ * @param fonts - Fonts the content is drawn with
  * @param warnings - Array to collect validation warnings
  */
-export function validateContentText<T extends { type: string; text?: string; bold?: boolean; children?: T[] }>(items: T[], regularFont: string, boldFont: string, warnings: string[]): void {
-  for (const item of items) {
-    if ((item.type === 'text' || item.type === 'heading') && item.text) {
-      const fnt = item.bold ? boldFont : regularFont;
-      const validation = validateTextForFont(item.text, fnt, undefined);
-      if (validation.hasUnsupportedCharacters) {
-        warnings.push(...validation.warnings);
+export function validateContentText<T extends { type: string; text?: string; bold?: boolean; children?: T[] }>(items: T[], fonts: FontConfig, warnings: string[]): void {
+  const validate = createFontValidator(fonts);
+  const visit = (list: T[]): void => {
+    for (const item of list) {
+      if ((item.type === 'text' || item.type === 'heading') && item.text) {
+        warnings.push(...validate(item.text).warnings);
       }
+      if (item.children) visit(item.children);
     }
-    if (item.children) {
-      validateContentText(item.children, regularFont, boldFont, warnings);
-    }
-  }
+  };
+  visit(items);
 }

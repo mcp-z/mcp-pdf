@@ -3,13 +3,15 @@ import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE, WRAP_EPSILON } from 
 import { measureEmoji, splitTextAndEmoji } from './emoji-renderer.ts';
 import { hasEmoji } from './fonts.ts';
 import type { PDFTextOptions } from './pdf-helpers.ts';
+import { selectFace, type TextStyle } from './text-style.ts';
+import type { FontConfig } from './types/typography.ts';
 import type { LayoutContent } from './yoga-layout.ts';
 
 /**
  * Content measurement utilities for determining heights before rendering.
  *
- * These functions measure content without modifying the document,
- * enabling Yoga layout to make informed page break decisions.
+ * These functions measure content before rendering, enabling Yoga layout to make informed page break decisions.
+ * They leave the measured face and size selected; drawing always selects its own.
  */
 
 /**
@@ -18,23 +20,18 @@ import type { LayoutContent } from './yoga-layout.ts';
  * @param doc - PDFKit document (used for font metrics)
  * @param text - Text to measure
  * @param fontSize - Font size in points
- * @param fontName - Font name for metrics
+ * @param fonts - Fonts the text is drawn with
+ * @param style - Bold and italic
  * @param emojiAvailable - Whether emoji rendering is available
  * @param options - Text layout options (width, lineGap, indent, etc.)
  * @returns Height in points
  */
-export function measureTextHeight(doc: PDFKit.PDFDocument, text: string, fontSize: number, fontName: string, emojiAvailable: boolean, options: PDFTextOptions = {}): number {
+export function measureTextHeight(doc: PDFKit.PDFDocument, text: string, fontSize: number, fonts: FontConfig, style: TextStyle, emojiAvailable: boolean, options: PDFTextOptions = {}): number {
   if (!text || text.trim() === '') {
     return 0;
   }
 
-  // Save current state (using type assertion for internal PDFKit properties)
-  const pdfDoc = doc as unknown as { _font?: { name: string }; _fontSize?: number };
-  const savedFont = pdfDoc._font?.name;
-  const savedFontSize = pdfDoc._fontSize;
-
-  // Set font for measurements
-  doc.fontSize(fontSize).font(fontName);
+  selectFace(doc, fonts, style).fontSize(fontSize);
 
   // Calculate available width
   const availableWidth = options.width || doc.page.width - doc.page.margins.left - doc.page.margins.right;
@@ -57,14 +54,6 @@ export function measureTextHeight(doc: PDFKit.PDFDocument, text: string, fontSiz
     // Complex case: manually calculate with emoji segments
     const lineCount = measureLinesWithEmoji(doc, text, fontSize, effectiveWidth);
     height = lineCount * lineHeight;
-  }
-
-  // Restore font state
-  if (savedFont) {
-    doc.font(savedFont);
-  }
-  if (savedFontSize) {
-    doc.fontSize(savedFontSize);
   }
 
   return height;
@@ -115,22 +104,17 @@ function measureLinesWithEmoji(doc: PDFKit.PDFDocument, text: string, fontSize: 
  * @param doc - PDFKit document (used for font metrics)
  * @param text - Text to measure
  * @param fontSize - Font size in points
- * @param fontName - Font name for metrics
+ * @param fonts - Fonts the text is drawn with
+ * @param style - Bold and italic
  * @param emojiAvailable - Whether emoji rendering is available
  * @returns Width in points
  */
-export function measureTextWidth(doc: PDFKit.PDFDocument, text: string, fontSize: number, fontName: string, emojiAvailable: boolean): number {
+export function measureTextWidth(doc: PDFKit.PDFDocument, text: string, fontSize: number, fonts: FontConfig, style: TextStyle, emojiAvailable: boolean): number {
   if (!text || text.trim() === '') {
     return 0;
   }
 
-  // Save current state
-  const pdfDoc = doc as unknown as { _font?: { name: string }; _fontSize?: number };
-  const savedFont = pdfDoc._font?.name;
-  const savedFontSize = pdfDoc._fontSize;
-
-  // Set font for measurements
-  doc.fontSize(fontSize).font(fontName);
+  selectFace(doc, fonts, style).fontSize(fontSize);
 
   let width: number;
 
@@ -151,14 +135,6 @@ export function measureTextWidth(doc: PDFKit.PDFDocument, text: string, fontSize
     }
   }
 
-  // Restore font state
-  if (savedFont) {
-    doc.font(savedFont);
-  }
-  if (savedFontSize) {
-    doc.fontSize(savedFontSize);
-  }
-
   return width;
 }
 
@@ -166,12 +142,11 @@ export function measureTextWidth(doc: PDFKit.PDFDocument, text: string, fontSize
  * Create a width measurer function that can extract font info from LayoutContent.
  *
  * @param doc - PDFKit document
- * @param regularFont - Name of regular font
- * @param boldFont - Name of bold font
+ * @param fonts - Fonts the content is drawn with
  * @param emojiAvailable - Whether emoji rendering is available
  * @returns Width measurer function compatible with yoga-layout
  */
-export function createWidthMeasurer(doc: PDFKit.PDFDocument, regularFont: string, boldFont: string, emojiAvailable: boolean): (content: LayoutContent) => number {
+export function createWidthMeasurer(doc: PDFKit.PDFDocument, fonts: FontConfig, emojiAvailable: boolean): (content: LayoutContent) => number {
   return (content: LayoutContent): number => {
     if (content.type !== 'text' && content.type !== 'heading') {
       return 0;
@@ -182,9 +157,9 @@ export function createWidthMeasurer(doc: PDFKit.PDFDocument, regularFont: string
 
     const fontSize = content.type === 'heading' ? ((content.fontSize as number) ?? DEFAULT_HEADING_FONT_SIZE) : ((content.fontSize as number) ?? DEFAULT_TEXT_FONT_SIZE);
 
-    const fontName = content.type === 'heading' ? (content.bold !== false ? boldFont : regularFont) : content.bold ? boldFont : regularFont;
+    const bold = content.type === 'heading' ? content.bold !== false : content.bold === true;
 
-    return measureTextWidth(doc, text, fontSize, fontName, emojiAvailable);
+    return measureTextWidth(doc, text, fontSize, fonts, { bold }, emojiAvailable);
   };
 }
 

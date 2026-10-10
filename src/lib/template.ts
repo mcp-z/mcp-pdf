@@ -4,9 +4,11 @@
  */
 
 import { Liquid } from 'liquidjs';
+import { escapeMarkdown } from './markdown.ts';
 
-// Singleton Liquid engine instance
+// Templates produce markdown: every inserted value is escaped to render as written, unless piped through `raw`.
 const engine = new Liquid({
+  outputEscape: (value: unknown) => escapeMarkdown(String(value ?? '')),
   strictFilters: false,
   strictVariables: false,
   trimTagLeft: false,
@@ -44,24 +46,29 @@ export function registerHelper(name: string, fn: HelperFn): void {
  * Render a template string with the given context
  */
 export function render(template: string, context: Record<string, unknown>): string {
-  try {
-    return engine.parseAndRenderSync(template, context);
-  } catch (_error) {
-    // On error, return template as-is for debugging
-    return template;
-  }
+  return compile(template)(context);
+}
+
+function invalidTemplate(template: string, error: unknown): Error {
+  return new Error(`Invalid template "${template}": ${error instanceof Error ? error.message : String(error)}`);
 }
 
 /**
  * Compile a template for repeated use (returns render function)
+ * Throws naming the template when it cannot be parsed or rendered
  */
 export function compile(template: string): (context: Record<string, unknown>) => string {
-  const tpl = engine.parse(template);
+  let tpl: ReturnType<typeof engine.parse>;
+  try {
+    tpl = engine.parse(template);
+  } catch (error) {
+    throw invalidTemplate(template, error);
+  }
   return (context) => {
     try {
       return engine.renderSync(tpl, context);
-    } catch (_error) {
-      return template;
+    } catch (error) {
+      throw invalidTemplate(template, error);
     }
   };
 }

@@ -5,7 +5,8 @@ import { mkdir } from 'fs/promises';
 import { join } from 'path';
 import PDFDocument from 'pdfkit';
 import { registerEmojiFont } from '../../../src/lib/emoji-renderer.ts';
-import { type PDFTextOptions, renderText } from '../../../src/lib/pdf-helpers.ts';
+import { measureMarkdownTextHeight, type PDFTextOptions, renderText, type TextRenderConfig } from '../../../src/lib/pdf-helpers.ts';
+import { pageContents, type TextRun, textRuns } from '../../lib/fixture-fonts.ts';
 
 type ContentItem =
   | { type: 'text'; text: string; fontSize?: number; bold?: boolean; color?: string; left?: number; top?: number; width?: number; align?: string; oblique?: number | boolean; characterSpacing?: number; moveDown?: number }
@@ -62,7 +63,6 @@ async function createPdfWithEnhancements(options: {
 
   // Setup fonts
   const fontSet = await fonts.setupFonts(doc, undefined);
-  const { regular: regularFont, bold: boldFont } = fontSet;
 
   // Helper to draw background on new pages
   const drawBackgroundOnPage = () => {
@@ -84,9 +84,7 @@ async function createPdfWithEnhancements(options: {
       case 'text':
       case 'heading': {
         const fontSize = item.fontSize ?? (item.type === 'text' ? 12 : 24);
-        const font = item.bold !== false && item.type === 'heading' ? boldFont : item.bold ? boldFont : regularFont;
-
-        if (item.color) doc.fillColor(item.color);
+        const bold = item.type === 'heading' ? item.bold !== false : item.bold === true;
 
         const options: PDFTextOptions = {};
         if (item.left !== undefined) options.x = item.left;
@@ -97,12 +95,11 @@ async function createPdfWithEnhancements(options: {
         if (item.characterSpacing !== undefined) options.characterSpacing = item.characterSpacing;
 
         renderText(doc, item.text, {
-          typography: { fontSize, fontName: font },
+          typography: { fontSize, fonts: fontSet, style: { bold } },
+          color: { fillColor: item.color },
           features: { enableEmoji: emojiAvailable },
           layout: options,
         });
-
-        if (item.color) doc.fillColor('black');
         if (item.moveDown !== undefined) doc.moveDown(item.moveDown);
         break;
       }
@@ -450,19 +447,18 @@ describe('Layout Options for pdf-layout', () => {
     doc.pipe(stream);
 
     const fontSet = await fonts.setupFonts(doc, undefined);
-    const { regular: regularFont } = fontSet;
 
     renderText(doc, 'Left aligned (default)', {
-      typography: { fontSize: 12, fontName: regularFont },
+      typography: { fontSize: 12, fonts: fontSet },
       features: { enableEmoji: false },
     });
     renderText(doc, 'Center aligned', {
-      typography: { fontSize: 12, fontName: regularFont },
+      typography: { fontSize: 12, fonts: fontSet },
       features: { enableEmoji: false },
       layout: { align: 'center' },
     });
     renderText(doc, 'Right aligned', {
-      typography: { fontSize: 12, fontName: regularFont },
+      typography: { fontSize: 12, fonts: fontSet },
       features: { enableEmoji: false },
       layout: { align: 'right' },
     });
@@ -489,20 +485,19 @@ describe('Layout Options for pdf-layout', () => {
     doc.pipe(stream);
 
     const fontSet = await fonts.setupFonts(doc, undefined);
-    const { regular: regularFont } = fontSet;
 
     renderText(doc, 'Line 1', {
-      typography: { fontSize: 12, fontName: regularFont },
+      typography: { fontSize: 12, fonts: fontSet },
       features: { enableEmoji: false },
     });
     doc.moveDown(0.5);
     renderText(doc, 'Line 2 (0.5 spacing)', {
-      typography: { fontSize: 12, fontName: regularFont },
+      typography: { fontSize: 12, fonts: fontSet },
       features: { enableEmoji: false },
     });
     doc.moveDown(2);
     renderText(doc, 'Line 3 (2.0 spacing)', {
-      typography: { fontSize: 12, fontName: regularFont },
+      typography: { fontSize: 12, fonts: fontSet },
       features: { enableEmoji: false },
     });
 
@@ -528,18 +523,17 @@ describe('Layout Options for pdf-layout', () => {
     doc.pipe(stream);
 
     const fontSet = await fonts.setupFonts(doc, undefined);
-    const { regular: regularFont } = fontSet;
 
     renderText(doc, 'Normal text', {
-      typography: { fontSize: 12, fontName: regularFont },
+      typography: { fontSize: 12, fonts: fontSet },
       features: { enableEmoji: false },
     });
     renderText(doc, 'Underlined text', {
-      typography: { fontSize: 12, fontName: regularFont, underline: true },
+      typography: { fontSize: 12, fonts: fontSet, underline: true },
       features: { enableEmoji: false },
     });
     renderText(doc, 'Strikethrough text', {
-      typography: { fontSize: 12, fontName: regularFont, strike: true },
+      typography: { fontSize: 12, fonts: fontSet, strike: true },
       features: { enableEmoji: false },
     });
 
@@ -565,19 +559,18 @@ describe('Layout Options for pdf-layout', () => {
     doc.pipe(stream);
 
     const fontSet = await fonts.setupFonts(doc, undefined);
-    const { regular: regularFont } = fontSet;
 
     renderText(doc, 'No indent', {
-      typography: { fontSize: 12, fontName: regularFont },
+      typography: { fontSize: 12, fonts: fontSet },
       features: { enableEmoji: false },
     });
     renderText(doc, 'Indent 20', {
-      typography: { fontSize: 12, fontName: regularFont },
+      typography: { fontSize: 12, fonts: fontSet },
       features: { enableEmoji: false },
       layout: { indent: 20 },
     });
     renderText(doc, 'Indent 40', {
-      typography: { fontSize: 12, fontName: regularFont },
+      typography: { fontSize: 12, fonts: fontSet },
       features: { enableEmoji: false },
       layout: { indent: 40 },
     });
@@ -599,4 +592,178 @@ describe('Layout Options for pdf-layout', () => {
 it('print test output directory', () => {
   console.log(`\n📁 Layout test PDFs generated in: ${testOutputDir}`);
   console.log('   Open these files to visually verify layout options\n');
+});
+
+describe('measureMarkdownTextHeight style lookup', () => {
+  const fontSize = 12;
+  const lineGap = 0;
+  const helvetica = { regular: 'Helvetica', bold: 'Helvetica-Bold', italic: 'Helvetica-Oblique', boldItalic: 'Helvetica-BoldOblique' };
+  const lineHeight = new PDFDocument().font('Helvetica').fontSize(fontSize).currentLineHeight(true);
+
+  // Width of the plain words, each measured in the given font; whitespace tokens use the regular font.
+  function widthOf(doc: PDFKit.PDFDocument, words: Array<[string, string]>): number {
+    return words.reduce((sum, [word, font]) => sum + doc.font(font).fontSize(fontSize).widthOfString(word), 0);
+  }
+
+  it('applies a bold range that comes after many other ranges', () => {
+    const doc = new PDFDocument();
+    const r = helvetica.regular;
+    const fitsOnlyIfRegular =
+      widthOf(doc, [
+        ['a', r],
+        [' ', r],
+        ['b', helvetica.italic],
+        [' ', r],
+        ['c', r],
+        [' ', r],
+        ['d', helvetica.italic],
+        [' ', r],
+        ['wider', r],
+      ]) + 0.01;
+    const height = measureMarkdownTextHeight(doc, 'a *b* c *d* **wider**', fitsOnlyIfRegular, fontSize, lineGap, helvetica);
+    assert.strictEqual(height, 2 * lineHeight, 'bold "wider" is wider than regular, so it wraps');
+  });
+
+  it('applies a bold range at the start', () => {
+    const doc = new PDFDocument();
+    const r = helvetica.regular;
+    const fitsOnlyIfRegular =
+      widthOf(doc, [
+        ['wider', r],
+        [' ', r],
+        ['a', helvetica.italic],
+        [' ', r],
+        ['c', r],
+      ]) + 0.01;
+    const height = measureMarkdownTextHeight(doc, '**wider** *a* c', fitsOnlyIfRegular, fontSize, lineGap, helvetica);
+    assert.strictEqual(height, 2 * lineHeight);
+  });
+
+  it('skips several ranges that fall inside one word', () => {
+    const doc = new PDFDocument();
+    const r = helvetica.regular;
+    const fitsOnlyIfRegular =
+      widthOf(doc, [
+        ['x', r],
+        ['y', helvetica.italic],
+        ['z', r],
+        [' ', r],
+        ['wider', r],
+      ]) + 0.01;
+    const height = measureMarkdownTextHeight(doc, 'x*y*z **wider**', fitsOnlyIfRegular, fontSize, lineGap, helvetica);
+    assert.strictEqual(height, 2 * lineHeight);
+  });
+
+  it('does not carry a style past the end of its range', () => {
+    const doc = new PDFDocument();
+    const r = helvetica.regular;
+    const exactWidth =
+      widthOf(doc, [
+        ['a', r],
+        [' ', r],
+        ['b', helvetica.bold],
+        [' ', r],
+        ['wider', r],
+        [' ', r],
+        ['c', helvetica.italic],
+        [' ', r],
+        ['wider', r],
+      ]) + 0.01;
+    const height = measureMarkdownTextHeight(doc, 'a **b** wider *c* wider', exactWidth, fontSize, lineGap, helvetica);
+    assert.strictEqual(height, lineHeight, 'both "wider" words are regular, so the line fits');
+  });
+});
+
+describe('renderText styling', () => {
+  const helvetica = fonts.standardFonts('Helvetica');
+
+  async function runs(text: string, config: Partial<TextRenderConfig> = {}): Promise<TextRun[]> {
+    const doc = new PDFDocument();
+    const chunks: Buffer[] = [];
+    doc.on('data', (c: Buffer) => chunks.push(c));
+    const done = new Promise<Buffer>((resolve) => doc.on('end', () => resolve(Buffer.concat(chunks))));
+    renderText(doc, text, { typography: { fontSize: 12, fonts: helvetica }, layout: { x: 50, y: 50, width: 400 }, ...config });
+    doc.end();
+    return textRuns(await done);
+  }
+
+  it('draws markdown beside emoji without the markers and with the right styles', async () => {
+    registerEmojiFont();
+    const drawn = await runs('one **two** three 😀 four', { features: { enableEmoji: true, markdown: true } });
+    assert.deepStrictEqual(
+      drawn.map((r) => [r.font, r.text.replace(/\s+/g, ' ')]),
+      [
+        ['Helvetica', 'one '],
+        ['Helvetica-Bold', 'two'],
+        ['Helvetica', ' three '],
+        ['Helvetica', ' four'],
+      ]
+    );
+  });
+
+  it('styles part of a word', async () => {
+    const drawn = await runs('**Tools**: Git and a**b**c.', { features: { markdown: true } });
+    assert.deepStrictEqual(
+      drawn.map((r) => [r.font, r.text]),
+      [
+        ['Helvetica-Bold', 'Tools'],
+        ['Helvetica', ': Git and a'],
+        ['Helvetica-Bold', 'b'],
+        ['Helvetica', 'c.'],
+      ]
+    );
+    assert.strictEqual(new Set(drawn.map((r) => r.y)).size, 1, 'one line');
+  });
+
+  it('draws escapes and inline code without their markers', async () => {
+    const drawn = await runs('Run `npm test` on \\*nix', { features: { markdown: true } });
+    assert.deepStrictEqual(
+      drawn.map((r) => r.text),
+      ['Run npm test on *nix']
+    );
+  });
+
+  it('starts a new line at each line break in markdown text', async () => {
+    const drawn = await runs('one **two**\nthree\n\nfour', { features: { markdown: true } });
+    const lineOf = (text: string): number => drawn.find((r) => r.text.includes(text))?.y ?? Number.NaN;
+    assert.strictEqual(lineOf('one'), lineOf('two'), 'one and two share a line');
+    assert.ok(lineOf('three') < lineOf('two'), 'three is on the next line');
+    const lineHeight = lineOf('two') - lineOf('three');
+    assert.ok(Math.abs(lineOf('three') - lineOf('four') - 2 * lineHeight) < 0.01, 'a blank line separates paragraphs');
+  });
+
+  it('measures line breaks the way it draws them', () => {
+    const doc = new PDFDocument();
+    const lineHeight = doc.font('Helvetica').fontSize(12).currentLineHeight(true);
+    const height = measureMarkdownTextHeight(doc, 'one **two**\nthree\n\nfour', 400, 12, 0, helvetica);
+    assert.strictEqual(height, 4 * lineHeight);
+  });
+
+  it('draws markdown spans in the text color and links in the hyperlink color', async () => {
+    const drawn = await runs('plain **bold** [link](https://example.com)', { features: { markdown: true }, color: { fillColor: '#ff0000', hyperlinkColor: '#0000ff' } });
+    assert.deepStrictEqual(
+      drawn.map((r) => [r.text, r.fill]),
+      [
+        ['plain ', '1 0 0'],
+        ['bold', '1 0 0'],
+        [' ', '1 0 0'],
+        ['link', '0 0 1'],
+      ]
+    );
+  });
+
+  it('applies oblique, underline and strike from typography', async () => {
+    const drawn = await runs('Slanted', { typography: { fontSize: 12, fonts: helvetica, oblique: true } });
+    assert.strictEqual(drawn[0]?.oblique, true);
+
+    for (const decoration of ['underline', 'strike'] as const) {
+      const doc = new PDFDocument();
+      const chunks: Buffer[] = [];
+      doc.on('data', (c: Buffer) => chunks.push(c));
+      const done = new Promise<Buffer>((resolve) => doc.on('end', () => resolve(Buffer.concat(chunks))));
+      renderText(doc, 'Decorated', { typography: { fontSize: 12, fonts: helvetica, [decoration]: true }, layout: { x: 50, y: 50, width: 400 } });
+      doc.end();
+      assert.match(pageContents(await done).join('\n'), / l\nS\n/, `${decoration} line is stroked`);
+    }
+  });
 });

@@ -12,7 +12,7 @@
 
 import type PDFKit from 'pdfkit';
 import { measureTextHeight } from '../content-measure.ts';
-import { renderField } from '../formatting.ts';
+import { renderContactLine, renderField } from '../formatting.ts';
 import type {
   CompanyHeaderElement,
   CredentialData,
@@ -33,12 +33,24 @@ import type {
   TextElement,
 } from '../ir/types.ts';
 import { measureMarkdownTextHeight } from '../pdf-helpers.ts';
+import { selectFace, type TextStyle } from '../text-style.ts';
 import type { TypographyOptions } from '../types/typography.ts';
 import { calculateEntryColumnWidths, type MeasureContext } from './types.ts';
+
+const REGULAR: TextStyle = {};
+const BOLD: TextStyle = { bold: true };
+const ITALIC: TextStyle = { italic: true };
 
 // =============================================================================
 // Helper Functions
 // =============================================================================
+
+/**
+ * Height of field-template output, measured as markdown the way renderers draw it.
+ */
+function fieldHeight(ctx: MeasureContext, text: string, width: number, fontSize: number, style: TextStyle, lineGap: number): number {
+  return measureMarkdownTextHeight(ctx.doc, text, width, fontSize, lineGap, ctx.typography.fonts, true, style);
+}
 
 /**
  * Ensure a value is a string.
@@ -96,7 +108,7 @@ export function measureText(ctx: MeasureContext, element: TextElement): number {
   totalHeight += content.marginTop;
 
   for (let i = 0; i < paragraphs.length; i++) {
-    const height = measureTextHeight(doc, paragraphs[i], style.fontSize, typography.fonts.regular, emojiAvailable, {
+    const height = measureTextHeight(doc, paragraphs[i], style.fontSize, typography.fonts, REGULAR, emojiAvailable, {
       width,
       lineGap: style.lineGap,
     });
@@ -119,7 +131,7 @@ export function measureSectionTitle(ctx: MeasureContext, element: SectionTitleEl
   const { sectionTitle } = typography;
   if (!element.title) return 0;
 
-  doc.font(typography.fonts.bold).fontSize(sectionTitle.fontSize);
+  selectFace(doc, typography.fonts, BOLD).fontSize(sectionTitle.fontSize);
   const titleHeight = doc.heightOfString(element.title.toUpperCase(), { width });
 
   const underlineHeight = (sectionTitle.underlineGap ?? 0) + 1;
@@ -137,22 +149,16 @@ export function measureHeader(ctx: MeasureContext, element: HeaderElement): numb
   const { header } = typography;
 
   // Name height
-  doc.font(typography.fonts.bold).fontSize(header.name.fontSize);
+  selectFace(doc, typography.fonts, BOLD).fontSize(header.name.fontSize);
   const nameHeight = doc.heightOfString(element.name.toUpperCase(), { width, align: 'center' });
 
   // Contact line height
   let contactHeight = 0;
   if (element.contactItems.length > 0) {
-    const contactTexts = element.contactItems
-      .map((item) => {
-        return item.location ? renderField(fieldTemplates.location, item.location) : item.text;
-      })
-      .filter((text) => text.length > 0);
+    const contactText = renderContactLine(fieldTemplates, element.contactItems);
 
-    const contactText = renderField(fieldTemplates.contactLine, { items: contactTexts });
-
-    doc.font(typography.fonts.regular).fontSize(header.contact.fontSize);
-    contactHeight = doc.heightOfString(contactText, { width, align: 'center' });
+    selectFace(doc, typography.fonts, REGULAR).fontSize(header.contact.fontSize);
+    contactHeight = fieldHeight(ctx, contactText, width, header.contact.fontSize, REGULAR, 0);
   }
 
   const nameMarginBottom = header.name.marginBottom ?? 0;
@@ -197,7 +203,7 @@ function measureWorkEntry(ctx: MeasureContext, entry: EntryData, isGrouped: bool
   let totalHeight = 0;
   if (!isGrouped) {
     // Line 1: Company + Location
-    doc.font(typography.fonts.bold).fontSize(entryStyle.position.fontSize);
+    selectFace(doc, typography.fonts, BOLD).fontSize(entryStyle.position.fontSize);
     const companyHeight = company ? doc.heightOfString(company, { width: leftWidth }) : 0;
     const locationHeight = location ? doc.heightOfString(location, { width: rightWidth }) : 0;
     const line1Height = Math.max(companyHeight, locationHeight);
@@ -205,16 +211,16 @@ function measureWorkEntry(ctx: MeasureContext, entry: EntryData, isGrouped: bool
   }
 
   // Position + Dates line
-  doc.font(typography.fonts.italic).fontSize(entryStyle.position.fontSize);
+  selectFace(doc, typography.fonts, ITALIC).fontSize(entryStyle.position.fontSize);
   const positionHeight = doc.heightOfString(position, { width: leftWidth });
-  doc.font(typography.fonts.italic).fontSize(entryStyle.company.fontSize);
-  const dateHeight = dateText ? doc.heightOfString(dateText, { width: rightWidth }) : 0;
+  selectFace(doc, typography.fonts, ITALIC).fontSize(entryStyle.company.fontSize);
+  const dateHeight = dateText ? fieldHeight(ctx, dateText, rightWidth, entryStyle.company.fontSize, ITALIC, 0) : 0;
   const line2Height = Math.max(positionHeight, dateHeight);
   totalHeight += line2Height;
 
   // Location line (for grouped entries only)
   if (isGrouped && location) {
-    doc.font(typography.fonts.regular).fontSize(entryStyle.location.fontSize);
+    selectFace(doc, typography.fonts, REGULAR).fontSize(entryStyle.location.fontSize);
     const locHeight = doc.heightOfString(location, { width });
     totalHeight += locHeight;
   }
@@ -225,7 +231,7 @@ function measureWorkEntry(ctx: MeasureContext, entry: EntryData, isGrouped: bool
 
   // Summary paragraphs
   if (summaryParagraphs.length > 0) {
-    doc.font(typography.fonts.regular).fontSize(style.fontSize);
+    selectFace(doc, typography.fonts, REGULAR).fontSize(style.fontSize);
     for (const para of summaryParagraphs) {
       totalHeight += doc.heightOfString(para, { width, lineGap: style.lineGap });
       totalHeight += style.paragraphMarginBottom;
@@ -238,7 +244,7 @@ function measureWorkEntry(ctx: MeasureContext, entry: EntryData, isGrouped: bool
       totalHeight += style.blockMarginBottom;
     }
     const bulletWidth = width - typography.content.bulletIndent;
-    doc.font(typography.fonts.regular).fontSize(style.fontSize);
+    selectFace(doc, typography.fonts, REGULAR).fontSize(style.fontSize);
     for (const highlight of highlights) {
       totalHeight += doc.heightOfString(`• ${highlight}`, { width: bulletWidth, lineGap: style.lineGap });
       totalHeight += style.bulletMarginBottom;
@@ -260,7 +266,7 @@ function measureCompanyHeader(ctx: MeasureContext, company: string, location: st
 
   const { leftWidth, rightWidth } = calculateEntryColumnWidths(width, entryStyle.date.width);
 
-  doc.font(typography.fonts.bold).fontSize(entryStyle.position.fontSize);
+  selectFace(doc, typography.fonts, BOLD).fontSize(entryStyle.position.fontSize);
   const companyHeight = doc.heightOfString(company, { width: leftWidth });
   const locationHeight = location ? doc.heightOfString(location, { width: rightWidth }) : 0;
   const line1Height = Math.max(companyHeight, locationHeight);
@@ -302,10 +308,10 @@ export function measureEntryHeader(ctx: MeasureContext, element: EntryHeaderElem
 
   if (element.variant === 'education') {
     // Education: Institution + Dates on first line, degree on second
-    doc.font(typography.fonts.bold).fontSize(style.fontSize);
+    selectFace(doc, typography.fonts, BOLD).fontSize(style.fontSize);
     const institutionHeight = doc.heightOfString(company, { width: leftWidth });
-    doc.font(typography.fonts.italic).fontSize(style.fontSize);
-    const dateHeight = dateText ? doc.heightOfString(dateText, { width: rightWidth }) : 0;
+    selectFace(doc, typography.fonts, ITALIC).fontSize(style.fontSize);
+    const dateHeight = dateText ? fieldHeight(ctx, dateText, rightWidth, style.fontSize, ITALIC, 0) : 0;
     totalHeight += Math.max(institutionHeight, dateHeight);
 
     // Degree line
@@ -317,8 +323,8 @@ export function measureEntryHeader(ctx: MeasureContext, element: EntryHeaderElem
     // Add lineSpacing after institution only if degree or GPA follows
     if (degreeParts || entry.score) totalHeight += typography.entryHeader.lineSpacing;
     if (degreeParts) {
-      doc.font(typography.fonts.italic).fontSize(style.fontSize);
-      totalHeight += doc.heightOfString(degreeParts, { width, lineGap: style.lineGap });
+      selectFace(doc, typography.fonts, ITALIC).fontSize(style.fontSize);
+      totalHeight += fieldHeight(ctx, degreeParts, width, style.fontSize, ITALIC, style.lineGap);
 
       // Only add lineSpacing if GPA follows
       if (entry.score) totalHeight += typography.entryHeader.lineSpacing;
@@ -326,36 +332,36 @@ export function measureEntryHeader(ctx: MeasureContext, element: EntryHeaderElem
 
     // GPA line
     if (entry.score) {
-      doc.font(typography.fonts.regular).fontSize(style.fontSize);
+      selectFace(doc, typography.fonts, REGULAR).fontSize(style.fontSize);
       totalHeight += doc.heightOfString(`GPA: ${entry.score}`, { width, lineGap: style.lineGap });
     }
   } else if (element.isGroupedPosition) {
     // Grouped work entry: Position + Dates (company is in separate CompanyHeaderElement)
-    doc.font(typography.fonts.italic).fontSize(entryStyle.position.fontSize);
+    selectFace(doc, typography.fonts, ITALIC).fontSize(entryStyle.position.fontSize);
     const positionHeight = doc.heightOfString(position, { width: leftWidth });
-    doc.font(typography.fonts.italic).fontSize(entryStyle.company.fontSize);
-    const dateHeight = dateText ? doc.heightOfString(dateText, { width: rightWidth }) : 0;
+    selectFace(doc, typography.fonts, ITALIC).fontSize(entryStyle.company.fontSize);
+    const dateHeight = dateText ? fieldHeight(ctx, dateText, rightWidth, entryStyle.company.fontSize, ITALIC, 0) : 0;
     totalHeight += Math.max(positionHeight, dateHeight);
 
     // Location line (if shown for grouped entries with different locations)
     if (location) {
-      doc.font(typography.fonts.regular).fontSize(entryStyle.location.fontSize);
+      selectFace(doc, typography.fonts, REGULAR).fontSize(entryStyle.location.fontSize);
       totalHeight += doc.heightOfString(location, { width });
     }
   } else {
     // Single work entry: Company + Location on first line, Position + Dates on second
-    doc.font(typography.fonts.bold).fontSize(entryStyle.position.fontSize);
+    selectFace(doc, typography.fonts, BOLD).fontSize(entryStyle.position.fontSize);
     const companyHeight = company ? doc.heightOfString(company, { width: leftWidth }) : 0;
     // Use correct font for location measurement (matches rendering)
-    doc.font(typography.fonts.bold).fontSize(entryStyle.location.fontSize);
+    selectFace(doc, typography.fonts, BOLD).fontSize(entryStyle.location.fontSize);
     const locationHeight = location ? doc.heightOfString(location, { width: rightWidth }) : 0;
     totalHeight += Math.max(companyHeight, locationHeight) + typography.entryHeader.lineSpacing;
 
     // Position + Dates line
-    doc.font(typography.fonts.italic).fontSize(entryStyle.position.fontSize);
+    selectFace(doc, typography.fonts, ITALIC).fontSize(entryStyle.position.fontSize);
     const positionHeight = doc.heightOfString(position, { width: leftWidth });
-    doc.font(typography.fonts.italic).fontSize(entryStyle.company.fontSize);
-    const dateHeight = dateText ? doc.heightOfString(dateText, { width: rightWidth }) : 0;
+    selectFace(doc, typography.fonts, ITALIC).fontSize(entryStyle.company.fontSize);
+    const dateHeight = dateText ? fieldHeight(ctx, dateText, rightWidth, entryStyle.company.fontSize, ITALIC, 0) : 0;
     totalHeight += Math.max(positionHeight, dateHeight);
   }
 
@@ -431,7 +437,7 @@ export function measureCompanyHeaderElement(ctx: MeasureContext, element: Compan
 
   const { leftWidth, rightWidth } = calculateEntryColumnWidths(width, entryStyle.date.width);
 
-  doc.font(typography.fonts.bold).fontSize(entryStyle.position.fontSize);
+  selectFace(doc, typography.fonts, BOLD).fontSize(entryStyle.position.fontSize);
   const companyHeight = doc.heightOfString(element.company, { width: leftWidth });
   const locationHeight = element.location ? doc.heightOfString(element.location, { width: rightWidth }) : 0;
   const line1Height = Math.max(companyHeight, locationHeight);
@@ -461,14 +467,14 @@ function measureEducationEntry(ctx: MeasureContext, entry: EntryData): number {
     area: entry.area,
   });
 
-  doc.font(typography.fonts.bold).fontSize(style.fontSize);
+  selectFace(doc, typography.fonts, BOLD).fontSize(style.fontSize);
   const institutionHeight = doc.heightOfString(institution, { width: leftWidth });
-  doc.font(typography.fonts.italic).fontSize(style.fontSize);
-  const dateHeight = dates ? doc.heightOfString(dates, { width: rightWidth }) : 0;
+  selectFace(doc, typography.fonts, ITALIC).fontSize(style.fontSize);
+  const dateHeight = dates ? fieldHeight(ctx, dates, rightWidth, style.fontSize, ITALIC, 0) : 0;
   const line1Height = Math.max(institutionHeight, dateHeight);
 
-  doc.font(typography.fonts.italic).fontSize(style.fontSize);
-  const degreeHeight = degreeParts ? doc.heightOfString(degreeParts, { width, lineGap: style.lineGap }) : 0;
+  selectFace(doc, typography.fonts, ITALIC).fontSize(style.fontSize);
+  const degreeHeight = degreeParts ? fieldHeight(ctx, degreeParts, width, style.fontSize, ITALIC, style.lineGap) : 0;
   const gpaHeight = entry.score ? doc.heightOfString(`GPA: ${entry.score}`, { width, lineGap: style.lineGap }) : 0;
 
   return line1Height + degreeHeight + gpaHeight + style.itemMarginBottom * 3 + style.blockMarginBottom;
@@ -565,8 +571,8 @@ export function measureKeywordList(ctx: MeasureContext, element: KeywordListElem
 
     const fullText = renderField(fieldTemplates.skill, { name, level, keywords });
 
-    doc.font(typography.fonts.regular).fontSize(style.fontSize);
-    const textHeight = doc.heightOfString(fullText, { width, lineGap: style.lineGap });
+    selectFace(doc, typography.fonts, REGULAR).fontSize(style.fontSize);
+    const textHeight = fieldHeight(ctx, fullText, width, style.fontSize, REGULAR, style.lineGap);
     totalHeight += textHeight + style.itemMarginBottom;
   }
 
@@ -586,8 +592,8 @@ export function measureLanguageList(ctx: MeasureContext, element: LanguageListEl
   const languageTexts = element.items.map((item) => renderField(fieldTemplates.language, item)).filter(Boolean);
   const fullText = languageTexts.join(', ');
 
-  doc.font(typography.fonts.regular).fontSize(style.fontSize);
-  return doc.heightOfString(fullText, { width, lineGap: style.lineGap });
+  selectFace(doc, typography.fonts, REGULAR).fontSize(style.fontSize);
+  return fieldHeight(ctx, fullText, width, style.fontSize, REGULAR, style.lineGap);
 }
 
 /**
@@ -615,16 +621,16 @@ export function measureCredentialList(ctx: MeasureContext, element: CredentialLi
       releaseDate: item.releaseDate,
     });
 
-    doc.font(typography.fonts.bold).fontSize(style.fontSize);
+    selectFace(doc, typography.fonts, BOLD).fontSize(style.fontSize);
     const titleHeight = doc.heightOfString(title, { width });
 
-    doc.font(typography.fonts.italic).fontSize(style.fontSize);
-    const metaHeight = metaLine ? doc.heightOfString(metaLine, { width }) : 0;
+    selectFace(doc, typography.fonts, ITALIC).fontSize(style.fontSize);
+    const metaHeight = metaLine ? fieldHeight(ctx, metaLine, width, style.fontSize, ITALIC, 0) : 0;
 
     const summaryParagraphs = paragraphsFromContent(ensureString(item.summary));
     let summaryHeight = 0;
     if (summaryParagraphs.length > 0) {
-      doc.font(typography.fonts.regular).fontSize(style.fontSize);
+      selectFace(doc, typography.fonts, REGULAR).fontSize(style.fontSize);
       for (const para of summaryParagraphs) {
         summaryHeight += doc.heightOfString(para, { width, lineGap: style.lineGap });
       }
@@ -657,7 +663,7 @@ export function measureReferenceList(ctx: MeasureContext, element: ReferenceList
 
     // Name line
     if (name) {
-      doc.font(typography.fonts.bold).fontSize(style.fontSize);
+      selectFace(doc, typography.fonts, BOLD).fontSize(style.fontSize);
       totalHeight += doc.heightOfString(name, { width });
       totalHeight += style.itemMarginBottom;
     }
@@ -665,7 +671,7 @@ export function measureReferenceList(ctx: MeasureContext, element: ReferenceList
     // Quote text (indented)
     if (reference) {
       const quoteWidth = width - quote.indent;
-      doc.font(typography.fonts.italic).fontSize(style.fontSize);
+      selectFace(doc, typography.fonts, ITALIC).fontSize(style.fontSize);
       totalHeight += doc.heightOfString(`"${reference}"`, { width: quoteWidth, lineGap: style.lineGap });
     }
 
