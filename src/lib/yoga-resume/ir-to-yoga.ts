@@ -1,136 +1,54 @@
 /**
- * Transform IR elements to Yoga layout nodes.
+ * Lays resume elements out with Yoga.
  *
- * This module bridges the IR (Intermediate Representation) from resume
- * transformation with the Yoga layout engine.
+ * Yoga positions each element from its block's height; the same blocks are then paginated and drawn.
  */
 
-import type PDFKit from 'pdfkit';
-import type { FieldTemplates, GroupElement, LayoutElement } from '../ir/types.ts';
-import type { TypographyOptions } from '../types/typography.ts';
-import type { HeightMeasurer, LayoutContent, LayoutNode } from '../yoga-layout.ts';
+import type { LayoutElement } from '../ir/types.ts';
+import type { HeightMeasurer, LayoutContent } from '../yoga-layout.ts';
 import { calculateLayout } from '../yoga-layout.ts';
-import { createMeasureContext, measureElement } from './measure.ts';
-import { DEFAULT_PAGE_CONFIG } from './paginate.ts';
-import type { PageConfig, ResumeLayoutNode } from './types.ts';
+import { type Block, buildBlock } from './blocks.ts';
+import { DEFAULT_PAGE_CONFIG, type PlacedBlock } from './paginate.ts';
+import type { PageConfig, RenderContext } from './types.ts';
 
-// =============================================================================
-// IR to Yoga Transformation
-// =============================================================================
-
-/**
- * Transform an IR element to a Yoga LayoutContent node.
- *
- * Each IR element becomes a Yoga node with measured height.
- * Groups become container nodes with children.
- */
-function irElementToYoga(element: LayoutElement): LayoutContent {
-  const base: LayoutContent = {
-    type: element.type,
-    // Store the original element for rendering
-    _element: element,
-  };
-
-  // Groups need children transformed recursively
-  if (element.type === 'group') {
-    const group = element as GroupElement;
-    return {
-      ...base,
-      type: 'group',
-      direction: 'column',
-      children: group.children.map(irElementToYoga),
-      // wrap=false means this group should stay together (atomic)
-      _atomic: group.wrap === false,
-    };
-  }
-
-  return base;
+function toYoga(element: LayoutElement): LayoutContent {
+  return { type: element.type, _element: element };
 }
 
 /**
- * Create a height measurer function for Yoga layout.
- *
- * This wraps our measureElement function in the interface Yoga expects.
+ * Measures through blocks, remembering each element's block at the width Yoga asked for so the placed block is the
+ * one that was measured.
  */
-function createHeightMeasurer(doc: PDFKit.PDFDocument, typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean): HeightMeasurer {
-  return (content: LayoutContent, availableWidth: number): number => {
-    // Get the original IR element from the Yoga node
-    const element = (content as LayoutContent & { _element?: LayoutElement })._element;
-    if (!element) {
-      return 0;
+function blockMeasurer(ctx: RenderContext): { measure: HeightMeasurer; blockFor: (element: LayoutElement, width: number) => Block } {
+  const blocks = new Map<LayoutElement, Map<number, Block>>();
+  const blockFor = (element: LayoutElement, width: number): Block => {
+    let byWidth = blocks.get(element);
+    if (!byWidth) {
+      byWidth = new Map();
+      blocks.set(element, byWidth);
     }
-
-    const ctx = createMeasureContext(doc, typography, fieldTemplates, emojiAvailable, availableWidth);
-    return measureElement(ctx, element);
+    let block = byWidth.get(width);
+    if (!block) {
+      block = buildBlock(ctx, element, width);
+      byWidth.set(width, block);
+    }
+    return block;
   };
-}
-
-/**
- * Transform a LayoutDocument to Yoga layout nodes.
- */
-export function transformToYogaNodes(elements: LayoutElement[]): LayoutContent[] {
-  return elements.map(irElementToYoga);
-}
-
-/**
- * Calculate layout for IR elements using Yoga.
- *
- * This is the main entry point for Yoga-based layout calculation.
- *
- * @param doc - PDFKit document for measurements
- * @param elements - IR elements to lay out
- * @param typography - Typography options
- * @param fieldTemplates - Field templates for rendering
- * @param emojiAvailable - Whether emoji rendering is available
- * @param config - Page configuration
- * @returns Layout nodes with computed positions and the original IR elements
- */
-export async function calculateResumeLayout(doc: PDFKit.PDFDocument, elements: LayoutElement[], typography: TypographyOptions, fieldTemplates: Required<FieldTemplates>, emojiAvailable: boolean, config: PageConfig = DEFAULT_PAGE_CONFIG): Promise<ResumeLayoutNode[]> {
-  // Transform IR elements to Yoga-compatible nodes
-  const yogaNodes = transformToYogaNodes(elements);
-
-  // Create height measurer
-  const measureHeight = createHeightMeasurer(doc, typography, fieldTemplates, emojiAvailable);
-
-  // Calculate layout using Yoga
-  const layoutNodes = await calculateLayout(
-    yogaNodes,
-    config.width,
-    undefined, // Let Yoga calculate height
-    measureHeight,
-    config.margins
-  );
-
-  // Convert LayoutNode[] to ResumeLayoutNode[] by extracting IR elements
-  return layoutNodes.map((node, index) => toResumeLayoutNode(node, elements[index]));
-}
-
-/**
- * Convert a Yoga LayoutNode to a ResumeLayoutNode.
- *
- * This extracts the original IR element and includes it in the result.
- */
-function toResumeLayoutNode(node: LayoutNode, element: LayoutElement): ResumeLayoutNode {
-  const result: ResumeLayoutNode = {
-    element,
-    x: node.x,
-    y: node.y,
-    width: node.width,
-    height: node.height,
+  const measure: HeightMeasurer = (content, availableWidth) => {
+    const element = (content as LayoutContent & { _element?: LayoutElement })._element;
+    return element ? blockFor(element, availableWidth).height : 0;
   };
-
-  // Handle children for groups
-  if (node.children && element.type === 'group') {
-    const group = element as GroupElement;
-    result.children = node.children.map((childNode, index) => toResumeLayoutNode(childNode, group.children[index]));
-  }
-
-  return result;
+  return { measure, blockFor };
 }
 
-// =============================================================================
-// Two-Column Layout Support
-// =============================================================================
+/**
+ * Lays elements out in one column down the page.
+ */
+export async function calculateResumeLayout(ctx: RenderContext, elements: LayoutElement[], config: PageConfig = DEFAULT_PAGE_CONFIG): Promise<PlacedBlock[]> {
+  const { measure, blockFor } = blockMeasurer(ctx);
+  const nodes = await calculateLayout(elements.map(toYoga), config.width, undefined, measure, config.margins);
+  return nodes.map((node, i) => ({ block: blockFor(elements[i] as LayoutElement, node.width), x: node.x, y: node.y }));
+}
 
 /**
  * Configuration for two-column layout.
@@ -148,72 +66,25 @@ export interface TwoColumnLayoutConfig {
 }
 
 /**
- * Calculate layout for two-column resume layout.
- *
- * Creates a single unified Yoga tree with left and right columns,
- * computing all positions in one pass.
+ * Lays elements out in two columns that grow independently from the top.
  */
-export async function calculateTwoColumnLayout(
-  doc: PDFKit.PDFDocument,
-  layout: TwoColumnLayoutConfig,
-  typography: TypographyOptions,
-  fieldTemplates: Required<FieldTemplates>,
-  emojiAvailable: boolean,
-  config: PageConfig = DEFAULT_PAGE_CONFIG
-): Promise<{ left: ResumeLayoutNode[]; right: ResumeLayoutNode[]; columnPositions: { leftX: number; leftWidth: number; rightX: number; rightWidth: number } }> {
+export async function calculateTwoColumnLayout(ctx: RenderContext, layout: TwoColumnLayoutConfig, config: PageConfig = DEFAULT_PAGE_CONFIG): Promise<{ left: PlacedBlock[]; right: PlacedBlock[] }> {
+  const { measure, blockFor } = blockMeasurer(ctx);
   const contentWidth = config.width - config.margins.left - config.margins.right;
-  const measureHeight = createHeightMeasurer(doc, typography, fieldTemplates, emojiAvailable);
-
-  // Normalize column widths
-  const leftWidth = layout.left.width ?? '30%';
-  const rightWidth = layout.right.width ?? '70%';
-
-  // Build unified Yoga tree with actual content in both columns
-  const unifiedTree: LayoutContent = {
+  const tree: LayoutContent = {
     type: 'group',
     direction: 'row',
     gap: layout.gap,
     width: contentWidth,
-    alignItems: 'start', // Columns grow independently from top
+    alignItems: 'start',
     children: [
-      {
-        type: 'group',
-        direction: 'column',
-        width: leftWidth,
-        children: transformToYogaNodes(layout.left.elements),
-      },
-      {
-        type: 'group',
-        direction: 'column',
-        width: rightWidth,
-        children: transformToYogaNodes(layout.right.elements),
-      },
+      { type: 'group', direction: 'column', width: layout.left.width ?? '30%', children: layout.left.elements.map(toYoga) },
+      { type: 'group', direction: 'column', width: layout.right.width ?? '70%', children: layout.right.elements.map(toYoga) },
     ],
   };
-
-  // Single Yoga calculation for entire two-column layout
-  const [layoutResult] = await calculateLayout([unifiedTree], config.width, undefined, measureHeight, config.margins);
-
-  const leftColumn = layoutResult.children?.[0];
-  const rightColumn = layoutResult.children?.[1];
-
-  if (!leftColumn || !rightColumn) {
-    throw new Error('Yoga failed to compute column layout');
-  }
-
-  // Extract children from each column, converting to ResumeLayoutNode
-  const leftNodes = (leftColumn.children ?? []).map((node, index) => toResumeLayoutNode(node, layout.left.elements[index]));
-
-  const rightNodes = (rightColumn.children ?? []).map((node, index) => toResumeLayoutNode(node, layout.right.elements[index]));
-
-  return {
-    left: leftNodes,
-    right: rightNodes,
-    columnPositions: {
-      leftX: leftColumn.x,
-      leftWidth: leftColumn.width,
-      rightX: rightColumn.x,
-      rightWidth: rightColumn.width,
-    },
-  };
+  const [row] = await calculateLayout([tree], config.width, undefined, measure, config.margins);
+  const [left, right] = row?.children ?? [];
+  if (!left || !right) throw new Error('Yoga failed to compute column layout');
+  const place = (column: typeof left, elements: LayoutElement[]): PlacedBlock[] => (column.children ?? []).map((node, i) => ({ block: blockFor(elements[i] as LayoutElement, node.width), x: node.x, y: node.y }));
+  return { left: place(left, layout.left.elements), right: place(right, layout.right.elements) };
 }

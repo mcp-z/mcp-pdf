@@ -7,7 +7,7 @@
  */
 
 import type { ResumeSchema } from '../../../assets/resume.ts';
-import { mergeFieldTemplates, registerFieldFilters } from '../formatting.ts';
+import { ensureString, mergeFieldTemplates, paragraphsFromContent, registerFieldFilters } from '../formatting.ts';
 import type {
   ContactItem,
   CredentialData,
@@ -19,7 +19,6 @@ import type {
   EntryHeaderElement,
   EntryListElement,
   FieldTemplates,
-  GroupElement,
   HeaderElement,
   KeywordListElement,
   LanguageListElement,
@@ -132,187 +131,31 @@ function inferEntryVariant(source: string): 'work' | 'education' {
 }
 
 /**
- * Convert content to array of paragraphs.
+ * Transform an entry (work, education, volunteer) into its header and its content (summary paragraphs and bullets).
  */
-function paragraphsFromContent(content: string | string[] | undefined): string[] {
-  if (!content) return [];
-  if (Array.isArray(content)) return content.filter(Boolean);
-  return content
-    .split(/\n\n+/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-}
-
-/**
- * Ensure a value is a string.
- */
-function ensureString(value: unknown): string {
-  if (typeof value === 'string') return value;
-  if (value == null) return '';
-  return String(value);
-}
-
-/**
- * Group entries by company name (for work entries).
- */
-function _groupByCompany(entries: EntryData[]): EntryData[][] {
-  const groups: EntryData[][] = [];
-  let currentGroup: EntryData[] = [];
-  let currentCompany = '';
-
-  for (const entry of entries) {
-    const rec = entry as Record<string, unknown>;
-    const company = ensureString(rec.name ?? rec.organization ?? rec.entity)
-      .trim()
-      .toLowerCase();
-
-    if (company === currentCompany && currentGroup.length > 0) {
-      currentGroup.push(entry);
-    } else {
-      if (currentGroup.length > 0) {
-        groups.push(currentGroup);
-      }
-      currentGroup = [entry];
-      currentCompany = company;
-    }
-  }
-
-  if (currentGroup.length > 0) {
-    groups.push(currentGroup);
-  }
-
-  return groups;
-}
-
-/**
- * Transform a single entry into EntryHeader + StructuredContent elements.
- * This is the unified transformation for all entry types (work, education, volunteer).
- *
- * Uses atomic grouping: header + first content line stay together on same page
- * to prevent orphaned headers. Remaining content can paginate independently.
- */
-function transformEntry(entry: EntryData, variant: 'work' | 'education', isFirstEntry: boolean, sectionTitleElement: SectionTitleElement | null): LayoutElement[] {
-  const elements: LayoutElement[] = [];
-
-  const headerElement: EntryHeaderElement = {
+function transformEntry(entry: EntryData, variant: 'work' | 'education', isFirstEntry: boolean): LayoutElement[] {
+  const header: EntryHeaderElement = {
     type: 'entry-header',
     variant,
     entry,
-    isGroupedPosition: false,
-    showLocation: true,
-    // Add spacing before non-first entries - actual value applied in measure.ts
-    marginTop: isFirstEntry ? undefined : 0, // 0 = use entrySpacing from typography
+    // Spacing before non-first entries: 0 means typography.content.entrySpacing
+    marginTop: isFirstEntry ? undefined : 0,
   };
-
   const entryData = entry as Record<string, unknown>;
-  const summaryText = entryData.summary ?? entryData.description;
-  const summaryParagraphs = paragraphsFromContent(summaryText as string | string[] | undefined);
-  const highlights = Array.isArray(entryData.highlights) ? (entryData.highlights as string[]).map(ensureString).filter(Boolean) : [];
-
-  // Build first line (first paragraph OR first bullet)
-  let firstLine: StructuredContentElement | null = null;
-  const remainingLines: StructuredContentElement[] = [];
-
-  if (summaryParagraphs.length > 0) {
-    // First paragraph is the first line
-    // Include first bullet with first summary paragraph if bullets exist
-    const firstBullet = highlights.length > 0 ? [highlights[0]] : undefined;
-
-    firstLine = {
-      type: 'structured-content',
-      summary: summaryParagraphs[0],
-      bullets: firstBullet,
-    };
-
-    // Remaining paragraphs (if any) as separate element
-    const remainingParagraphs = summaryParagraphs.slice(1);
-    if (remainingParagraphs.length > 0) {
-      remainingLines.push({
-        type: 'structured-content',
-        summary: remainingParagraphs,
-      });
-    }
-
-    // Remaining bullets as INDIVIDUAL elements for fine-grained pagination
-    for (let i = 1; i < highlights.length; i++) {
-      remainingLines.push({
-        type: 'structured-content',
-        bullets: [highlights[i]],
-      });
-    }
-  } else if (highlights.length > 0) {
-    // No paragraphs, first bullet is the first line
-    firstLine = {
-      type: 'structured-content',
-      bullets: [highlights[0]],
-    };
-
-    // Remaining bullets as INDIVIDUAL elements for fine-grained pagination
-    for (let i = 1; i < highlights.length; i++) {
-      remainingLines.push({
-        type: 'structured-content',
-        bullets: [highlights[i]],
-      });
-    }
-  }
-
-  // Build atomic group: section title + header + first line
-  const atomicChildren: LayoutElement[] = [];
-
-  if (isFirstEntry && sectionTitleElement) {
-    atomicChildren.push(sectionTitleElement);
-  }
-
-  atomicChildren.push(headerElement);
-
-  if (firstLine) {
-    atomicChildren.push(firstLine);
-  }
-
-  const atomicGroup: GroupElement = {
-    type: 'group',
-    wrap: false,
-    children: atomicChildren,
-  };
-  elements.push(atomicGroup);
-
-  // Remaining content lines are separate elements for fine-grained pagination
-  for (const line of remainingLines) {
-    elements.push(line);
-  }
-
-  return elements;
+  const summary = paragraphsFromContent((entryData.summary ?? entryData.description) as string | string[] | undefined);
+  const bullets = Array.isArray(entryData.highlights) ? (entryData.highlights as string[]).map(ensureString).filter(Boolean) : [];
+  if (summary.length === 0 && bullets.length === 0) return [header];
+  return [header, { type: 'structured-content', summary, bullets }];
 }
 
 /**
- * Transform entry-list into fine-grained elements for better pagination.
- * Creates EntryHeader + StructuredContent elements for each entry.
+ * Transform an entry list into entry headers and content, after the section title if there is one.
  */
-function transformEntryList(entryList: EntryListElement, sectionTitleElement: SectionTitleElement | null, source: string): LayoutElement[] {
-  const elements: LayoutElement[] = [];
-  const { entries, variant } = entryList;
-
-  if (entries.length === 0) {
-    if (sectionTitleElement) {
-      elements.push(sectionTitleElement);
-    }
-    return elements;
-  }
-
-  for (let i = 0; i < entries.length; i++) {
-    const entryElements = transformEntry(entries[i], variant, i === 0, i === 0 ? sectionTitleElement : null);
-    elements.push(...entryElements);
-  }
-
-  for (const el of elements) {
-    el.source = source;
-    if (el.type === 'group' && 'children' in el) {
-      for (const child of (el as GroupElement).children) {
-        child.source = source;
-      }
-    }
-  }
-
+function transformEntryList(entryList: EntryListElement, sectionTitleElement: SectionTitleElement | null): LayoutElement[] {
+  const elements: LayoutElement[] = sectionTitleElement ? [sectionTitleElement] : [];
+  entryList.entries.forEach((entry, i) => {
+    elements.push(...transformEntry(entry, entryList.variant, i === 0));
+  });
   return elements;
 }
 
@@ -444,27 +287,15 @@ function transformData(data: unknown, source: string, config: SectionConfig): La
 }
 
 /**
- * Transform a section config into IR elements.
- *
- * For sections with titles and entry-list content, creates an atomic group
- * containing the section title + first entry. This implements react-pdf style
- * wrap={false} behavior to prevent orphaned section titles.
+ * Transform a section config into IR elements: its title (if any), then its content. Entry lists become an entry
+ * header and content element per entry.
  */
 function transformSection(resume: ResumeSchema, config: SectionConfig): LayoutElement[] {
   const elements: LayoutElement[] = [];
   const { source, render, title, template, style } = config;
 
-  // Helper to tag all elements with their source
   const tagElements = () => {
-    for (const el of elements) {
-      el.source = source;
-      // Also tag children in groups
-      if (el.type === 'group' && 'children' in el) {
-        for (const child of (el as GroupElement).children) {
-          child.source = source;
-        }
-      }
-    }
+    for (const el of elements) el.source = source;
     return elements;
   };
 
@@ -516,136 +347,12 @@ function transformSection(resume: ResumeSchema, config: SectionConfig): LayoutEl
       }
     : null;
 
-  // Create atomic groups to prevent orphaned section titles (react-pdf style wrap={false})
-  // Section title stays with at least one item/sentence from its content
-  if (sectionTitleElement && contentElement) {
-    const type = contentElement.type;
-
-    if (type === 'entry-list') {
-      // Entry list: use fine-grained decomposition for optimal pagination
-      const entryList = contentElement as EntryListElement;
-      const entryElements = transformEntryList(entryList, sectionTitleElement, source);
-      elements.push(...entryElements);
-      return tagElements(); // Early return since elements are already tagged
-    }
-    if (type === 'keyword-list') {
-      // Keyword list (skills, interests): group title with first category, then each remaining as separate node
-      const keywordList = contentElement as KeywordListElement;
-      const items = keywordList.items;
-
-      if (items.length > 0) {
-        const firstKeywordList: KeywordListElement = {
-          ...keywordList,
-          items: items.slice(0, 1),
-        };
-
-        const atomicGroup: GroupElement = {
-          type: 'group',
-          wrap: false,
-          children: [sectionTitleElement, firstKeywordList],
-        };
-        elements.push(atomicGroup);
-
-        // Each remaining keyword category as a separate node for better pagination
-        for (let i = 1; i < items.length; i++) {
-          const singleKeywordList: KeywordListElement = {
-            ...keywordList,
-            items: [items[i]],
-          };
-          elements.push(singleKeywordList);
-        }
-      } else {
-        elements.push(sectionTitleElement);
-      }
-    } else if (type === 'language-list') {
-      // Language list: group title with ALL languages (they render as a single comma-separated line)
-      const languageList = contentElement as LanguageListElement;
-
-      if (languageList.items.length > 0) {
-        const atomicGroup: GroupElement = {
-          type: 'group',
-          wrap: false,
-          children: [sectionTitleElement, languageList],
-        };
-        elements.push(atomicGroup);
-      } else {
-        elements.push(sectionTitleElement);
-      }
-    } else if (type === 'credential-list') {
-      // Credential list (awards, certificates, publications): group title with first item, then each remaining as separate node
-      const credentialList = contentElement as CredentialListElement;
-      const items = credentialList.items;
-
-      if (items.length > 0) {
-        const firstCredentialList: CredentialListElement = {
-          ...credentialList,
-          items: items.slice(0, 1),
-        };
-
-        const atomicGroup: GroupElement = {
-          type: 'group',
-          wrap: false,
-          children: [sectionTitleElement, firstCredentialList],
-        };
-        elements.push(atomicGroup);
-
-        // Each remaining credential as a separate node for better pagination
-        for (let i = 1; i < items.length; i++) {
-          const singleCredentialList: CredentialListElement = {
-            ...credentialList,
-            items: [items[i]],
-          };
-          elements.push(singleCredentialList);
-        }
-      } else {
-        elements.push(sectionTitleElement);
-      }
-    } else if (type === 'reference-list') {
-      // Reference list: group title with first reference, then each remaining as separate node
-      const referenceList = contentElement as ReferenceListElement;
-      const items = referenceList.items;
-
-      if (items.length > 0) {
-        const firstReferenceList: ReferenceListElement = {
-          ...referenceList,
-          items: items.slice(0, 1),
-        };
-
-        const atomicGroup: GroupElement = {
-          type: 'group',
-          wrap: false,
-          children: [sectionTitleElement, firstReferenceList],
-        };
-        elements.push(atomicGroup);
-
-        // Each remaining reference as a separate node for better pagination
-        for (let i = 1; i < items.length; i++) {
-          const singleReferenceList: ReferenceListElement = {
-            ...referenceList,
-            items: [items[i]],
-          };
-          elements.push(singleReferenceList);
-        }
-      } else {
-        elements.push(sectionTitleElement);
-      }
-    } else {
-      // Other types (text, summary-highlights, template): group entire content with title
-      const atomicGroup: GroupElement = {
-        type: 'group',
-        wrap: false,
-        children: [sectionTitleElement, contentElement],
-      };
-      elements.push(atomicGroup);
-    }
+  // Titles and entry headers keep with the next line when paginated; content breaks between any two lines
+  if (contentElement?.type === 'entry-list') {
+    elements.push(...transformEntryList(contentElement, sectionTitleElement));
   } else {
-    // No title or no content - add elements normally
-    if (sectionTitleElement) {
-      elements.push(sectionTitleElement);
-    }
-    if (contentElement) {
-      elements.push(contentElement);
-    }
+    if (sectionTitleElement) elements.push(sectionTitleElement);
+    if (contentElement) elements.push(contentElement);
   }
 
   return tagElements();

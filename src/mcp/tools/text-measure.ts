@@ -10,10 +10,10 @@ import { type CallToolResult, ProtocolError, ProtocolErrorCode } from '@mcp-z/se
 import PDFDocument from 'pdfkit';
 import { z } from 'zod';
 import { DEFAULT_TEXT_FONT_SIZE } from '../../constants.ts';
-import { measureTextHeight, measureTextWidth } from '../../lib/content-measure.ts';
 import { registerEmojiFont } from '../../lib/emoji-renderer.ts';
 import { hasEmoji, setupFonts } from '../../lib/fonts.ts';
-import { FONT_OPTION_DESCRIPTION } from '../../lib/pdf-core.ts';
+import { FONT_OPTION_DESCRIPTION, MARKDOWN_OPTION_DESCRIPTION } from '../../lib/pdf-core.ts';
+import { measureText, type TextRenderConfig } from '../../lib/pdf-helpers.ts';
 import { styleFace } from '../../lib/text-style.ts';
 
 // ============================================================================
@@ -31,6 +31,7 @@ const textItemSchema = z.object({
 const inputSchema = z.object({
   items: z.array(textItemSchema).describe('Array of text items to measure'),
   font: z.string().optional().describe(FONT_OPTION_DESCRIPTION),
+  markdown: z.boolean().optional().describe(MARKDOWN_OPTION_DESCRIPTION),
 });
 
 const measurementResultSchema = z.object({
@@ -65,7 +66,7 @@ export type Output = z.infer<typeof outputSchema>;
 
 export default function createTool() {
   async function handler(args: Input): Promise<CallToolResult> {
-    const { items, font } = args;
+    const { items, font, markdown = true } = args;
 
     try {
       // Create a temporary PDFDocument for measurements (not saved)
@@ -84,14 +85,15 @@ export default function createTool() {
         const fontSize = item.fontSize ?? DEFAULT_TEXT_FONT_SIZE;
         const style = { bold: item.bold === true };
 
-        // Measure natural width (single line)
-        const width = measureTextWidth(doc, item.text, fontSize, fonts, style, emojiAvailable);
-
-        // Measure height (accounts for wrapping if width specified)
-        const height = measureTextHeight(doc, item.text, fontSize, fonts, style, emojiAvailable, {
-          width: item.width,
-          lineGap: item.lineGap,
-        });
+        const config: TextRenderConfig = {
+          typography: { fontSize, fonts, style },
+          features: { enableEmoji: emojiAvailable, markdown },
+          layout: { width: item.width },
+          spacing: { lineGap: item.lineGap },
+        };
+        // Natural single-line width, and height wrapped to the item's width (or the page's)
+        const width = measureText(doc, item.text, { ...config, spacing: { ...config.spacing, lineBreak: false } }).width;
+        const height = measureText(doc, item.text, config).height;
 
         measurements.push({
           text: item.text,

@@ -5,7 +5,7 @@ import { mkdir } from 'fs/promises';
 import { join } from 'path';
 import PDFDocument from 'pdfkit';
 import { registerEmojiFont } from '../../../src/lib/emoji-renderer.ts';
-import { measureMarkdownTextHeight, type PDFTextOptions, renderText, type TextRenderConfig } from '../../../src/lib/pdf-helpers.ts';
+import { measureMarkdownTextHeight, measureText, type PDFTextOptions, renderText, type TextRenderConfig } from '../../../src/lib/pdf-helpers.ts';
 import { pageContents, type TextRun, textRuns } from '../../lib/fixture-fonts.ts';
 
 type ContentItem =
@@ -765,5 +765,91 @@ describe('renderText styling', () => {
       doc.end();
       assert.match(pageContents(await done).join('\n'), / l\nS\n/, `${decoration} line is stroked`);
     }
+  });
+});
+
+describe('renderText layout', () => {
+  const helvetica = fonts.standardFonts('Helvetica');
+  const para = 'Built systems that scaled to millions of users while mentoring engineers and shipping on schedule. ';
+
+  async function render(draw: (doc: PDFKit.PDFDocument) => void): Promise<Buffer> {
+    const doc = new PDFDocument();
+    const chunks: Buffer[] = [];
+    doc.on('data', (c: Buffer) => chunks.push(c));
+    const done = new Promise<Buffer>((resolve) => doc.on('end', () => resolve(Buffer.concat(chunks))));
+    draw(doc);
+    doc.end();
+    return done;
+  }
+
+  it('wraps text without a width at the right page margin', async () => {
+    const pdf = await render((doc) => renderText(doc, para.repeat(3), { typography: { fontSize: 12, fonts: helvetica } }));
+    const runs = textRuns(pdf);
+    assert.ok(runs.length > 1, 'wrapped onto several lines');
+    const right = 612 - 72;
+    const doc = new PDFDocument();
+    for (const run of runs) assert.ok(72 + doc.font('Helvetica').fontSize(12).widthOfString(run.text) <= right + 0.01, run.text);
+  });
+
+  it('continues the next text on the same line, styled or not', async () => {
+    const pdf = await render((doc) => {
+      renderText(doc, 'Hello ', { typography: { fontSize: 12, fonts: helvetica }, spacing: { continued: true }, layout: { x: 72, y: 100, width: 400 } });
+      renderText(doc, '**bold** world', { typography: { fontSize: 12, fonts: helvetica }, features: { markdown: true }, layout: { width: 400 } });
+    });
+    const runs = textRuns(pdf);
+    assert.deepStrictEqual(
+      runs.map((r) => [r.font, r.text]),
+      [
+        ['Helvetica', 'Hello'],
+        ['Helvetica-Bold', 'bold'],
+        ['Helvetica', ' world'],
+      ]
+    );
+    assert.strictEqual(new Set(runs.map((r) => r.y)).size, 1, 'one line');
+  });
+
+  it('flows text placed at the cursor onto new pages between lines', async () => {
+    const pdf = await render((doc) => {
+      doc.y = 700;
+      renderText(doc, para.repeat(12), { typography: { fontSize: 12, fonts: helvetica }, layout: { width: 468 } });
+    });
+    assert.strictEqual(pageContents(pdf).length, 2, 'two pages');
+    const lowestBaseline = Math.min(...textRuns(pdf).map((r) => r.y));
+    assert.ok(lowestBaseline >= 72 - 0.01, `nothing below the bottom margin: ${lowestBaseline}`);
+  });
+
+  it('keeps text at a fixed position on its page', async () => {
+    const pdf = await render((doc) => renderText(doc, para.repeat(12), { typography: { fontSize: 12, fonts: helvetica }, layout: { x: 72, y: 700, width: 468 } }));
+    assert.strictEqual(pageContents(pdf).length, 1, 'one page');
+  });
+});
+
+describe('measureText', () => {
+  const helvetica = fonts.standardFonts('Helvetica');
+  const para = 'Built **systems** that scaled to *millions* of users while mentoring engineers and shipping on schedule. ';
+  const configs: Array<[string, TextRenderConfig]> = [
+    ['plain', { typography: { fontSize: 12, fonts: helvetica }, layout: { width: 300 } }],
+    ['markdown', { typography: { fontSize: 12, fonts: helvetica }, features: { markdown: true }, layout: { width: 300 } }],
+    ['spacing', { typography: { fontSize: 11, fonts: helvetica }, features: { markdown: true }, layout: { width: 250, indent: 20 }, spacing: { lineGap: 3, characterSpacing: 0.5, wordSpacing: 2 } }],
+    ['bold', { typography: { fontSize: 14, fonts: helvetica, style: { bold: true } }, layout: { width: 200 } }],
+  ];
+
+  for (const [name, config] of configs) {
+    it(`reports the height renderText advances (${name})`, () => {
+      const doc = new PDFDocument();
+      const text = para.repeat(3);
+      const measured = measureText(doc, text, config);
+      doc.x = 72;
+      doc.y = 100;
+      renderText(doc, text, { ...config, layout: { ...config.layout, x: 72, y: 100 } });
+      assert.ok(Math.abs(doc.y - 100 - measured.height) < 1e-6, `${measured.height} vs ${doc.y - 100}`);
+    });
+  }
+
+  it('reports the natural width of the widest line', () => {
+    const doc = new PDFDocument();
+    const measured = measureText(doc, 'short\nmuch **longer** line', { typography: { fontSize: 12, fonts: helvetica }, features: { markdown: true }, spacing: { lineBreak: false } });
+    const longer = doc.font('Helvetica').fontSize(12).widthOfString('much ') + doc.font('Helvetica-Bold').widthOfString('longer') + doc.font('Helvetica').widthOfString(' line');
+    assert.ok(Math.abs(measured.width - longer) < 1e-6, `${measured.width} vs ${longer}`);
   });
 });

@@ -242,40 +242,18 @@ export interface TemplateElement extends BaseElement {
   data: Record<string, unknown>;
 }
 
-/** Group element - atomic block for page break control (react-pdf style wrap={false}) */
-export interface GroupElement extends BaseElement {
-  type: 'group';
-  /** When false, entire group moves to next page if it doesn't fit (atomic) */
-  wrap?: boolean;
-  /** Child elements to render together */
-  children: LayoutElement[];
-  /** Optional margin for spacing between groups */
-  margin?: { top?: number; bottom?: number };
-}
-
-/** Entry header element - company/position/dates without content (for fine-grained pagination) */
+/** Entry header element - company/position/dates; its content follows as a structured-content element */
 export interface EntryHeaderElement extends BaseElement {
   type: 'entry-header';
   variant: 'work' | 'education';
   /** Full entry data for rendering header portion */
   entry: EntryData;
-  /** Whether this is part of a grouped company (multiple positions at same company) */
-  isGroupedPosition?: boolean;
-  /** Whether to show location (for grouped entries where location varies) */
-  showLocation?: boolean;
   /** Optional margin top for spacing between entries */
   marginTop?: number;
 }
 
-/** Company header element - for grouped entries with multiple positions at same company */
-export interface CompanyHeaderElement extends BaseElement {
-  type: 'company-header';
-  company: string;
-  location: string | null;
-}
-
 /** Discriminated union of all layout elements */
-export type LayoutElement = TextElement | DividerElement | SectionTitleElement | EntryListElement | KeywordListElement | LanguageListElement | CredentialListElement | ReferenceListElement | StructuredContentElement | HeaderElement | TemplateElement | GroupElement | EntryHeaderElement | CompanyHeaderElement;
+export type LayoutElement = TextElement | DividerElement | SectionTitleElement | EntryListElement | KeywordListElement | LanguageListElement | CredentialListElement | ReferenceListElement | StructuredContentElement | HeaderElement | TemplateElement | EntryHeaderElement;
 
 // ===== Layout Document (complete IR) =====
 

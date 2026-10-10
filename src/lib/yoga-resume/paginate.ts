@@ -1,14 +1,14 @@
 /**
- * Page break logic for Yoga-based resume layout.
+ * Page breaks for the Yoga-based resume layout.
  *
- * Yoga calculates positions as if everything is on one infinite page.
- * This module splits the computed layout into pages, adjusting Y positions
- * for each page.
+ * Yoga positions blocks as if on one endless page. This splits them into pages, breaking only between lines and
+ * never directly after a line that is kept with the next: a title or entry header always stays with the first line
+ * after it, and anything else may continue on the next page between any two lines.
  */
 
 import { DEFAULT_PAGE_SIZE, RESUME_DEFAULT_MARGINS } from '../../constants.ts';
-import type { GroupElement, LayoutElement } from '../ir/types.ts';
-import type { Page, PageConfig, PageNode, ResumeLayoutNode } from './types.ts';
+import type { Block } from './blocks.ts';
+import type { PageConfig } from './types.ts';
 
 /**
  * Default page configuration (US Letter with resume margins).
@@ -26,224 +26,89 @@ export function getContentHeight(config: PageConfig): number {
   return config.height - config.margins.top - config.margins.bottom;
 }
 
-/**
- * Calculate the content width available on a page.
- */
-export function getContentWidth(config: PageConfig): number {
-  return config.width - config.margins.left - config.margins.right;
+/** A block positioned by Yoga on the endless page */
+export interface PlacedBlock {
+  block: Block;
+  x: number;
+  y: number;
+}
+
+/** The part of a block drawn on one page: lines whose top lies in [from, to), with the block's top at page y `top` */
+export interface PageSlice {
+  block: Block;
+  x: number;
+  top: number;
+  from: number;
+  to: number;
+}
+
+/** Offsets within a block where a page may break: before a line whose previous line is not kept with it */
+function breakOffsets(block: Block): number[] {
+  return block.lines.filter((_line, i) => i > 0 && !(block.lines[i - 1]?.keepWithNext ?? false)).map((line) => line.top);
+}
+
+/** Height from a block's top to the end of its first unbreakable run of lines */
+function firstRun(block: Block): number {
+  return breakOffsets(block)[0] ?? block.height;
 }
 
 /**
- * Check if a node is a group with wrap=false (atomic block).
+ * Splits positioned blocks (one column, in order) into pages.
  */
-function isAtomicGroup(element: LayoutElement): element is GroupElement {
-  return element.type === 'group' && element.wrap === false;
-}
-
-/**
- * Convert a ResumeLayoutNode to a PageNode with adjusted Y position.
- */
-function toPageNode(node: ResumeLayoutNode, yOffset: number): PageNode {
-  const pageNode: PageNode = {
-    element: node.element,
-    position: {
-      x: node.x,
-      y: node.y - yOffset,
-      width: node.width,
-      height: node.height,
-    },
+export function paginateBlocks(placed: PlacedBlock[], config: PageConfig): PageSlice[][] {
+  const pageTop = config.margins.top;
+  const pageBottom = config.height - config.margins.bottom;
+  const pages: PageSlice[][] = [[]];
+  // Endless-page y that maps to the top of the current page's content area
+  let offset = 0;
+  const current = (): PageSlice[] => pages[pages.length - 1] as PageSlice[];
+  const newPage = (startAt: number): void => {
+    pages.push([]);
+    offset = startAt - pageTop;
   };
 
-  if (node.children && node.children.length > 0) {
-    pageNode.children = node.children.map((child) => toPageNode(child, yOffset));
-  }
-
-  return pageNode;
-}
-
-/**
- * Split layout nodes into pages.
- *
- * Algorithm:
- * 1. Process nodes in order, tracking current Y position
- * 2. When a node would overflow the page, start a new page
- * 3. Adjust Y positions so each page starts at margins.top
- *
- * @param nodes - Computed layout nodes from Yoga
- * @param config - Page configuration
- * @returns Array of pages with adjusted node positions
- */
-export function paginateLayout(nodes: ResumeLayoutNode[], config: PageConfig = DEFAULT_PAGE_CONFIG): Page[] {
-  const contentHeight = getContentHeight(config);
-  const pageBottom = config.margins.top + contentHeight;
-
-  const pages: Page[] = [{ number: 0, nodes: [] }];
-  let currentPage = 0;
-  let pageStartY = 0; // Y offset for current page
-
-  for (const node of nodes) {
-    const nodeTop = node.y;
-    const _nodeBottom = node.y + node.height;
-    const nodeHeight = node.height;
-
-    // Check if node fits on current page
-    // Note: nodeTop already includes margins.top from Yoga layout
-    const currentPageY = nodeTop - pageStartY;
-    const nodeBottomOnPage = currentPageY + nodeHeight;
-    const fitsOnPage = nodeBottomOnPage <= pageBottom;
-
-    // Check if this is an atomic group that should stay together
-    const _isAtomic = isAtomicGroup(node.element);
-
-    if (!fitsOnPage) {
-      // Node doesn't fit - start new page
-      currentPage++;
-      pages.push({ number: currentPage, nodes: [] });
-
-      // New page starts at the top margin
-      // Calculate offset so this node starts at margins.top
-      pageStartY = nodeTop - config.margins.top;
+  placed.forEach(({ block, x, y }, index) => {
+    // A block kept with the next needs room for itself, any following kept blocks, and the first run of the block after
+    let required = y + block.height;
+    for (let next = index; placed[next]?.block.keepWithNext; next++) {
+      const after = placed[next + 1];
+      if (after) required = after.y + firstRun(after.block);
     }
 
-    // Add node to current page with adjusted Y
-    const pageNode = toPageNode(node, pageStartY);
-    pages[currentPage].nodes.push(pageNode);
-  }
-
-  return pages;
-}
-
-/**
- * Check if a node would cause a page break at the given Y position.
- * Note: nodeY should already include margins.top from Yoga layout.
- */
-export function wouldCausePageBreak(nodeY: number, nodeHeight: number, currentPageStartY: number, config: PageConfig): boolean {
-  const contentHeight = getContentHeight(config);
-  const pageBottom = config.margins.top + contentHeight;
-  const nodeBottomOnPage = nodeY - currentPageStartY + nodeHeight;
-
-  return nodeBottomOnPage > pageBottom;
-}
-
-/**
- * Calculate the Y offset for a new page.
- *
- * @param nodeY - The Y position of the node that triggered the page break
- * @param config - Page configuration
- * @returns The Y offset to subtract from nodes on the new page
- */
-export function calculateNewPageOffset(nodeY: number, config: PageConfig): number {
-  // The node should start at the top margin of the new page
-  return nodeY - config.margins.top;
-}
-
-/**
- * Flatten a node tree into paginatable units.
- *
- * For non-atomic groups, we need to paginate their children individually.
- * Atomic groups and leaf nodes are kept as single units.
- *
- * @param nodes - Layout nodes to flatten
- * @returns Flattened array of paginatable nodes
- */
-function flattenToPaginatableUnits(nodes: ResumeLayoutNode[]): ResumeLayoutNode[] {
-  const result: ResumeLayoutNode[] = [];
-
-  for (const node of nodes) {
-    const isGroup = node.element.type === 'group';
-    const isAtomic = isAtomicGroup(node.element);
-
-    if (isGroup && !isAtomic && node.children && node.children.length > 0) {
-      // Non-atomic group: recursively flatten children
-      // The children already have their absolute Y positions from Yoga
-      result.push(...flattenToPaginatableUnits(node.children));
-    } else {
-      // Atomic group or leaf node: keep as single unit
-      result.push(node);
-    }
-  }
-
-  return result;
-}
-
-/**
- * Advanced pagination that handles atomic groups (wrap=false).
- *
- * When a group with wrap=false doesn't fit on the current page,
- * the entire group moves to the next page.
- *
- * For non-atomic groups, children are paginated individually to prevent
- * content from overflowing the page bottom.
- */
-export function paginateLayoutWithAtomicGroups(nodes: ResumeLayoutNode[], config: PageConfig = DEFAULT_PAGE_CONFIG): Page[] {
-  const contentHeight = getContentHeight(config);
-  const pageBottom = config.margins.top + contentHeight;
-
-  // Flatten the node tree so we can paginate each unit individually
-  // Non-atomic groups are expanded to their children
-  const flattenedNodes = flattenToPaginatableUnits(nodes);
-
-  const pages: Page[] = [{ number: 0, nodes: [] }];
-  let currentPage = 0;
-  let pageStartY = 0;
-
-  for (const node of flattenedNodes) {
-    const nodeTop = node.y;
-    const nodeHeight = node.height;
-    const isAtomic = isAtomicGroup(node.element);
-
-    // Calculate position on current page
-    // Note: nodeTop already includes margins.top from Yoga layout
-    const currentPageY = nodeTop - pageStartY;
-    const nodeBottomOnPage = currentPageY + nodeHeight;
-    const fitsOnPage = nodeBottomOnPage <= pageBottom;
-
-    // For atomic groups, check if the whole group fits
-    // If not, and we're not at the top of a page, move to next page
-    if (isAtomic && !fitsOnPage) {
-      // Check if we're not already at the top of a fresh page
-      if (pages[currentPage].nodes.length > 0) {
-        // Start new page
-        currentPage++;
-        pages.push({ number: currentPage, nodes: [] });
-        pageStartY = nodeTop - config.margins.top;
+    let from = 0;
+    for (;;) {
+      const fitsBottom = (at: number): boolean => at - offset <= pageBottom + 1e-6;
+      if (fitsBottom(from === 0 ? required : y + block.height)) {
+        current().push({ block, x, top: y - offset, from, to: block.height });
+        return;
       }
-    } else if (!fitsOnPage && !isAtomic) {
-      // Non-atomic element that doesn't fit - start new page
-      currentPage++;
-      pages.push({ number: currentPage, nodes: [] });
-      pageStartY = nodeTop - config.margins.top;
+      const candidates = breakOffsets(block).filter((b) => b > from && fitsBottom(y + b));
+      const cut = candidates[candidates.length - 1];
+      if (cut !== undefined && !(from === 0 && block.keepWithNext)) {
+        current().push({ block, x, top: y - offset, from, to: cut });
+        newPage(y + cut);
+        from = cut;
+        continue;
+      }
+      if (current().length > 0) {
+        newPage(y + from);
+        continue;
+      }
+      // Nothing fits on an empty page: place the rest as it is
+      current().push({ block, x, top: y - offset, from, to: block.height });
+      return;
     }
-
-    // Add node to current page with adjusted Y
-    const pageNode = toPageNode(node, pageStartY);
-    pages[currentPage].nodes.push(pageNode);
-  }
-
+  });
   return pages;
 }
 
 /**
- * Calculate total document height from layout nodes.
+ * Draws one page's slices: every line whose top lies in the slice.
  */
-export function calculateTotalHeight(nodes: ResumeLayoutNode[]): number {
-  if (nodes.length === 0) return 0;
-
-  let maxBottom = 0;
-  for (const node of nodes) {
-    const bottom = node.y + node.height;
-    if (bottom > maxBottom) {
-      maxBottom = bottom;
+export function drawPage(slices: PageSlice[]): void {
+  for (const slice of slices) {
+    for (const line of slice.block.lines) {
+      if (line.top >= slice.from && line.top < slice.to) line.draw(slice.x, slice.top + line.top);
     }
   }
-
-  return maxBottom;
-}
-
-/**
- * Calculate the number of pages needed for a document.
- */
-export function calculatePageCount(totalHeight: number, config: PageConfig): number {
-  const contentHeight = getContentHeight(config);
-  return Math.ceil((totalHeight - config.margins.top) / contentHeight);
 }

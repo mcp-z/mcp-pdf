@@ -1,78 +1,9 @@
 /**
- * Yoga-based resume layout module.
- *
- * This module provides:
- * - Type definitions for Yoga-based resume layout
- * - Height measurement for IR elements
- * - Pagination for multi-page documents
- * - IR to Yoga transformation
- * - Position-based rendering
+ * Yoga-based resume layout: elements become blocks of lines, Yoga positions them, and pages are cut between lines.
  */
 
-export type { TwoColumnLayoutConfig } from './ir-to-yoga.ts';
-// IR to Yoga transformation
-export {
-  calculateResumeLayout,
-  calculateTwoColumnLayout,
-  transformToYogaNodes,
-} from './ir-to-yoga.ts';
-
-// Measurement
-export {
-  createMeasureContext,
-  measureCredentialList,
-  measureDivider,
-  measureElement,
-  measureEntryList,
-  measureGroup,
-  measureHeader,
-  measureKeywordList,
-  measureLanguageList,
-  measureReferenceList,
-  measureSectionTitle,
-  measureStructuredContent,
-  measureText,
-} from './measure.ts';
-
-// Pagination
-export {
-  calculateNewPageOffset,
-  calculatePageCount,
-  calculateTotalHeight,
-  DEFAULT_PAGE_CONFIG,
-  getContentHeight,
-  getContentWidth,
-  paginateLayout,
-  paginateLayoutWithAtomicGroups,
-  wouldCausePageBreak,
-} from './paginate.ts';
-// Rendering
-export {
-  createRenderContext,
-  renderCredentialList,
-  renderDivider,
-  renderGroup,
-  renderHeader,
-  renderKeywordList,
-  renderLanguageList,
-  renderPage,
-  renderPageNode,
-  renderReferenceList,
-  renderSectionTitle,
-  renderStructuredContent,
-  renderTextElement,
-} from './render.ts';
-// Types
-export type {
-  ComputedPosition,
-  LayoutConfig,
-  MeasureContext,
-  Page,
-  PageConfig,
-  PageNode,
-  RenderContext,
-  ResumeLayoutNode,
-  SingleColumnConfig,
-  TwoColumnConfig,
-} from './types.ts';
+export { type Block, type BlockLine, buildBlock } from './blocks.ts';
+export { calculateResumeLayout, calculateTwoColumnLayout, type TwoColumnLayoutConfig } from './ir-to-yoga.ts';
+export { DEFAULT_PAGE_CONFIG, drawPage, getContentHeight, type PageSlice, type PlacedBlock, paginateBlocks } from './paginate.ts';
+export type { LayoutConfig, PageConfig, RenderContext, SingleColumnConfig, TwoColumnConfig } from './types.ts';
 export { isTwoColumnConfig } from './types.ts';

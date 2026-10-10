@@ -439,7 +439,7 @@ Render PDF pages to PNG images for previews or export.
 
 ### text-measure
 
-Measure text width and height before layout.
+Measure text width and height before layout. Takes the same `font` and `markdown` options as pdf-layout, and reports the size pdf-layout and pdf-document draw the same text at.
 
 ### Fonts
 

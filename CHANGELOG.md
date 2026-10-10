@@ -1,5 +1,26 @@
 # Changelog
 
+## [3.4.0] - 2026-10-10
+
+### Added
+
+- Images accept an https URL as `imagePath` in `pdf-document` and `pdf-layout`; it is downloaded once into `~/.mcp-z/mcp-pdf/cache/images/`. Width or height left out comes from the image's own size.
+- `text-measure` takes the `markdown` option (default `true`) and reports the size `pdf-document` and `pdf-layout` draw the same text at.
+
+### Changed
+
+- Local image paths are only read when the server runs over stdio. Over HTTP they are refused, so remote callers cannot read the server's files; pass an https URL instead.
+- Font and image URLs must be https on a public address, checked again on every redirect, and at most 20 MB. Fonts are cached per URL in `~/.mcp-z/mcp-pdf/cache/fonts/` instead of by file name in the system temp directory, so two URLs ending in the same file name no longer share one cached font.
+- Resume pages break between lines instead of keeping whole sections together. Section titles and entry headers stay with the line after them, so a long section starts under its header instead of leaving the rest of the page empty.
+
+### Fixed
+
+- Moonshot (Kimi) rejected `pdf-document` and `pdf-layout` because of the custom page size schema; it is now a two-number array.
+- Chinese and Japanese text with markdown or emoji did not wrap and ran off the page.
+- Text placed at a fixed position could spill onto a new page; it stays on its page.
+- `continued` text ignored markdown in the text that followed it.
+- Resume sections of entries without a title, and sections using a custom template, printed nothing.
+
 ## [3.3.0] - 2026-10-09
 
 ### Added

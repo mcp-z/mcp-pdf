@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { DEFAULT_FIELD_TEMPLATES, renderField } from '../../../src/lib/formatting.ts';
+import { DEFAULT_FIELD_TEMPLATES, ensureString, paragraphsFromContent, renderField } from '../../../src/lib/formatting.ts';
 import { tokenizeMarkdown, tokensToStyledSegments } from '../../../src/lib/markdown.ts';
 import { compile, render } from '../../../src/lib/template.ts';
 
@@ -62,5 +62,17 @@ describe('field templates produce markdown', () => {
       ['a*b@c.d | ', 'plain'],
       ['my_site', 'link:https://x.y/a_b'],
     ]);
+  });
+});
+
+describe('resume content helpers', () => {
+  it('ensureString turns missing values into empty strings and other values into text', () => {
+    assert.deepStrictEqual([ensureString(undefined), ensureString(null), ensureString('a'), ensureString(4)], ['', '', 'a', '4']);
+  });
+
+  it('paragraphsFromContent splits on blank lines and drops empty paragraphs', () => {
+    assert.deepStrictEqual(paragraphsFromContent('one\n\n  two  \n\n\n\nthree'), ['one', 'two', 'three']);
+    assert.deepStrictEqual(paragraphsFromContent(['one', '', 'two']), ['one', 'two']);
+    assert.deepStrictEqual(paragraphsFromContent(undefined), []);
   });
 });

@@ -27,8 +27,8 @@ describe('layout-transform', () => {
 
     it('returns two-column layout with elements assigned to columns', () => {
       const elements: LayoutElement[] = [
-        { type: 'group', children: [], source: 'work' },
-        { type: 'group', children: [], source: 'skills' },
+        { type: 'section-title', title: 'work', source: 'work' },
+        { type: 'section-title', title: 'skills', source: 'skills' },
       ];
       const sections: SectionConfig[] = [{ source: 'work' }, { source: 'skills' }];
 
@@ -100,9 +100,9 @@ describe('layout-transform', () => {
 
     it('assigns unassigned elements to right column', () => {
       const elements: LayoutElement[] = [
-        { type: 'group', children: [], source: 'work' },
-        { type: 'group', children: [], source: 'skills' },
-        { type: 'group', children: [], source: 'misc' },
+        { type: 'section-title', title: 'work', source: 'work' },
+        { type: 'section-title', title: 'skills', source: 'skills' },
+        { type: 'section-title', title: 'misc', source: 'misc' },
       ];
       const sections: SectionConfig[] = [{ source: 'work' }, { source: 'skills' }, { source: 'misc' }];
 

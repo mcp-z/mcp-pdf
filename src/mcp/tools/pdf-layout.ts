@@ -13,11 +13,10 @@
 import { type CallToolResult, getFileUri, ProtocolError, ProtocolErrorCode, type ToolModule, writeFile } from '@mcp-z/server';
 import { z } from 'zod';
 import { DEFAULT_HEADING_FONT_SIZE, DEFAULT_TEXT_FONT_SIZE, type Margins, type PageSizePreset } from '../../constants.ts';
-import { createWidthMeasurer, measureTextHeight } from '../../lib/content-measure.ts';
 import { resolveImageDimensions } from '../../lib/image-dimensions.ts';
 import { resolveContentImages } from '../../lib/image-source.ts';
-import { createPDFDocument, FONT_OPTION_DESCRIPTION, MARKDOWN_OPTION_DESCRIPTION, type PDFOutput, pdfOutputSchema, textItemConfig, validateContentText } from '../../lib/pdf-core.ts';
-import { renderText } from '../../lib/pdf-helpers.ts';
+import { createPDFDocument, FONT_OPTION_DESCRIPTION, MARKDOWN_OPTION_DESCRIPTION, type PDFOutput, pdfOutputSchema, type TextBaseItem, textItemConfig, validateContentText } from '../../lib/pdf-core.ts';
+import { measureText, renderText } from '../../lib/pdf-helpers.ts';
 import { selectFace } from '../../lib/text-style.ts';
 import { calculateLayout, type LayoutContent, type LayoutNode } from '../../lib/yoga-layout.ts';
 import type { BaseContentItem } from '../../schemas/content.ts';
@@ -140,11 +139,7 @@ export default function createTool() {
           if (!item.text) return 0;
           const fontSize = item.type === 'heading' ? ((item.fontSize as number) ?? DEFAULT_HEADING_FONT_SIZE) : ((item.fontSize as number) ?? DEFAULT_TEXT_FONT_SIZE);
           const style = { bold: item.type === 'heading' ? item.bold !== false : item.bold === true };
-          let height = measureTextHeight(doc, item.text as string, fontSize, fonts, style, emojiAvailable, {
-            width: availableWidth,
-            indent: item.indent as number | undefined,
-            lineGap: item.lineGap as number | undefined,
-          });
+          let height = measureText(doc, item.text as string, textItemConfig(item as TextBaseItem, { fonts, fontSize, bold: style.bold, emojiAvailable, markdown: parseMarkdown, hyperlinkColor, width: availableWidth })).height;
           const moveDown = item.moveDown as number | undefined;
           if (moveDown !== undefined && moveDown > 0) {
             selectFace(doc, fonts, style).fontSize(fontSize);
@@ -296,8 +291,14 @@ export default function createTool() {
       const pageGroups = groupContentByPage(content as ContentItem[]);
       const maxPage = Math.max(...pageGroups.keys(), 1);
 
-      // Width measurer for row layouts with space-between
-      const measureWidth = createWidthMeasurer(doc, fonts, emojiAvailable);
+      // Natural single-line width of text and headings, for row layouts with space-between
+      const measureWidth = (item: LayoutContent): number => {
+        if ((item.type !== 'text' && item.type !== 'heading') || !item.text) return 0;
+        const heading = item.type === 'heading';
+        const fontSize = (item.fontSize as number | undefined) ?? (heading ? DEFAULT_HEADING_FONT_SIZE : DEFAULT_TEXT_FONT_SIZE);
+        const config = textItemConfig(item as TextBaseItem, { fonts, fontSize, bold: heading ? item.bold !== false : item.bold === true, emojiAvailable, markdown: parseMarkdown, hyperlinkColor });
+        return measureText(doc, item.text as string, { ...config, spacing: { ...config.spacing, lineBreak: false } }).width;
+      };
 
       // Calculate layout and render per page
       for (let pageNum = 1; pageNum <= maxPage; pageNum++) {

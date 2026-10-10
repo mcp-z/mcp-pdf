@@ -73,12 +73,6 @@ export const RESUME_DEFAULT_MARGINS: Margins = {
 };
 
 /**
- * Epsilon tolerance for floating-point comparisons in text wrapping.
- * Half a point provides reasonable precision while avoiding floating-point edge cases.
- */
-export const WRAP_EPSILON = 0.5;
-
-/**
  * Default font sizes for content rendering.
  */
 export const DEFAULT_TEXT_FONT_SIZE = 12;

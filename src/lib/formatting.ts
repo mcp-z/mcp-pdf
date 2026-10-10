@@ -182,6 +182,27 @@ export function renderField(template: string, context: Record<string, unknown>):
 }
 
 /**
+ * A value as text: missing values become empty.
+ */
+export function ensureString(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (value == null) return '';
+  return String(value);
+}
+
+/**
+ * Paragraphs of resume content: an array as given, or text split on blank lines; empty paragraphs are dropped.
+ */
+export function paragraphsFromContent(content: string | string[] | undefined): string[] {
+  if (!content) return [];
+  if (Array.isArray(content)) return content.filter(Boolean);
+  return content
+    .split(/\n\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+}
+
+/**
  * The header contact line as markdown: locations and links from their templates, other items escaped, joined by
  * the contactLine template.
  */
