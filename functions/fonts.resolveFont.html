@@ -14,20 +14,21 @@
 <section class="tsd-panel">
 <ul class="tsd-signatures">
 <li class="">
-<div class="tsd-signature tsd-anchor-link" id="resolvefont"><span class="tsd-kind-call-signature">resolveFont</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">fontSpec</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">null</span><span class="tsd-signature-symbol">&gt;</span><a href="#resolvefont" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-signature tsd-anchor-link" id="resolvefont"><span class="tsd-kind-call-signature">resolveFont</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">fontSpec</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">options</span><span class="tsd-signature-symbol">?:</span> <a href="../interfaces/fonts.FontOptions.html" class="tsd-signature-type tsd-kind-interface">FontOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">null</span><span class="tsd-signature-symbol">&gt;</span><a href="#resolvefont" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
 <div class="tsd-description">
 <div class="tsd-comment tsd-typography"><p>Resolve font specification to actual font path or name
-Supports: PDF standard fonts, absolute paths, URLs, 'auto' detection
+Supports: PDF standard fonts, absolute paths, https URLs on public hosts, 'auto' detection
 Returns null if font cannot be resolved (caller should use fallback)
-Throws error if URL download fails</p>
+Throws if a URL is refused or its download fails</p>
 </div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
-<li><span><span class="tsd-kind-parameter">fontSpec</span>: <span class="tsd-signature-type">string</span></span></li></ul></div>
+<li><span><span class="tsd-kind-parameter">fontSpec</span>: <span class="tsd-signature-type">string</span></span></li>
+<li><span><span class="tsd-kind-parameter">options</span>: <a href="../interfaces/fonts.FontOptions.html" class="tsd-signature-type tsd-kind-interface">FontOptions</a><span class="tsd-signature-symbol"> = {}</span></span></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">null</span><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/mcp-z/mcp-pdf/blob/2953690fdcc0b97a100eb98ce70196701586dfcb/src/lib/fonts.ts#L123">lib/fonts.ts:123</a></li></ul></aside></div></li></ul></section></div>
+<li>Defined in <a href="https://github.com/mcp-z/mcp-pdf/blob/cad33f5caa19e5568222f5a7fec1b4ca6115649f/src/lib/fonts.ts#L98">lib/fonts.ts:98</a></li></ul></aside></div></li></ul></section></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
