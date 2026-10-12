@@ -32,7 +32,7 @@ describe('tool schemas for strict clients', () => {
 
   before(async () => {
     mkdirSync(testStorageDir, { recursive: true });
-    const port = await getPort();
+    const port = await getPort({ host: '127.0.0.1' });
     const server = await setup.createHTTPServer(createTestConfig(testOutputDir, testStorageDir, { type: 'http', port }));
     close = server.close;
     url = `http://127.0.0.1:${port}/mcp`;
