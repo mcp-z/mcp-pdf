@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.1] - 2026-11-16
+
+### Fixed
+
+- `pdf-resume` reported an internal failure to load its resume schema (a broken install) as invalid input in the resume. It now reports an internal error.
+- The package failed to load (`The requested module 'linebreak' does not provide an export named 'default'`) with `linebreak` 2.0.0; text layout now imports it by name.
+
 ## [3.4.0] - 2026-10-10
 
 ### Added

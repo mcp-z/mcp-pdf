@@ -1,4 +1,4 @@
-import LineBreaker from 'linebreak';
+import { LineBreaker } from 'linebreak';
 import type PDFKit from 'pdfkit';
 import { measureEmoji, renderEmojiToBuffer, splitTextAndEmoji } from './emoji-renderer.ts';
 import { tokenizeMarkdown, tokensToStyledSegments } from './markdown.ts';

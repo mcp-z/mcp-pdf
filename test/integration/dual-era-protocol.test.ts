@@ -39,7 +39,7 @@ describe('2026-07-28 protocol reaches mcp-pdf tools end to end (plan 04)', () =>
 
     before(async () => {
       mkdirSync(testStorageDir, { recursive: true });
-      const port = await getPort();
+      const port = await getPort({ host: '127.0.0.1' });
       const config = createTestConfig(testOutputDir, testStorageDir, { type: 'http', port });
       const server = await setup.createHTTPServer(config);
       close = server.close;

@@ -20,21 +20,24 @@ const ajv = new Ajv({
 });
 addFormats(ajv);
 
+const DEFAULT_SCHEMA_PATH = join(packageRoot, 'assets/resume.schema.json');
+
 // Cache the compiled validator
 let cachedValidate: ReturnType<typeof ajv.compile> | null = null;
 
 /**
  * Get or compile the resume schema validator (cached)
  */
-function getValidator(): ReturnType<typeof ajv.compile> {
+function getValidator(schemaPath?: string): ReturnType<typeof ajv.compile> {
+  if (schemaPath) {
+    return ajv.compile(JSON.parse(readFileSync(schemaPath, 'utf-8')));
+  }
   if (cachedValidate) {
     return cachedValidate;
   }
 
   // Load and compile the schema once
-  const schemaPath = join(packageRoot, 'assets/resume.schema.json');
-  const schemaContent = readFileSync(schemaPath, 'utf-8');
-  const schema = JSON.parse(schemaContent);
+  const schema = JSON.parse(readFileSync(DEFAULT_SCHEMA_PATH, 'utf-8'));
 
   cachedValidate = ajv.compile(schema);
   return cachedValidate;
@@ -49,31 +52,24 @@ export interface ValidationResult {
 }
 
 /**
- * Validate a resume object against the JSON Resume schema
+ * Validate a resume object against the JSON Resume schema.
+ * Returns `valid: false` only for a resume that breaks the schema; a schema that
+ * cannot be loaded or compiled (a broken install) throws.
+ *
+ * @param schemaPath - Schema file to compile; defaults to the bundled schema
  */
-export function validateResume(resume: unknown): ValidationResult {
-  try {
-    // Get cached validator
-    const validate = getValidator();
+export function validateResume(resume: unknown, schemaPath?: string): ValidationResult {
+  const validate = getValidator(schemaPath);
 
-    // Validate the resume
-    const valid = validate(resume);
+  if (!validate(resume)) {
+    const errors = validate.errors?.map((error) => {
+      const path = error.instancePath || 'root';
+      const message = error.message || 'Unknown error';
+      return `${path}: ${message}`;
+    }) || ['Unknown validation error'];
 
-    if (!valid) {
-      const errors = validate.errors?.map((error) => {
-        const path = error.instancePath || 'root';
-        const message = error.message || 'Unknown error';
-        return `${path}: ${message}`;
-      }) || ['Unknown validation error'];
-
-      return { valid: false, errors };
-    }
-
-    return { valid: true };
-  } catch (error) {
-    return {
-      valid: false,
-      errors: [`Schema validation setup failed: ${error instanceof Error ? error.message : 'Unknown error'}`],
-    };
+    return { valid: false, errors };
   }
+
+  return { valid: true };
 }
