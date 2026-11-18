@@ -73,6 +73,7 @@
     "pdf-to-png-converter": "^4.2.0",
     "pdfkit": "^0.20.1",
     "pino": "^10.0.0",
+    "staged-cache": "^0.1.0",
     "unist-util-visit": "^5.0.0",
     "yoga-layout": "^3.0.0",
     "zod": "^4.2.0"

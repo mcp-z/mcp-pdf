@@ -2,9 +2,10 @@
  * Reaches cdn.jsdelivr.net, github.com and raw.githubusercontent.com for the download and cache specs.
  */
 import assert from 'assert';
-import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
+import { createHash } from 'crypto';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'fs';
 import { safeRmSync } from 'fs-remove-compat';
-import { join } from 'path';
+import { basename, join } from 'path';
 import { Readable } from 'stream';
 import { downloadFile, isPublicAddress, MAX_DOWNLOAD_BYTES, readWithLimit } from '../../../src/lib/download.ts';
 
@@ -61,6 +62,39 @@ describe('downloadFile', () => {
       [],
       'no staging files left behind'
     );
+  });
+
+  // The cache path is a hash of the URL, so a test can place an invalid entry exactly where the download goes.
+  const cachedPath = (url: string) => join(cacheDir, `${createHash('sha256').update(url).digest('hex')}.ttf`);
+
+  it('downloads again when the cached file is empty', async () => {
+    mkdirSync(cacheDir, { recursive: true });
+    writeFileSync(cachedPath(DEJAVU_URL), '');
+    const path = await downloadFile(DEJAVU_URL, cacheDir);
+    assert.strictEqual(path, cachedPath(DEJAVU_URL));
+    assert.ok(readFileSync(path).equals(DEJAVU));
+  });
+
+  it('replaces a folder sitting where the file belongs', async () => {
+    mkdirSync(join(cachedPath(DEJAVU_URL), 'in-the-way'), { recursive: true });
+    const path = await downloadFile(DEJAVU_URL, cacheDir);
+    assert.ok(statSync(path).isFile());
+    assert.ok(readFileSync(path).equals(DEJAVU));
+  });
+
+  it('serves concurrent downloads of one URL from one valid file and leaves no staging files', async () => {
+    const paths = await Promise.all([1, 2, 3].map(() => downloadFile(DEJAVU_URL, cacheDir)));
+    assert.strictEqual(new Set(paths).size, 1);
+    assert.ok(readFileSync(paths[0] as string).equals(DEJAVU));
+    assert.deepStrictEqual(
+      readdirSync(cacheDir).map((name) => basename(name)),
+      [basename(cachedPath(DEJAVU_URL))]
+    );
+  });
+
+  it('leaves nothing in the cache when the download fails', async () => {
+    await assert.rejects(downloadFile('https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/does-not-exist.ttf', cacheDir), /HTTP 404/);
+    assert.deepStrictEqual(existsSync(cacheDir) ? readdirSync(cacheDir) : [], []);
   });
 
   it('keeps different URLs apart even when their file names match', async () => {

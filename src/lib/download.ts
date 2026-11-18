@@ -1,13 +1,13 @@
-import { createHash, randomBytes } from 'crypto';
+import { createHash } from 'crypto';
 import { lookup as dnsLookup, type LookupAddress } from 'dns';
-import { existsSync } from 'fs';
-import { mkdir, rename, writeFile } from 'fs/promises';
+import { stat, writeFile } from 'fs/promises';
 import type { IncomingMessage } from 'http';
 import { get } from 'https';
 import ipaddr from 'ipaddr.js';
 import { isIP, type LookupFunction } from 'net';
 import { homedir } from 'os';
 import { extname, join } from 'path';
+import { stagedCache } from 'staged-cache';
 import type { Readable } from 'stream';
 
 /** Machine-wide caches for files downloaded from URLs, shared by every project */
@@ -104,12 +104,12 @@ export async function downloadFile(url: string, cacheDir: string): Promise<strin
   assertAllowed(parsed);
   const extension = extname(parsed.pathname).toLowerCase();
   const path = join(cacheDir, createHash('sha256').update(url).digest('hex') + (KEPT_EXTENSIONS.has(extension) ? extension : ''));
-  if (existsSync(path)) return path;
-
-  const data = await fetchFile(url);
-  await mkdir(cacheDir, { recursive: true });
-  const staging = `${path}.${randomBytes(6).toString('hex')}.tmp`;
-  await writeFile(staging, data);
-  await rename(staging, path);
-  return path;
+  return stagedCache(path, {
+    // A hit is a non-empty file; the key is a hash of the URL, so the content has no known hash to check.
+    verify: async (file) => {
+      const info = await stat(file);
+      return info.isFile() && info.size > 0;
+    },
+    build: async (staging) => writeFile(staging, await fetchFile(url)),
+  });
 }

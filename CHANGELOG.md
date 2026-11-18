@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.4.2]
+
+### Changed
+
+- Downloaded fonts and images are cached through `staged-cache`. A cached file counts as a hit only when it is a non-empty file; an empty file or a folder in its place is replaced by a fresh download instead of being returned.
+
+### Fixed
+
+- A failed font or image download could leave `*.tmp` files in `~/.mcp-z/mcp-pdf/cache/`. Nothing is left behind now, and two processes downloading the same URL at once both get a valid file, including on Windows.
+
 ## [3.4.1] - 2026-11-16
 
 ### Fixed
